@@ -1,0 +1,155 @@
+package {{.AllLower}}
+
+import (
+	"context"
+	"encoding/json"
+	{{.GrpcImport}}
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	p "{{.ProjectPath}}/pkg/proto"
+)
+
+type (
+	{{.Camel}}Grpc struct {
+		p.Unimplemented{{.Camel}}ServiceServer
+		manager{{.Camel}} Manager{{.Camel}}Adapter
+	}
+)
+
+func New{{.Camel}}Grpc(m{{.Abbr}} Manager{{.Camel}}Adapter) *{{.Camel}}Grpc {
+	return &{{.Camel}}Grpc{manager{{.Camel}}: m{{.Abbr}}}
+}
+
+func (a *{{.Camel}}Grpc) Get{{.Camel}}(ctx context.Context, in *p.IDIn) (*p.{{.Camel}}Response, error) {
+	result := &p.Result{Success: false}
+	response := &p.{{.Camel}}Response{Result: result}
+	{{.Abbr}} := &{{.Camel}}{Id: int(in.Id)}
+	if err := a.manager{{.Camel}}.Get({{.Abbr}}); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var err error
+	response.{{.Camel}}, err = translateOut({{.Abbr}})
+	if err != nil {
+		return response, err
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *{{.Camel}}Grpc) List{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) (*p.{{.Camel}}RepeatResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.{{.Camel}}RepeatResponse{Result: result}
+	{{.Abbr}} := &[]{{.Camel}}{}
+	if err := a.manager{{.Camel}}.List({{.Abbr}}); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	for _, a := range *{{.Abbr}} {
+		proto{{.Camel}}, err := translateOut(&a)
+		if err != nil {
+			return response, err
+		}
+		response.{{.Camel}} = append(response.{{.Camel}}, proto{{.Camel}})
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *{{.Camel}}Grpc) Post{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) (*p.{{.Camel}}Response, error) {
+	result := &p.Result{Success: false}
+	response := &p.{{.Camel}}Response{Result: result}
+	{{.Abbr}}, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.manager{{.Camel}}.Post({{.Abbr}}); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var errTranslate error
+	response.{{.Camel}}, errTranslate = translateOut({{.Abbr}})
+	if err != nil {
+		return response, errTranslate
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *{{.Camel}}Grpc) Put{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	{{.Abbr}}, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.manager{{.Camel}}.Put({{.Abbr}}); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func (a *{{.Camel}}Grpc) Patch{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	patchByte, err := json.Marshal(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.manager{{.Camel}}.Patch(patchByte); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func (a *{{.Camel}}Grpc) Delete{{.Camel}}(ctx context.Context, in *p.IDIn) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	{{.Abbr}} := &{{.Camel}}{Id: int(in.Id)}
+	if err := a.manager{{.Camel}}.Delete({{.Abbr}}); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func translateOut({{.Abbr}} *{{.Camel}}) (*p.{{.Camel}}, error) {
+	proto{{.Camel}} := p.{{.Camel}}{}
+	{{.GrpcTranslateOut}}
+	return &proto{{.Camel}}, nil
+}
+
+func translateIn(in *p.{{.Camel}}) (*{{.Camel}}, error) {
+	{{.Abbr}} := {{.Camel}}{}
+	{{.GrpcTranslateIn}}
+	return &{{.Abbr}}, nil
+}
+
+// found these are slower; deprecated; keep them, just in case
+func translateJsonOut({{.Abbr}} *{{.Camel}}) (*p.{{.Camel}}, error) {
+	proto{{.Camel}} := p.{{.Camel}}{}
+	outBytes, err := json.Marshal({{.Abbr}})
+	if err != nil {
+		return &proto{{.Camel}}, ae.GeneralError("Unable to encode from {{.Camel}}", err)
+	}
+	err = json.Unmarshal(outBytes, &proto{{.Camel}})
+	if err != nil {
+		return &proto{{.Camel}}, ae.GeneralError("Unable to decode to proto.{{.Camel}}", err)
+	}
+	return &proto{{.Camel}}, nil
+}
+
+func translateJsonIn(in *p.{{.Camel}}) (*{{.Camel}}, error) {
+	{{.Abbr}} := {{.Camel}}{}
+	outBytes, err := json.Marshal(in)
+	if err != nil {
+		return &{{.Abbr}}, ae.GeneralError("Unable to encode from proto.{{.Camel}}", err)
+	}
+	err = json.Unmarshal(outBytes, &{{.Abbr}})
+	if err != nil {
+		return &{{.Abbr}}, ae.GeneralError("Unable to decode to {{.Camel}}", err)
+	}
+	return &{{.Abbr}}, nil
+}

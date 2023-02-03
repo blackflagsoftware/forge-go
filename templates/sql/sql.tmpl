@@ -1,0 +1,82 @@
+package {{.AllLower}}
+
+import (
+	"github.com/jmoiron/sqlx"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	stor "{{.ProjectPath}}/internal/storage"
+	"{{.ProjectPath}}/internal/util"
+)
+
+type (
+	SQL{{.Camel}} struct {
+		DB *sqlx.DB
+	}
+)
+
+func InitSQL() *SQL{{.Camel}} {
+	db := stor.{{.SQLProvider}}Init()
+	return &SQL{{.Camel}}{DB: db}
+}
+
+func (d *SQL{{.Camel}}) Read({{.Abbr}} *{{.Camel}}) error {
+	sqlGet := {{.DataTablePrefix}}`
+		SELECT
+			{{.SqlGetColumns}}
+		FROM {{.DataTable}} WHERE {{.SqlTableKeyKeys}}`{{.DataTablePostfix}}
+	if errDB := d.DB.Get({{.Abbr}}, sqlGet, {{.SqlTableKeyValues}}); errDB != nil {
+		return ae.DBError("{{.Camel}} Get: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Select({{.Abbr}} *[]{{.Camel}}, {{.LowerCamel}}Param {{.Camel}}Param) error {
+	args := []interface{}{}
+	searchStr := util.BuildSearchString({{.LowerCamel}}Param.Search, false, &args)
+	sqlSearch := fmt.Sprintf(`
+		SELECT
+			{{.SqlGetColumns}}
+		FROM {{.DataTable}}
+		%s
+		ORDER BY %s %s`, searchStr, {{.LowerCamel}}Param.Sort {{.LowerCamel}}Para.Limit)
+	if errDB := d.DB.Select({{.Abbr}}, sqlSearch, args...); errDB != nil {
+		return ae.DBError("{{.Camel}} Search: unable to select records.", errDB)
+	}
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Create({{.Abbr}} *{{.Camel}}) error {
+	sqlPost := {{.DataTablePrefix}}`
+		INSERT INTO {{.DataTable}} (
+			{{.SqlPostColumns}}
+		) VALUES (
+			{{.SqlPostColumnsNamed}}
+		){{.SqlPostReturning}}`{{.DataTablePostfix}}
+	{{.SqlPostQuery}}
+	if errDB != nil {
+		return ae.DBError("{{.Camel}} Post: unable to insert record.", errDB)
+	}
+	defer rows.Close()
+	{{.SqlPostLastId}}
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Update({{.Abbr}} *{{.Camel}}) error {
+	sqlPatch := {{.DataTablePrefix}}`
+		UPDATE {{.DataTable}} SET
+			{{.SqlPatchColumns}}
+		WHERE {{.SqlPatchWhere}}`{{.DataTablePostfix}}
+	if _, errDB := d.DB.NamedExec(sqlPatch, {{.Abbr}}); errDB != nil {
+		return ae.DBError("{{.Camel}} Patch: unable to update record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+	sqlDelete := {{.DataTablePrefix}}`
+		DELETE FROM {{.DataTable}} WHERE {{.SqlTableKeyKeys}}`{{.DataTablePostfix}}
+	if _, errDB := d.DB.Exec(sqlDelete, {{.SqlTableKeyValues}}); errDB != nil {
+		return ae.DBError("{{.Camel}} Delete: unable to delete record.", errDB)
+	}
+	return nil
+}

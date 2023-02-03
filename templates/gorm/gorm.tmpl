@@ -1,0 +1,58 @@
+package {{.AllLower}}
+
+import (
+	"gorm.io/gorm"
+	ae "{{.ProjectPath}}/internal/api_error"
+	stor "{{.ProjectPath}}/internal/storage"
+)
+
+type (
+	SQL{{.Camel}} struct {
+		DB *gorm.DB
+	}
+)
+
+func InitSQL() *SQL{{.Camel}} {
+	db := stor.GormInit()
+	return &SQL{{.Camel}}{DB: db}
+}
+
+func (d *SQL{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
+	result := d.DB.Where({{.Abbr}}).First({{.Abbr}})
+	if result.Error != nil {
+		return ae.DBError("{{.Camel}} Get: unable to select record.", result.Error)
+	}
+	return nil
+}
+
+func (d *SQL{{.Camel}}) List({{.Abbr}} *[]{{.Camel}}) error {
+	result := d.DB.Find({{.Abbr}})
+	if result.Error != nil {
+		return ae.DBError("{{.Camel}} List: unable to select records.", result.Error)
+	}
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
+	result := d.DB.Create({{.Abbr}})
+	if result.Error != nil {
+		return ae.DBError("{{.Camel}} Post: unable to insert record.", result.Error)
+	}
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Patch({{.Abbr}} *{{.Camel}}) error {
+	result := d.DB.Save({{.Abbr}})
+	if result.Error != nil {
+		return ae.DBError("{{.Camel}} Patch: unable to update record.", result.Error)
+	}
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+	result := d.DB.Delete({{.Abbr}})
+	if result.Error != nil {
+		return ae.DBError("{{.Camel}} Delete: unable to delete record.", result.Error)
+	}
+	return nil
+}

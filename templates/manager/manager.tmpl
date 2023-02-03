@@ -1,0 +1,64 @@
+package {{.AllLower}}
+
+import (
+	{{.ManagerTime}}
+
+	g "github.com/Jeffail/gabs"
+	ae "{{.ProjectPath}}/internal/api_error"
+	"{{.ProjectPath}}/internal/util"
+	{{.ManagerUtilPath}}
+)
+
+//go:generate mockgen -source=manager.go -destination=mock.go -package={{.AllLower}}
+type (
+	Data{{.Camel}}Adapter interface {
+		Read(*{{.Camel}}) error
+		Select(*[]{{.Camel}}, {{.Camel}}Param) error
+		Create(*{{.Camel}}) error
+		Update(*{{.Camel}}) error
+		Delete(*{{.Camel}}) error
+	}
+
+	Manager{{.Camel}} struct {
+		data{{.Camel}} Data{{.Camel}}Adapter
+	}
+)
+
+func NewManager{{.Camel}}(c{{.Abbr}} Data{{.Camel}}Adapter) *Manager{{.Camel}} {
+	return &Manager{{.Camel}}{data{{.Camel}}: c{{.Abbr}}}
+}
+
+func (m *Manager{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
+{{.ManagerGetRow}}
+	return m.data{{.Camel}}.Read({{.Abbr}})
+}
+
+func (m *Manager{{.Camel}}) Search({{.Abbr}} *[]{{.Camel}}, {{.LowerCamel}}Param {{.Camel}}Param) error {
+	{{.LowerCamel}}Param.Param.CalculateParam({{.DefaultColumn}}, map[string]{ {{.SortColumn })
+
+	return m.data{{.Camel}}.Select({{.Abbr}}, {{.LowerCamel}}Camel)
+}
+
+func (m *Manager{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
+{{.ManagerPostRows}}
+	return m.data{{.Camel}}.Create({{.Abbr}})
+}
+
+func (m *Manager{{.Camel}}) Put({{.Abbr}} *{{.Camel}}) error {
+{{.ManagerPutRows}}
+	return m.data{{.Camel}}.Update({{.Abbr}})
+}
+
+func (m *Manager{{.Camel}}) Patch(body []byte) error {
+	jParsed, errP := g.ParseJSON(body)
+	if errP != nil {
+		return ae.BindError(errP)
+	}
+{{.ManagerPatchRows}}
+	return m.data{{.Camel}}.Update({{.Abbr}})
+}
+
+func (m *Manager{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+{{.ManagerGetRow}}
+	return m.data{{.Camel}}.Delete({{.Abbr}})
+}

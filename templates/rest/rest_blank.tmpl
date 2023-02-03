@@ -1,0 +1,28 @@
+package {{.AllLower}}
+
+import (
+	"github.com/labstack/echo/v4"
+)
+
+type (
+	Manager{{.Camel}}Adapter interface {
+	}
+
+	Rest{{.Camel}} struct {
+		manager{{.Camel}} Manager{{.Camel}}Adapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	sl := InitStorage()
+	ml := NewManager{{.Camel}}(sl)
+	hl := NewRest{{.Camel}}(ml)
+	hl.Load{{.Camel}}Routes(eg)
+}
+
+func NewRest{{.Camel}}(m{{.Abbr}} Manager{{.Camel}}Adapter) *Rest{{.Camel}} {
+	return &Rest{{.Camel}}{manager{{.Camel}}: m{{.Abbr}}}
+}
+
+func (h *Rest{{.Camel}}) Load{{.Camel}}Routes(eg *echo.Group) {
+}

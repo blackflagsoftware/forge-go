@@ -1,0 +1,37 @@
+package {{.AllLower}}
+
+import (
+	"gorm.io/gorm"
+	stor "{{.ProjectPath}}/internal/storage"
+)
+
+type (
+	SQL{{.Camel}} struct {
+		DB *gorm.DB
+	}
+)
+
+func InitSQL() *SQL{{.Camel}} {
+	db := stor.GormInit()
+	return &SQL{{.Camel}}{DB: db}
+}
+
+func (d *SQL{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
+	return nil
+}
+
+func (d *SQL{{.Camel}}) List({{.Abbr}} *[]{{.Camel}}) error {
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Patch({{.Abbr}} *{{.Camel}}) error {
+	return nil
+}
+
+func (d *SQL{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+	return nil
+}

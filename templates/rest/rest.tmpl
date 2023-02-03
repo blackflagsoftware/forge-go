@@ -1,0 +1,117 @@
+package {{.AllLower}}
+
+import (
+	"io/ioutil"
+	"net/http"{{.RestStrConv}}
+
+	"github.com/labstack/echo/v4"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	util "{{.ProjectPath}}/internal/util"
+)
+
+type (
+	Manager{{.Camel}}Adapter interface {
+		Get(*{{.Camel}}) error
+		Search(*[]{{.Camel}}, {{.Camel}}Param) error
+		Post(*{{.Camel}}) error
+		Put(*{{.Camel}}) error
+		Patch([]byte) error
+		Delete(*{{.Camel}}) error
+	}
+
+	Rest{{.Camel}} struct {
+		manager{{.Camel}} Manager{{.Camel}}Adapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	sl := InitStorage()
+	ml := NewManager{{.Camel}}(sl)
+	hl := NewRest{{.Camel}}(ml)
+	hl.Load{{.Camel}}Routes(eg)
+}
+
+func NewRest{{.Camel}}(m{{.Abbr}} Manager{{.Camel}}Adapter) *Rest{{.Camel}} {
+	return &Rest{{.Camel}}{manager{{.Camel}}: m{{.Abbr}}}
+}
+
+func (h *Rest{{.Camel}}) Load{{.Camel}}Routes(eg *echo.Group) {
+	eg.GET("/{{.AllLower}}/{{.RestGetDeleteUrl}}", h.Get)
+	eg.GET("/{{.AllLower}}", h.Search)
+	eg.POST("/{{.AllLower}}", h.Post)
+	eg.PUT("/{{.AllLower}}", h.Put)
+	eg.PATCH("/{{.AllLower}}", h.Patch)
+	eg.DELETE("/{{.AllLower}}/{{.RestGetDeleteUrl}}", h.Delete)
+}
+
+func (h *Rest{{.Camel}}) Get(c echo.Context) error {
+{{.RestGetDeleteAssign}}
+	{{.LowerCamel}} := &{{.Camel}}{ {{.RestArgSet}} }
+	if err := h.manager{{.Camel}}.Get({{.LowerCamel}}); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(*{{.LowerCamel}}, nil, nil))
+}
+
+func (h *Rest{{.Camel}}) Search(c echo.Context) error {
+	{{.LowerCamel}}Param := {{.Camel}}Param{}
+	{{.LowerCamel}}s := &[]{{.Camel}}{}
+	if err := h.manager{{.Camel}}.Search({{.LowerCamel}}s, {{.LowerCamel}}Param); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(*{{.LowerCamel}}s, nil, nil))
+}
+
+func (h *Rest{{.Camel}}) Post(c echo.Context) error {
+	{{.Abbr}} := &{{.Camel}}{}
+	if err := c.Bind({{.Abbr}}); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.manager{{.Camel}}.Post({{.Abbr}}); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(*{{.Abbr}}, nil, nil))
+}
+
+func (h *Rest{{.Camel}}) Put(c echo.Context) error {
+	{{.Abbr}} := &{{.Camel}}{}
+	if err := c.Bind({{.Abbr}}); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.manager{{.Camel}}.Put({{.Abbr}}); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(*{{.Abbr}}, nil, nil))
+}
+
+func (h *Rest{{.Camel}}) Patch(c echo.Context) error {
+	body, _ := ioutil.ReadAll(c.Request().Body)
+	if err := h.manager{{.Camel}}.Patch(body); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(struct{}{}, nil, nil))
+}
+
+func (h *Rest{{.Camel}}) Delete(c echo.Context) error {
+{{.RestGetDeleteAssign}}
+	{{.LowerCamel}} := &{{.Camel}}{ {{.RestArgSet}} }
+	if err := h.manager{{.Camel}}.Delete({{.LowerCamel}}); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(struct{}{}, nil, nil))
+}

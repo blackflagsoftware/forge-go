@@ -1,0 +1,30 @@
+package storage
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/jmoiron/sqlx"
+	"{{.ProjectPath}}/config"
+	_ "github.com/mattn/go-sqlite3"
+)
+
+var SqliteDB *sqlx.DB
+var sqliteConnection string
+
+func SqliteInit() *sqlx.DB {
+	if SqliteDB == nil {
+		var err error
+		sqliteConnection = GetSqliteConnection()
+		SqliteDB, err = sqlx.Open("sqlite3", sqliteConnection)
+		if err != nil {
+			log.Panicln("Could not connect to the DB host: %s*****; %s", sqliteConnection[6:], err)
+		}
+		SqliteDB.SetMaxOpenConns(1)
+	}
+	return SqliteDB
+}
+
+func GetSqliteConnection() string {
+	return fmt.Sprintf("%s?cache=shared&mode=wrc", config.SqlitePath)
+}

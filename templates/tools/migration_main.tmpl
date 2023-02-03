@@ -1,0 +1,174 @@
+package main
+
+import (
+	"bufio"
+	"flag"
+	"fmt"
+	"os"
+	"path"
+	"strings"
+	"time"
+
+	"{{.ProjectPath}}/config"
+	mig "{{.ProjectPath}}/tools/migration/src"
+)
+
+/*
+This tool will provide a few functionalities for your application:
+
+1 - able to run any sql scripts in the scripts/migrations directory and apply them in chronological order and determine which scripts have already been applied
+
+2 - able to normalize the name of a file so that your file can be ran by the migration process in the chronological order; when using (f) just enter in the name of the file
+	e.g.:
+		- save a file in the folder scripts/migrations/save_my_table.sql
+		- command line would be: tools/migration/migration -f save_my_table.sql
+		- the out come of this operation would be a name change to scripts/migrations/<timestamp>-save-my-table.sql
+3 - able to run in an interactive mode to take text in to save to a file for normalization of name; this will ask you two questions:
+	- what is they sql you would like to save
+	- what name would you like to give it
+
+If migration (m) or file (f) is not set the application will go into interactive mode
+
+Connection to the db is provided by the application config file (see config/config.go) or you can manually send in the credentials (see flags below)
+
+The directory structure can get located anywhere, you can either set its location through the command line (see flags below) or provide a value for env var: {{.ProjectFile.Name.Upper}}_MIGRATION_PATH, command line arg will override
+
+Functionality (1) is performed every time cmd/rest/rest or cmd/grpc/grpc is started
+Functionality (2 and 3) is performed by compiling tool/migration/main.go and running that
+*/
+
+func main() {
+	var migration bool
+	var file string
+	var host string
+	var db string
+	var user string
+	var pwd string
+	var path string
+
+	flag.BoolVar(&migration, "m", false, "Run migration for the project")
+	flag.StringVar(&file, "f", "", "File to normalize name; name of the file (only) found in <project root>/scripts/migrations")
+	flag.StringVar(&host, "h", "", "Host name")
+	flag.StringVar(&db, "d", "", "DB name")
+	flag.StringVar(&user, "u", "", "Username")
+	flag.StringVar(&pwd, "p", "", "Password")
+	flag.StringVar(&path, "t", "", "Scripts path; typically the path to <project root>/scripts/migrations")
+	flag.Parse()
+
+	if path == "" {
+		envPath := os.Getenv("{{.ProjectFile.Name.Upper}}_MIGRATION_PATH")
+		if envPath == "" {
+			fmt.Println("Path is not set for scripts/migrations")
+			os.Exit(1)
+		}
+		path = envPath
+	}
+
+	err := os.MkdirAll(path, 0744)
+	if err != nil {
+		fmt.Printf("Unable to make scripts/migrations directory structure: %s with error: %s\n", path, err)
+	}
+
+	// get credential values from application config
+	dbHost := config.DBHost
+	if host != "" {
+		dbHost = host
+	}
+	dbUser := config.DBUser
+	if user != "" {
+		dbUser = user
+	}
+	dbPass := config.DBPass
+	if pwd != "" {
+		dbPass = pwd
+	}
+	dbDB := config.DBDB
+	if db != "" {
+		dbDB = db
+	}
+
+	// make sure the database is initialized, this will include the migration table
+	errVerify := mig.VerifyDBInit(dbDB, dbHost, dbUser, dbPass)
+	if errVerify != nil {
+		fmt.Printf("Error verifying DB initialization: %s\n", errVerify)
+		os.Exit(1)
+	}
+
+	if migration {
+		if dbUser == "" || dbPass == "" {
+			fmt.Println("Missing host or user values")
+			os.Exit(1)
+		}
+
+		mig.RunMigration(path, dbHost, dbUser, dbPass, dbDB)
+		os.Exit(0)
+	}
+
+	if file != "" {
+		processFile(file, path)
+		os.Exit(0)
+	}
+
+	interactive(path)
+}
+
+func processFile(fileName, migrationDir string) {
+	filePath := fmt.Sprintf("%s/%s", migrationDir, fileName)
+	now := time.Now().Format("20060102150405")
+	ext := ".sql"
+	if path.Ext(fileName) == ".sql" {
+		ext = ""
+	}
+	renameFileName := fmt.Sprintf("%s/%s-%s%s", migrationDir, now, normalizeName(fileName), ext)
+	err := os.Rename(filePath, renameFileName)
+	if err != nil {
+		fmt.Printf("Error in renaming file: %s\n", err)
+	}
+}
+
+func interactive(migrationDir string) {
+	for {
+		fmt.Printf("Paste or enter your sql code below; type 'exit' when done\n\n")
+		lines := []string{}
+		reader := bufio.NewReader(os.Stdin)
+		for {
+			line := parseInput(reader)
+			if line == "exit" {
+				break
+			}
+			lines = append(lines, line)
+		}
+
+		fmt.Print("Enter a description of the migration (will cut it off at 85 characters): ")
+		name := parseInput(reader)
+		now := time.Now().Format("20060102150405")
+		fileName := fmt.Sprintf("%s/%s-%s.sql", migrationDir, now, normalizeName(name))
+		err := os.WriteFile(fileName, []byte(strings.Join(lines, "\n")), 0644)
+		if err != nil {
+			fmt.Printf("Unable to save file: %s\n", err)
+		}
+		fmt.Println("")
+		fmt.Print("Add another (y/n): ")
+		another := parseInput(reader)
+		another = strings.ToLower(another)
+		if another != "y" {
+			break
+		}
+	}
+}
+
+func parseInput(reader *bufio.Reader) string {
+	s, _ := reader.ReadString('\n')
+	s = strings.TrimSpace(s)
+	return s
+}
+
+// Let's make sure all names are normalized and that the length does not exceed 85 due to the column max size and adding the date in front of it
+func normalizeName(fileName string) (normalizedName string) {
+	normalizedName = strings.ReplaceAll(fileName, " ", "-")
+	normalizedName = strings.ReplaceAll(normalizedName, "_", "-")
+	if len(normalizedName) > 85 {
+		normalizedName = normalizedName[:85]
+	}
+	return
+}

@@ -1,0 +1,8 @@
+package {{.AllLower}}
+
+type {{.Camel}} struct {}
+
+func InitStorage() Storage{{.Camel}}Adapter {
+    // TODO: decide which storage to use
+    {{.InitStorage}}
+}

@@ -1,0 +1,66 @@
+package {{.AllLower}}
+
+import (
+	"{{.ProjectPath}}/config"
+	"{{.ProjectPath}}/internal/storage"
+)
+
+type (
+	File{{.Camel}} struct {}
+)
+
+func (d *File{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
+	{{.Abbr}}s := []{{.Camel}}{}
+	if err := storage.OpenFile(config.StorageFileDir, &{{.Abbr}}s); err != nil {
+		return err
+	}
+	for _, {{.Abbr}}Obj := range {{.Abbr}}s {
+		if {{.FileKeys}} {
+			{{.FileGetColumns}}
+			break
+		}
+	}
+	return nil
+}
+
+func (d *File{{.Camel}}) Select({{.Abbr}} *[]{{.Camel}}) error {
+	return storage.OpenFile(config.StorageFileDir, {{.Abbr}})
+}
+
+func (d *File{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
+	{{.Abbr}}s := []{{.Camel}}{}
+	if err := storage.OpenFile(config.StorageFileDir, &{{.Abbr}}s); err != nil {
+		return err
+	}
+	{{.FilePostIncr}}
+	{{.Abbr}}s = append({{.Abbr}}s, *{{.Abbr}})
+	return storage.SaveFile(config.StorageFileDir, {{.Abbr}}s)
+}
+
+func (d *File{{.Camel}}) Patch({{.Abbr}} *{{.Camel}}) error {
+	{{.Abbr}}s := []{{.Camel}}{}
+	if err := storage.OpenFile(config.StorageFileDir, &{{.Abbr}}s); err != nil {
+		return err
+	}
+	for i, {{.Abbr}}Obj := range {{.Abbr}}s {
+		if {{.FileKeys}} {
+			{{.Abbr}}s[i] = *{{.Abbr}}
+			break
+		}
+	}
+	return storage.SaveFile(config.StorageFileDir, {{.Abbr}}s)
+}
+
+func (d *File{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+	{{.Abbr}}s := []{{.Camel}}{}
+	if err := storage.OpenFile(config.StorageFileDir, &{{.Abbr}}s); err != nil {
+		return err
+	}
+	for i, {{.Abbr}}Obj := range {{.Abbr}}s {
+		if {{.FileKeys}} {
+			{{.Abbr}}s = append({{.Abbr}}s[:i], {{.Abbr}}s[i+1:]...)
+			break
+		}
+	}
+	return storage.SaveFile(config.StorageFileDir, {{.Abbr}}s) 
+}

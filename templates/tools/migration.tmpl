@@ -1,0 +1,104 @@
+package migration
+
+import (
+	"fmt"
+	"os"
+	"regexp"
+	"strings"
+
+	{{.MigrationHeader}}
+	"github.com/jmoiron/sqlx"
+)
+
+type (
+	Migration struct {
+		Id      int64  `db:"id"`
+		Version string `db:"version"`
+	}
+)
+
+func RunMigration(migrationDir, dbHost, dbUser, dbPass, dbDB string) error {
+	// create conn str for projects DB
+	{{.MigrationConnection}}
+
+	sqlTableExists := fmt.Sprintf("SELECT EXISTS (SELECT table_name FROM information_schema.tables WHERE table_schema = '%s' AND table_name = 'migration')", dbDB)
+	var exists bool
+	errGet := db.Get(&exists, sqlTableExists)
+	if errGet != nil {
+		return fmt.Errorf("Error Get table: %s", errGet)
+	}
+	if !exists {
+		sqlCreateMigration := fmt.Sprintf("CREATE TABLE IF NOT EXISTS migration (id int auto_increment, version varchar(100) not null, primary key (id))")
+		_, errMigration := db.Exec(sqlCreateMigration)
+		if errMigration != nil {
+			return fmt.Errorf("Error in creating migration: %s", errMigration)
+		}
+	}
+	// load file names in the 'migrations' folder
+	files, err := os.ReadDir(migrationDir)
+	if err != nil {
+		return fmt.Errorf("Error reading diretory: %s, nothing to do.", err)
+	}
+
+	// get the known migrations per service
+	migrations := []Migration{}
+	sqlMigration := "select id, version from migration order by id"
+	errSelect := db.Select(&migrations, sqlMigration)
+	if errSelect != nil {
+		return fmt.Errorf("Error selecting migrations: %s", errSelect)
+	}
+	// loop through and make these into a map; for easy lookup later
+	migrationsMap := make(map[string]struct{})
+	for _, migration := range migrations {
+		migrationsMap[migration.Version] = struct{}{}
+	}
+
+	// loop through file names and see if they are present in the db record
+	for _, file := range files {
+		// fmt.Printf("Processing file: %s\n", file.Name())
+		if file.IsDir() {
+			// skip directories
+			fmt.Printf("skipping directory: %s\n", file.Name())
+			continue
+		}
+		if strings.Index(file.Name(), ".sql") == -1 {
+			// skip any non .sql files
+			fmt.Printf("skipping non .sql file: %s\n", file.Name())
+			continue
+		}
+		if matched, err := regexp.Match(`^[0-9]{14}[a-zA-Z-]*\.sql$`, []byte(file.Name())); !matched || err != nil {
+			// skip non normalized names or error in regex
+			fmt.Printf("skipping non normalized name: %s\n", file.Name())
+			if err != nil {
+				fmt.Printf("\twith error: %s\n", err)
+			}
+			continue
+		}
+		// just get the name w/o extension
+		nameParts := strings.Split(file.Name(), ".")
+		if _, ok := migrationsMap[nameParts[0]]; !ok {
+			// if not, run the sql for that file
+			fileContent, err := os.ReadFile(fmt.Sprintf("%s/%s", migrationDir, file.Name()))
+			if err != nil {
+				fmt.Printf("Unable to read file: %s with error: %s\n", file.Name(), err)
+				continue
+			}
+			_, errExec := db.Exec(string(fileContent))
+			if errExec != nil {
+				fmt.Printf("Unable to run file query: %s with error: %s\n", file.Name(), errExec)
+				continue
+			}
+			migration := Migration{Version: nameParts[0]}
+			sqlInsert := "insert into migration (version) values (:version)"
+			_, errInsert := db.NamedExec(sqlInsert, migration)
+			if errInsert != nil {
+				return fmt.Errorf("Error inserting into migration: %s", errInsert)
+			}
+		}
+	}
+	return nil
+}
+
+func VerifyDBInit(expectedDB, dbHost, dbUser, dbPass string) error {
+	{{.MigrationVerify}}
+}

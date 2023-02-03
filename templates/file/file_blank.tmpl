@@ -1,0 +1,28 @@
+package {{.AllLower}}
+
+import (
+)
+
+type (
+	File{{.Camel}} struct {}
+)
+
+func (d *File{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
+	return nil
+}
+
+func (d *File{{.Camel}}) List({{.Abbr}} *[]{{.Camel}}) error {
+	return nil
+}
+
+func (d *File{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
+	return nil
+}
+
+func (d *File{{.Camel}}) Patch({{.Abbr}} *{{.Camel}}) error {
+	return nil
+}
+
+func (d *File{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+	return nil
+}

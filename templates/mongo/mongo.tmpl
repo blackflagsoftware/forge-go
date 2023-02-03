@@ -1,0 +1,90 @@
+package {{.AllLower}}
+
+import (
+	"context"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	stor "{{.ProjectPath}}/internal/storage"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+type (
+	Mongo{{.Camel}} struct {
+		DB *mongo.Client
+	}
+)
+
+func InitMongo() *Mongo{{.Camel}} {
+	db := stor.MongoInit()
+	return &Mongo{{.Camel}}{DB: db}
+}
+
+func (d *Mongo{{.Camel}}) Read({{.Abbr}} *{{.Camel}}) error {
+	collection := d.DB.Database("{{.Lower}}").Collection("{{.Abbr}}")
+	filter := bson.M{"id": {{.Abbr}}.Id}
+	err := collection.FindOne(context.TODO(), filter).Decode({{.Abbr}})
+	if err != nil {
+		return ae.DBError("{{.Camel}} Get: unable to get record.", err)
+	}
+	return nil
+}
+
+func (d *Mongo{{.Camel}}) Select({{.Abbr}} *[]{{.Camel}}) error {
+	collection := d.DB.Database("{{.Lower}}").Collection("{{.Abbr}}")
+	filter := bson.D{}
+	cur, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		return ae.DBError("{{.Camel}} List: unable to get records.", err)
+	}
+	defer cur.Close(context.TODO())
+	for cur.Next(context.TODO()) {
+		m := {{.Camel}}{}
+		err := cur.Decode(&m)
+		if err != nil {
+			return ae.DBError("{{.Camel}} List: unable to decode record.", err)
+		}
+		*{{.Abbr}} = append(*{{.Abbr}}, m)
+	}
+	return nil
+}
+
+func (d *Mongo{{.Camel}}) Create({{.Abbr}} *{{.Camel}}) error {
+	collection := d.DB.Database("{{.Lower}}").Collection("{{.Abbr}}")
+	_, err := collection.InsertOne(context.TODO(), {{.Abbr}})
+	if err != nil {
+		return ae.DBError("{{.Camel}} Post: unable to insert record.", err)
+	}
+	return nil
+}
+
+func (d *Mongo{{.Camel}}) Update({{.Abbr}} *{{.Camel}}) error {
+	obj, err := bson.Marshal({{.Abbr}})
+	if err != nil {
+		return ae.GeneralError("{{.Camel}} Put: unable to decode object.", err)
+	}
+	var updateDoc bson.D
+	err = bson.Unmarshal(obj, &updateDoc)
+	if err != nil {
+		return ae.GeneralError("{{.Camel}} Put: unable to encode document.", err)
+	}
+
+	collection := d.DB.Database("{{.Lower}}").Collection("{{.Abbr}}")
+	filter := bson.M{"id": {{.Abbr}}.Id}
+	update := bson.M{"$set": updateDoc}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return ae.GeneralError("{{.Camel}} Put: unable to update record.", err)
+	}
+	return nil
+}
+
+func (d *Mongo{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+	collection := d.DB.Database("{{.Lower}}").Collection("{{.Abbr}}")
+	filter := bson.M{"id": {{.Abbr}}.Id}
+	_, err := collection.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		return ae.GeneralError("{{.Camel}} Put: unable to delete record.", err)
+	}
+	return nil
+}
