@@ -131,7 +131,7 @@ func BuildRandomString(length int) string {
 }
 
 func CopyDirectory(src, dest string) error {
-	if err := os.MkdirAll(dest, 0644); err != nil {
+	if err := os.MkdirAll(dest, 0655); err != nil {
 		fmt.Println("Error in making project directory:", err)
 		return err
 	}
@@ -142,7 +142,7 @@ func CopyDirectory(src, dest string) error {
 	}
 	for _, entry := range dirEntry {
 		newSrc := filepath.Join(src, entry.Name())
-		newDest := filepath.Join(src, entry.Name())
+		newDest := filepath.Join(dest, entry.Name())
 		if entry.IsDir() {
 			CopyDirectory(newSrc, newDest)
 			continue
