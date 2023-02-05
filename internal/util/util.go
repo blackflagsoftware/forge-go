@@ -3,8 +3,10 @@ package util
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -126,4 +128,50 @@ func BuildRandomString(length int) string {
 		}
 	}
 	return randomString
+}
+
+func CopyDirectory(src, dest string) error {
+	if err := os.MkdirAll(dest, 0644); err != nil {
+		fmt.Println("Error in making project directory:", err)
+		return err
+	}
+	dirEntry, err := os.ReadDir(src)
+	if err != nil {
+		fmt.Printf("Unable to read directory %s: %s", src, err)
+		return err
+	}
+	for _, entry := range dirEntry {
+		newSrc := filepath.Join(src, entry.Name())
+		newDest := filepath.Join(src, entry.Name())
+		if entry.IsDir() {
+			CopyDirectory(newSrc, newDest)
+			continue
+		}
+		CopyFile(newSrc, newDest)
+	}
+	return nil
+}
+
+func CopyFile(src, dest string) {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		fmt.Printf("Unable to open source file: %s; %s", src, err)
+		return
+	}
+	defer srcFile.Close()
+	destFile, err := os.Create(dest)
+	if err != nil {
+		fmt.Printf("Unable to create destination file: %s; %s", dest, err)
+		return
+	}
+	_, err = io.Copy(destFile, srcFile)
+	if err != nil {
+		fmt.Printf("Unable to copy file: %s; %s", src, err)
+		return
+	}
+	err = destFile.Sync()
+	if err != nil {
+		fmt.Printf("Unable to close/sync destination file: %s; %s", dest, err)
+		return
+	}
 }

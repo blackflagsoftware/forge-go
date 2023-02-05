@@ -41,15 +41,12 @@ func cloneMe(directory string) {
 		fmt.Println("GOPATH is not set, please set this env. var")
 		return
 	}
-	projectDirectory := getProjectPath(goPath, directory)
+	// projectDirectory := getProjectPath(goPath, directory)
 
 	execDir, _ := osext.ExecutableFolder()
-	scriptDir := execDir + "/../../scripts"
-	// TODO: this un-tars a project, would not work on Windows, can we not use tar but have the whole project and rename all the relevant imports?
-	cmd := "./clone.sh " + projectDirectory
-
+	scriptDir := execDir + "/../../tools/clone"
 	os.Chdir(scriptDir)
-	output, _ := exec.Command("sh", "-c", cmd).CombinedOutput()
+	output, _ := exec.Command("go", "run", "clone.go", "-projectPath", directory).CombinedOutput()
 	fmt.Printf("%s\n", output)
 }
 

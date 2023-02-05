@@ -16,3 +16,5 @@
 
 cmd/forge/forge
 cmd/forge/forge.exec
+
+.vscode
