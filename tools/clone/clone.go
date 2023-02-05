@@ -38,7 +38,6 @@ func main() {
 	goPath := os.Getenv("GOPATH") + "/src"
 	destinationDir := filepath.Join(goPath, projectPath)
 
-	fmt.Println(destinationDir)
 	if _, errExists := os.Stat(destinationDir); !os.IsNotExist(errExists) {
 		fmt.Println("Project directory already exists... Good bye")
 		return

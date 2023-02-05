@@ -1,0 +1,4 @@
+cmd/grpc/grpc
+cmd/grpc/grpc.exec
+cmd/rest/rest
+cmd/rest/rest.exec

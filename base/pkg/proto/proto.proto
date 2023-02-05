@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "./;protobuf";
+
+message IDIn {
+	int64 Id = 1;
+}
+
+message Result {
+	bool Success = 1;
+	string Error = 2;
+}
