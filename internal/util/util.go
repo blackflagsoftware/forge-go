@@ -131,7 +131,7 @@ func BuildRandomString(length int) string {
 }
 
 func CopyDirectory(src, dest string) error {
-	if err := os.MkdirAll(dest, 0655); err != nil {
+	if err := os.MkdirAll(dest, 0755); err != nil {
 		fmt.Println("Error in making project directory:", err)
 		return err
 	}
@@ -155,23 +155,23 @@ func CopyDirectory(src, dest string) error {
 func CopyFile(src, dest string) {
 	srcFile, err := os.Open(src)
 	if err != nil {
-		fmt.Printf("Unable to open source file: %s; %s", src, err)
+		fmt.Printf("Unable to open source file: %s; %s\n", src, err)
 		return
 	}
 	defer srcFile.Close()
 	destFile, err := os.Create(dest)
 	if err != nil {
-		fmt.Printf("Unable to create destination file: %s; %s", dest, err)
+		fmt.Printf("Unable to create destination file: %s; %s\n", dest, err)
 		return
 	}
 	_, err = io.Copy(destFile, srcFile)
 	if err != nil {
-		fmt.Printf("Unable to copy file: %s; %s", src, err)
+		fmt.Printf("Unable to copy file: %s; %s\n", src, err)
 		return
 	}
 	err = destFile.Sync()
 	if err != nil {
-		fmt.Printf("Unable to close/sync destination file: %s; %s", dest, err)
+		fmt.Printf("Unable to close/sync destination file: %s; %s\n", dest, err)
 		return
 	}
 }
