@@ -41,14 +41,14 @@ func (p *ProjectFile) StorageMenu() {
 		prompts = []string{"(P) Postgres", "(M) Mysql", "(S) Sqlite"}
 		acceptablePrompts = []string{"p", "m", "s"} // haha... get it?!??!!  pms... haha
 		p.SqlStorage = util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "", setupHeader)
-		p.UseORM = util.AskYesOrNo("Would you like to a ORM")
+		p.UseORM = util.AskYesOrNo("Would you like to use an ORM")
 	}
 }
 
 func (p *ProjectFile) TagFormatMenu() {
 	setupHeader()
 	mainMesssge := []string{"Tag Format", "What format you want your 'json' tags to be", "This option will be saved to the project (this can be changed later)"}
-	prompts := []string{"(S) Snake Case (tag_format)", "(C) Camel Case (tagFormat)", "(P) Pascal Case (TagFormat)", "(K) Kebab Case (tag-format)", "(L) Lower Case (tag format)", "(U) Upper (TAG FORMAT)"}
+	prompts := []string{"(s) Snake Case (tag_format)", "(c) Camel Case (tagFormat)", "(p) Pascal Case (TagFormat)", "(k) Kebab Case (tag-format)", "(l) Lower Case (tag format)", "(u) Upper (TAG FORMAT)"}
 	acceptablePrompts := []string{"s", "f", "m"}
 	tagFormat := util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "", setupHeader)
 	switch tagFormat {

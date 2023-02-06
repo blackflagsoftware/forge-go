@@ -18,13 +18,16 @@ import (
 )
 
 func (p *Project) ProjectMenu() {
+
 	if p.ProjectFile.Storage == "s" {
 		p.SqlMenu()
 	} else {
 		p.NonSqlMenu()
 	}
 	// run templating process on endpoints
-	p.StartTemplating()
+	if len(p.Entities) > 0 {
+		p.StartTemplating()
+	}
 }
 
 func (p *Project) NonSqlMenu() {
@@ -32,6 +35,7 @@ func (p *Project) NonSqlMenu() {
 	prompts := []string{"(1) String", "(2) Integer", "(3) Decimal", "(4) Timestamp", "(5) Boolean", "(6) UUID"}
 	acceptablePrompts := []string{"1", "2", "3", "4", "5", "6"}
 
+OuterLoop:
 	for {
 		util.ClearScreen()
 		fmt.Println("** File/MongoDB Storage Menu **")
@@ -50,7 +54,7 @@ func (p *Project) NonSqlMenu() {
 			fmt.Print("Field Name: (e) to exit")
 			name := util.ParseInput()
 			if strings.ToLower(name) == "e" {
-				break
+				break OuterLoop
 			}
 			column.ColumnName.BuildName(name, p.ProjectFile.KnownAliases)
 			selection := util.BasicPrompt(messages, prompts, acceptablePrompts, "e", util.ClearScreen)
@@ -69,7 +73,7 @@ func (p *Project) NonSqlMenu() {
 			case "6":
 				column.GoType = "string"
 			case "e", "E":
-				break
+				break OuterLoop
 			}
 			entity.Columns = append(entity.Columns, column)
 			anotherColumn := util.AskYesOrNo("Add another field?")
@@ -140,6 +144,7 @@ func (p *Project) FileMenu() {
 }
 
 func (p *Project) PasteMenu() {
+PasteLoop:
 	for {
 		sql := []string{}
 		util.ClearScreen()
@@ -149,7 +154,7 @@ func (p *Project) PasteMenu() {
 		for {
 			line := util.ParseInput()
 			if line == "" || strings.ToLower(line) == "e" {
-				break
+				break PasteLoop
 			} else if line[:] == ")" || line[:] == ");" || line[len(line)-1:] == ";" {
 				sql = append(sql, line)
 				break
@@ -180,6 +185,9 @@ func (p *Project) PromptMenu() {
 		fmt.Println("")
 		fmt.Print("Enter entity name or (e) to exit: ")
 		objectName := util.ParseInput()
+		if strings.ToLower(objectName) == "e" {
+			break
+		}
 		sql = append(sql, fmt.Sprintf("create table %s (", objectName))
 		sql = append(sql, processColumns()...)
 		sql = append(sql, ")")

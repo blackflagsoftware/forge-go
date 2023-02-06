@@ -90,7 +90,7 @@ func BasicPrompt(mainMessage []string, prompts []string, acceptablePrompts []str
 
 func AskYesOrNo(msg string) (answer bool) {
 	for {
-		msg = msg + " (y/n)?"
+		msg = msg + " (y/n)? "
 		fmt.Print(msg)
 		def := ParseInput()
 		switch def {
