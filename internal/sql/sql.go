@@ -34,7 +34,7 @@ func tableNameParse(line string) (tableName, columnPart string, err error) {
 	reg := regexp.MustCompile(`(?i)create table (if )?(not )?(exists )?(?P<table_name>\w+) \((?P<column_part>.+)\);*`)
 	matches := reg.FindStringSubmatch(line)
 	if len(matches) < 2 {
-		err = fmt.Errorf("tableParse: sql parse invalid")
+		err = fmt.Errorf("tableParse: sql parse invalid, 'create table' not in correct format")
 		return
 	}
 	tableNameIdx := reg.SubexpIndex("table_name")
@@ -45,7 +45,8 @@ func tableNameParse(line string) (tableName, columnPart string, err error) {
 }
 
 func columnsParse(columnPart string) (columns []c.Column, err error) {
-	reg := regexp.MustCompile(`(?P<field_name>[a-zA-Z_]+) (?P<field_type>[a-zA-Z0-9\(\),]+)(?P<the_rest>.+)?`)
+	columnPart = replaceNumericPart(columnPart)
+	reg := regexp.MustCompile(`(?P<field_name>[a-zA-Z_]+) (?P<field_type>[a-zA-Z0-9\(\)_]+)(?P<the_rest>.+)?`)
 	keys := []string{}
 	// split columns and go through each column
 	lines := strings.Split(columnPart, ",")
@@ -58,8 +59,8 @@ func columnsParse(columnPart string) (columns []c.Column, err error) {
 		}
 		matches := reg.FindStringSubmatch(line)
 		if len(matches) < 2 {
-			err = fmt.Errorf("columnsParse: sql parse invalid")
-			return
+			err = fmt.Errorf("columnsParse: sql parse invalid, '<column name> <column type>...' not in correct format, skipping column")
+			continue
 		}
 		fieldNameIdx := reg.SubexpIndex("field_name")
 		fieldTypeIdx := reg.SubexpIndex("field_type")
@@ -75,6 +76,13 @@ func columnsParse(columnPart string) (columns []c.Column, err error) {
 	}
 	markPrimary(&columns, keys)
 	return
+}
+
+func replaceNumericPart(columnPart string) string {
+	// kind of a hack but need to get rid of the comma so the splitting of column lines goes smoothly
+	reg := regexp.MustCompile(`\((\d+), *?(\d+)\)`)
+	columnPart = reg.ReplaceAllString(columnPart, `(${1}_${2})`)
+	return columnPart
 }
 
 func parsePrimaryKey(line string) (keyNames []string) {
@@ -135,61 +143,64 @@ func setGoType(col *c.Column) {
 	charMatch := regexp.MustCompile(`^char[\(]\d+[\)]`)
 	binaryMatch := regexp.MustCompile(`^binary[\(]\d+[\)]`)
 	varbinaryMatch := regexp.MustCompile(`^binary[\(]\d+[\)]`)
-	switch col.DBType {
-	case "tinyint":
+	switch {
+	case col.DBType == "tinyint":
 		col.GoType = "null.Bool"
 		col.GoTypeNonSql = "bool"
-	case "int":
+	case strings.Contains(col.DBType, "int"):
 		col.GoType = "null.Int"
 		col.GoTypeNonSql = "int"
-	case "numeric":
+	case strings.Contains(col.DBType, "numeric"):
+		col.DBType = strings.Replace(col.DBType, "_", ",", 1) // replace the comma as it should, see replaceNumericPart()
 		col.GoType = "null.Float"
 		col.GoTypeNonSql = "float64"
-	case "decimal", "dec":
+	case strings.Contains(col.DBType, "dec"):
+		col.DBType = strings.Replace(col.DBType, "_", ",", 1) // replace the comma as it should, see replaceNumericPart()
 		col.GoType = "null.Float"
 		col.GoTypeNonSql = "float64"
-	case "float":
+	case strings.Contains(col.DBType, "float"):
 		col.GoType = "null.Float"
 		col.GoTypeNonSql = "float64"
-	case "double":
+	case strings.Contains(col.DBType, "double"):
 		col.GoType = "null.Float"
 		col.GoTypeNonSql = "float64"
-	case "real":
+	case strings.Contains(col.DBType, "real"):
 		col.GoType = "null.Float"
 		col.GoTypeNonSql = "float64"
-	case "money":
+	case col.DBType == "money":
 		col.GoType = "null.Float"
 		col.GoTypeNonSql = "float64"
-	case "text", "tinytext", "mediumtext", "longtext":
+	case strings.Contains(col.DBType, "text"):
 		col.GoType = "null.String"
 		col.GoTypeNonSql = "string"
-	case "json":
+	case col.DBType == "json":
 		col.GoType = "*json.RawMessage"
 		col.GoTypeNonSql = "[]byte"
-	case "tinyblob", "blob", "mediumblob", "longblob":
+	case strings.Contains(col.DBType, "blob"):
 		col.GoType = "null.Byte"
 		col.GoTypeNonSql = "[]byte"
-	case "time", "date", "datetime", "timestamp":
+	case strings.Contains(col.DBType, "time"):
 		col.GoType = "null.Time"
 		col.GoTypeNonSql = "time.Time"
-	case "uuid":
+	case strings.Contains(col.DBType, "date"):
+		col.GoType = "null.Time"
+		col.GoTypeNonSql = "time.Time"
+	case col.DBType == "uuid":
 		col.GoType = "string"
 		col.GoTypeNonSql = "string"
-	case "autoincrement":
+	case col.DBType == "autoincrement":
 		col.GoType = "int"
 		col.GoTypeNonSql = "int"
 		col.Null = false
-	case "serial":
+	case col.DBType == "serial":
 		col.DBType = "autoincrement"
 		col.GoType = "int"
 		col.GoTypeNonSql = "int"
 		col.Null = false
-	case "boolean", "bool":
+	case strings.Contains(col.DBType, "bool"):
 		col.DBType = "boolean"
 		col.GoType = "null.Bool"
 		col.GoTypeNonSql = "bool"
-	}
-	switch {
 	case varcharMatch.MatchString(col.DBType):
 		length, err := splitChar(col.DBType)
 		if err != nil {
@@ -235,6 +246,12 @@ func setGoType(col *c.Column) {
 		col.DBType = "varbinary"
 		col.GoType = "null.Byte"
 		col.GoTypeNonSql = "[]byte"
+	default:
+		fmt.Printf("column type: %s is invalid, setting to string with length of 100\n", col.DBType)
+		col.Length = 100
+		col.DBType = "varchar"
+		col.GoType = "null.String"
+		col.GoTypeNonSql = "string"
 	}
 }
 

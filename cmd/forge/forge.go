@@ -30,6 +30,15 @@ func main() {
 		cloneMe(directory)
 		return
 	}
+	if args[0] == "debug" {
+		if len(args) == 2 {
+			util.ParseInput()
+			os.Chdir(args[1])
+			fmt.Println("I'm in", args[1])
+			p.StartForge()
+		}
+	}
+
 	// usage
 	fmt.Printf("Usage:\n\tforge (no args): run forge process, make new set of endpoints, etc\n\tforge clone: interactive clone option to create new project\n\tforge clone <directory>: clone and create new project at <directory> location, directory can be full path or path past GOPATH/src\n")
 }

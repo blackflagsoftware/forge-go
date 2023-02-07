@@ -74,13 +74,13 @@ func Test_columnsParse(t *testing.T) {
 				columnPart: "id int auto_increment, user_id int not null, first_name varchar(50) not null, last_name varchar(50) not null, phone varchar(20), age int, active boolean not null default true, primary key(id)",
 			},
 			[]c.Column{
-				{ColumnName: n.Name{RawName: "id"}, DBType: "autoincrement", GoType: "int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: true},
-				{ColumnName: n.Name{RawName: "user_id"}, DBType: "int", GoType: "null.Int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "first_name"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 50, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "last_name"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 50, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "phone"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "", Length: 20, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "age"}, DBType: "int", GoType: "null.Int", GoTypeNonSql: "int", Null: true, DefaultValue: "", Length: 0, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "active"}, DBType: "boolean", GoType: "null.Bool", GoTypeNonSql: "bool", Null: false, DefaultValue: "true", Length: 0, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "id", Lower: "id", Camel: "Id", LowerCamel: "id", Upper: "ID", Abbr: "id", EnvVar: "ID", AllLower: "id"}, DBType: "autoincrement", GoType: "int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: true},
+				{ColumnName: n.Name{RawName: "user_id", Lower: "user_id", Camel: "UserId", LowerCamel: "userId", Upper: "USERID", Abbr: "use", EnvVar: "USER_ID", AllLower: "userid"}, DBType: "int", GoType: "null.Int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "first_name", Lower: "first_name", Camel: "FirstName", LowerCamel: "firstName", Upper: "FIRSTNAME", Abbr: "fir", EnvVar: "FIRST_NAME", AllLower: "firstname"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 50, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "last_name", Lower: "last_name", Camel: "LastName", LowerCamel: "lastName", Upper: "LASTNAME", Abbr: "las", EnvVar: "LAST_NAME", AllLower: "lastname"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 50, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "phone", Lower: "phone", Camel: "Phone", LowerCamel: "phone", Upper: "PHONE", Abbr: "pho", EnvVar: "PHONE", AllLower: "phone"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "", Length: 20, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "age", Lower: "age", Camel: "Age", LowerCamel: "age", Upper: "AGE", Abbr: "age", EnvVar: "AGE", AllLower: "age"}, DBType: "int", GoType: "null.Int", GoTypeNonSql: "int", Null: true, DefaultValue: "", Length: 0, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "active", Lower: "active", Camel: "Active", LowerCamel: "active", Upper: "ACTIVE", Abbr: "act", EnvVar: "ACTIVE", AllLower: "active"}, DBType: "boolean", GoType: "null.Bool", GoTypeNonSql: "bool", Null: false, DefaultValue: "true", Length: 0, PrimaryKey: false},
 			},
 			false,
 		},
@@ -90,13 +90,13 @@ func Test_columnsParse(t *testing.T) {
 				columnPart: "id int NOT NULL AUTO_INCREMENT, uid varchar(255) NOT NULL, tenant_uid varchar(255) NOT NULL, name varchar(255) NOT NULL, plan_currency varchar(20) DEFAULT '$', utility_name varchar(255) DEFAULT NULL, utility_code varchar(255) DEFAULT NULL, PRIMARY KEY (id)",
 			},
 			[]c.Column{
-				{ColumnName: n.Name{RawName: "id"}, DBType: "autoincrement", GoType: "int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: true},
-				{ColumnName: n.Name{RawName: "uid"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 255, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "tenant_uid"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 255, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "name"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 255, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "plan_currency"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "'$'", Length: 20, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "utility_name"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "", Length: 255, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "utility_code"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "", Length: 255, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "id", Lower: "id", Camel: "Id", LowerCamel: "id", Upper: "ID", Abbr: "id", EnvVar: "ID", AllLower: "id"}, DBType: "autoincrement", GoType: "int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: true},
+				{ColumnName: n.Name{RawName: "uid", Lower: "uid", Camel: "Uid", LowerCamel: "uid", Upper: "UID", Abbr: "uid", EnvVar: "UID", AllLower: "uid"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 255, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "tenant_uid", Lower: "tenant_uid", Camel: "TenantUid", LowerCamel: "tenantUid", Upper: "TENANTUID", Abbr: "ten", EnvVar: "TENANT_UID", AllLower: "tenantuid"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 255, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "name", Lower: "name", Camel: "Name", LowerCamel: "name", Upper: "NAME", Abbr: "nam", EnvVar: "NAME", AllLower: "name"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: false, DefaultValue: "", Length: 255, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "plan_currency", Lower: "plan_currency", Camel: "PlanCurrency", LowerCamel: "planCurrency", Upper: "PLANCURRENCY", Abbr: "pla", EnvVar: "PLAN_CURRENCY", AllLower: "plancurrency"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "'$'", Length: 20, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "utility_name", Lower: "utility_name", Camel: "UtilityName", LowerCamel: "utilityName", Upper: "UTILITYNAME", Abbr: "uti", EnvVar: "UTILITY_NAME", AllLower: "utilityname"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "", Length: 255, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "utility_code", Lower: "utility_code", Camel: "UtilityCode", LowerCamel: "utilityCode", Upper: "UTILITYCODE", Abbr: "uti", EnvVar: "UTILITY_CODE", AllLower: "utilitycode"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "", Length: 255, PrimaryKey: false},
 			},
 			false,
 		},
@@ -106,10 +106,24 @@ func Test_columnsParse(t *testing.T) {
 				columnPart: "id int NOT NULL AUTO_INCREMENT, tenant_id int DEFAULT NULL, name varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL, created_at datetime DEFAULT NULL",
 			},
 			[]c.Column{
-				{ColumnName: n.Name{RawName: "id"}, DBType: "autoincrement", GoType: "int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "tenant_id"}, DBType: "int", GoType: "null.Int", GoTypeNonSql: "int", Null: true, DefaultValue: "", Length: 0, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "name"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "", Length: 255, PrimaryKey: false},
-				{ColumnName: n.Name{RawName: "created_at"}, DBType: "datetime", GoType: "null.Time", GoTypeNonSql: "time.Time", Null: true, DefaultValue: "", Length: 0, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "id", Lower: "id", Camel: "Id", LowerCamel: "id", Upper: "ID", Abbr: "id", EnvVar: "ID", AllLower: "id"}, DBType: "autoincrement", GoType: "int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "tenant_id", Lower: "tenant_id", Camel: "TenantId", LowerCamel: "tenantId", Upper: "TENANTID", Abbr: "ten", EnvVar: "TENANT_ID", AllLower: "tenantid"}, DBType: "int", GoType: "null.Int", GoTypeNonSql: "int", Null: true, DefaultValue: "", Length: 0, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "name", Lower: "name", Camel: "Name", LowerCamel: "name", Upper: "NAME", Abbr: "nam", EnvVar: "NAME", AllLower: "name"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "", Length: 255, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "created_at", Lower: "created_at", Camel: "CreatedAt", LowerCamel: "createdAt", Upper: "CREATEDAT", Abbr: "cre", EnvVar: "CREATED_AT", AllLower: "createdat"}, DBType: "datetime", GoType: "null.Time", GoTypeNonSql: "time.Time", Null: true, DefaultValue: "", Length: 0, PrimaryKey: false},
+			},
+			false,
+		},
+		{
+			"columnParse - #4",
+			args{
+				columnPart: "id int NOT NULL AUTO_INCREMENT, tenant_id int DEFAULT NULL, name varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci DEFAULT NULL, score numeric(12,2) default 10.2, created_at datetime DEFAULT NULL",
+			},
+			[]c.Column{
+				{ColumnName: n.Name{RawName: "id", Lower: "id", Camel: "Id", LowerCamel: "id", Upper: "ID", Abbr: "id", EnvVar: "ID", AllLower: "id"}, DBType: "autoincrement", GoType: "int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "tenant_id", Lower: "tenant_id", Camel: "TenantId", LowerCamel: "tenantId", Upper: "TENANTID", Abbr: "ten", EnvVar: "TENANT_ID", AllLower: "tenantid"}, DBType: "int", GoType: "null.Int", GoTypeNonSql: "int", Null: true, DefaultValue: "", Length: 0, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "name", Lower: "name", Camel: "Name", LowerCamel: "name", Upper: "NAME", Abbr: "nam", EnvVar: "NAME", AllLower: "name"}, DBType: "varchar", GoType: "null.String", GoTypeNonSql: "string", Null: true, DefaultValue: "", Length: 255, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "score", Lower: "score", Camel: "Score", LowerCamel: "score", Upper: "SCORE", Abbr: "sco", EnvVar: "SCORE", AllLower: "score"}, DBType: "numeric(12,2)", GoType: "null.Float", GoTypeNonSql: "float64", Null: true, DefaultValue: "10.2", Length: 0, PrimaryKey: false},
+				{ColumnName: n.Name{RawName: "created_at", Lower: "created_at", Camel: "CreatedAt", LowerCamel: "createdAt", Upper: "CREATEDAT", Abbr: "cre", EnvVar: "CREATED_AT", AllLower: "createdat"}, DBType: "datetime", GoType: "null.Time", GoTypeNonSql: "time.Time", Null: true, DefaultValue: "", Length: 0, PrimaryKey: false},
 			},
 			false,
 		},
@@ -235,5 +249,39 @@ func Test_theRestParse(t *testing.T) {
 		if tt.col.PrimaryKey != tt.wantPrimaryKey {
 			t.Errorf("theRestParse() = column.PrimaryKey: %v, want %v", tt.col.PrimaryKey, tt.wantPrimaryKey)
 		}
+	}
+}
+
+func Test_replaceNumericPart(t *testing.T) {
+	type args struct {
+		columnPart string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			"nothing - success",
+			args{"create table user (id serial, last_name varchar(100), age int, active bool, primary key(id))"},
+			"create table user (id serial, last_name varchar(100), age int, active bool, primary key(id))",
+		},
+		{
+			"replace one - success",
+			args{"create table user (id serial, last_name varchar(100), age int, active bool, amount numeric(16,2), primary key(id))"},
+			"create table user (id serial, last_name varchar(100), age int, active bool, amount numeric(16_2), primary key(id))",
+		},
+		{
+			"replace all - success",
+			args{"create table user (id serial, last_name varchar(100), age int, active bool, amount numeric(16,2), debit decimal(14,4), primary key(id))"},
+			"create table user (id serial, last_name varchar(100), age int, active bool, amount numeric(16_2), debit decimal(14_4), primary key(id))",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := replaceNumericPart(tt.args.columnPart); got != tt.want {
+				t.Errorf("replaceNumericPart() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
