@@ -24,5 +24,6 @@ type (
 		MigrationVerify     string
 		MigrationConnection string
 		MigrationHeader     string
+		pf.ProjectFile
 	}
 )

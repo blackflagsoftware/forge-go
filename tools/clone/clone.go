@@ -17,6 +17,7 @@ To clone:
 - ask for new directory
 - make new directory (if not exists)
 - move the base files
+- move the proto file to service name proto file
 - replace blackflagsotware/forge-go/base -> new folder structure
 - replace name with new app name
 - copy go.sum/.mod do a 'go mod tidy'
@@ -65,6 +66,10 @@ func main() {
 	if err := SearchAndReplace(destinationDir, "FORGE_GO_BASE", upperName); err != nil {
 		fmt.Println("Good bye")
 		return
+	}
+	// rename proto file
+	if err := os.Rename(destinationDir+"/pkg/proto/proto.proto", destinationDir+fmt.Sprintf("/pkg/proto/%s.proto", projectName)); err != nil {
+		fmt.Println("Unable to rename .proto file")
 	}
 	// get mod files and copy them... do go mod tidy
 	modSrc := sourceDir + "/../go.mod"

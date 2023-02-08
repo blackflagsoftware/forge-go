@@ -2,11 +2,16 @@ package project
 
 import (
 	"fmt"
+	"os"
 
 	pf "github.com/blackflagsoftware/forge-go/internal/projectfile"
 )
 
 func StartForge() {
+	if os.Getenv("FORGE_PATH") == "" {
+		fmt.Println("FORGE_PATH is not set... Goodbye")
+		return
+	}
 	project := Project{}
 	if !project.ProjectFile.LoadProjectFile() {
 		// .forge is not present, create new

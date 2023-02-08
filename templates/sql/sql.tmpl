@@ -1,6 +1,7 @@
 package {{.AllLower}}
 
 import (
+	"fmt"
 	"github.com/jmoiron/sqlx"
 
 	ae "{{.ProjectPath}}/internal/api_error"
@@ -38,7 +39,7 @@ func (d *SQL{{.Camel}}) Select({{.Abbr}} *[]{{.Camel}}, {{.LowerCamel}}Param {{.
 			{{.SqlGetColumns}}
 		FROM {{.DataTable}}
 		%s
-		ORDER BY %s %s`, searchStr, {{.LowerCamel}}Param.Sort {{.LowerCamel}}Para.Limit)
+		ORDER BY %s %s`, searchStr, {{.LowerCamel}}Param.Sort, {{.LowerCamel}}Param.Limit)
 	if errDB := d.DB.Select({{.Abbr}}, sqlSearch, args...); errDB != nil {
 		return ae.DBError("{{.Camel}} Search: unable to select records.", errDB)
 	}
@@ -61,7 +62,7 @@ func (d *SQL{{.Camel}}) Create({{.Abbr}} *{{.Camel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Update({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.Camel}}) Update({{.Abbr}} {{.Camel}}) error {
 	sqlPatch := {{.DataTablePrefix}}`
 		UPDATE {{.DataTable}} SET
 			{{.SqlPatchColumns}}

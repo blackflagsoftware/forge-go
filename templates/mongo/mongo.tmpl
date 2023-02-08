@@ -35,14 +35,14 @@ func (d *Mongo{{.Camel}}) Select({{.Abbr}} *[]{{.Camel}}) error {
 	filter := bson.D{}
 	cur, err := collection.Find(context.TODO(), filter)
 	if err != nil {
-		return ae.DBError("{{.Camel}} List: unable to get records.", err)
+		return ae.DBError("{{.Camel}} Select: unable to get records.", err)
 	}
 	defer cur.Close(context.TODO())
 	for cur.Next(context.TODO()) {
 		m := {{.Camel}}{}
 		err := cur.Decode(&m)
 		if err != nil {
-			return ae.DBError("{{.Camel}} List: unable to decode record.", err)
+			return ae.DBError("{{.Camel}} Select: unable to decode record.", err)
 		}
 		*{{.Abbr}} = append(*{{.Abbr}}, m)
 	}
@@ -58,7 +58,7 @@ func (d *Mongo{{.Camel}}) Create({{.Abbr}} *{{.Camel}}) error {
 	return nil
 }
 
-func (d *Mongo{{.Camel}}) Update({{.Abbr}} *{{.Camel}}) error {
+func (d *Mongo{{.Camel}}) Update({{.Abbr}} {{.Camel}}) error {
 	obj, err := bson.Marshal({{.Abbr}})
 	if err != nil {
 		return ae.GeneralError("{{.Camel}} Put: unable to decode object.", err)

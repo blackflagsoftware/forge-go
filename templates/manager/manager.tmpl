@@ -3,7 +3,6 @@ package {{.AllLower}}
 import (
 	{{.ManagerTime}}
 
-	g "github.com/Jeffail/gabs"
 	ae "{{.ProjectPath}}/internal/api_error"
 	"{{.ProjectPath}}/internal/util"
 	{{.ManagerUtilPath}}
@@ -15,7 +14,7 @@ type (
 		Read(*{{.Camel}}) error
 		Select(*[]{{.Camel}}, {{.Camel}}Param) error
 		Create(*{{.Camel}}) error
-		Update(*{{.Camel}}) error
+		Update({{.Camel}}) error
 		Delete(*{{.Camel}}) error
 	}
 
@@ -34,9 +33,9 @@ func (m *Manager{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
 }
 
 func (m *Manager{{.Camel}}) Search({{.Abbr}} *[]{{.Camel}}, {{.LowerCamel}}Param {{.Camel}}Param) error {
-	{{.LowerCamel}}Param.Param.CalculateParam({{.DefaultColumn}}, map[string]{ {{.SortColumn })
+	{{.LowerCamel}}Param.Param.CalculateParam("{{.DefaultColumn}}", map[string]string{ {{.SortColumns}} })
 
-	return m.data{{.Camel}}.Select({{.Abbr}}, {{.LowerCamel}}Camel)
+	return m.data{{.Camel}}.Select({{.Abbr}}, {{.LowerCamel}}Param)
 }
 
 func (m *Manager{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
@@ -44,18 +43,14 @@ func (m *Manager{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
 	return m.data{{.Camel}}.Create({{.Abbr}})
 }
 
-func (m *Manager{{.Camel}}) Put({{.Abbr}} *{{.Camel}}) error {
-{{.ManagerPutRows}}
-	return m.data{{.Camel}}.Update({{.Abbr}})
-}
-
-func (m *Manager{{.Camel}}) Patch(body []byte) error {
-	jParsed, errP := g.ParseJSON(body)
-	if errP != nil {
-		return ae.BindError(errP)
+func (m *Manager{{.Camel}}) Patch({{.Abbr}}In {{.Camel}}) error {
+	{{.Abbr}} := &{{.Camel}}{Id: {{.Abbr}}In.Id}
+	errGet := m.data{{.Camel}}.Read({{.Abbr}})
+	if errGet != nil {
+		return errGet
 	}
 {{.ManagerPatchRows}}
-	return m.data{{.Camel}}.Update({{.Abbr}})
+	return m.data{{.Camel}}.Update(*{{.Abbr}})
 }
 
 func (m *Manager{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {

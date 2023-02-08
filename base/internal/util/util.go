@@ -13,6 +13,7 @@ type (
 		Number int
 		Size   int
 		Sort   string
+		Search map[string]string
 	}
 )
 

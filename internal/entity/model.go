@@ -16,6 +16,7 @@ type (
 		Columns              []c.Column
 		ModelIncludeNull     string
 		ModelRows            string
+		ModelIncludeJson     string
 		RestStrConv          string
 		RestGetDeleteUrl     string
 		RestGetDeleteAssign  string

@@ -37,7 +37,7 @@ func (d *File{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
 	return storage.SaveFile(config.StorageFileDir, {{.Abbr}}s)
 }
 
-func (d *File{{.Camel}}) Patch({{.Abbr}} *{{.Camel}}) error {
+func (d *File{{.Camel}}) Patch({{.Abbr}} {{.Camel}}) error {
 	{{.Abbr}}s := []{{.Camel}}{}
 	if err := storage.OpenFile(config.StorageFileDir, &{{.Abbr}}s); err != nil {
 		return err

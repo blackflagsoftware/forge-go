@@ -16,7 +16,7 @@ const (
 	%s, err := strconv.ParseInt(%sStr, 10, 64)
 	if err != nil {
 		bindErr := ae.ParseError("Invalid param value, not a number")
-		return c.JSON(bindErr.StatusCode, s.NewOutput(bindErr.BodyError(), &bindErr))
+		return c.JSON(bindErr.StatusCode, util.NewOutput(bindErr.BodyError(), &bindErr, nil))
 	}`  // Lower, Lower, Lower, Lower
 	REST_PRIMARY_STR = `	%s := c.Param("%s")` // Lower, Lower
 	REST_GET_DELETE  = `	%s := &%s{%s}`       // CamelLower, Camel, RestArgSet
@@ -71,52 +71,21 @@ const (
 		return errGet
 	}
 	`  // Abbr
-	MANAGER_PATCH_INT_ASSIGN = `// %s
-	%s, ok%s := jParsed.Search("%s").Data().(float64)
-	if ok%s {
-		%s.%s = int64(%s)
-	}
-	`  // ColCamel, ColLower, ColCamel, ColCamel, ColCamel, Abbr, ColCamel, ColLower
 	MANAGER_PATCH_DEFAULT_ASSIGN = `// %s
-	if %s.%s.Valid {%s
+	if %sIn.%s.Valid {%s
 		%s.%s = %sIn.%s
 	}
 	`  // ColCamel, Abbr, ColCamel, StringLenCheck, Abbr, ColCamel, Abbr. ColCamel
-	MANAGER_PATCH_INT_NULL_ASSIGN = `// %s
-	%s, ok%s := jParsed.Search("%s").Data().(float64)
-	if ok%s {
-		%s.%s.Scan(int64(%s))
-	}
-	`  // ColCamel, ColLowerCamel, ColCamel, ColCamel, ColCamel, Abbr, ColCamel, ColLowerCamel
-	MANAGER_PATCH_FLOAT_NULL_ASSIGN = `// %s
-	%s, ok%s := jParsed.Search("%s").Data().(float64)
-	if ok%s {
-		%s.%s.Scan(%s)
-	}
-	`  // ColCamel, ColLowerCamel, ColCamel, ColCamel, ColCamel, Abbr, ColCamel, ColLowerCamel
-	MANAGER_PATCH_STRING_NULL_ASSIGN = `// %s
-	%s, ok%s := jParsed.Search("%s").Data().(string)
-	if ok%s {%s
-		%s.%s.Scan(%s)
-	}
-	`  // ColCamel, ColCamelLower, ColCamel, ColCamel, ColCamel, StringLenCheck, Abbr, ColCamel, ColCamelLower
-	MANAGER_PATCH_BOOL_NULL_ASSIGN = `// %s
-	%s, ok%s := jParsed.Search("%s").Data().(bool)
-	if ok%s {
-		%s.%s.Scan(%s)
-	}
-	`  // ColCamel, ColLowerCamel, ColCamel, ColCamel, ColCamel, Abbr, ColCamel, ColLowerCamel
 	MANAGER_PATCH_JSON_NULL_ASSIGN = `// %s
-	if jParsed.Exists("%s") {
-		%s := json.RawMessage(jParsed.Search("%s").Bytes())
-		if !util.ValidJson(*%s) {
+	if %sIn.%s != nil {
+		if !util.ValidJson(*%sIn.%s) {
 			return ae.ParseError("Invalid JSON syntax for %s")
 		}
-		%s.%s = &%s
+		%s.%s = %sIn.%s
 	}
-	`  // ColCamel, ColCamel, ColLowerCamel, ColCamel, ColLowerCamel, ColCamel, Abbr, ColCamel, ColLowerCamel
+	`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColLowerCamel, Abbr, ColCamel, Abbr, ColCamel
 	MANAGER_PATCH_TIME_NULL_ASSIGN = `// %s
-	if %s.%s.Valid {
+	if %sIn.%s.Valid {
 		_, errParse := time.Parse(time.RFC3339, %s.%s.Time.String())
 		if errParse != nil {
 			return ae.ParseError("%s: unable to parse time")
@@ -125,7 +94,7 @@ const (
 	}
 	`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 	MANAGER_PATCH_VARCHAR_LEN = `
-			if %s.%s.Valid && len(%s.%s.ValueOrZero()) > %d {
+			if %sIn.%s.Valid && len(%sIn.%s.ValueOrZero()) > %d {
 				return ae.StringLengthError("%s", %d)
 		}`  // Abbr, ColumnCamel, Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
 	SQL_POST_QUERY       = `_, errDB := d.DB.NamedExec(sqlPost, %s)`      // Abbr

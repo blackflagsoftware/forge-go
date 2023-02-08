@@ -28,7 +28,7 @@ func (ep *Entity) BuildGrpc() {
 			inLine = fmt.Sprintf("\t%s.%s = in.%s", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			if column.GoType == "null.Float" {
 				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.Float64", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
-				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", ep.Camel, column.ColumnName.Camel, column.ColumnName.Camel)
+				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			}
 		case "float32":
 			typeValue = "float"
@@ -66,6 +66,10 @@ func (ep *Entity) BuildGrpc() {
 			typeValue = "bytes"
 			outLine = fmt.Sprintf("\tproto%s.%s = %s.%s", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 			inLine = fmt.Sprintf("\t%s.%s = in.%s", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
+		case "*json.RawMessage":
+			typeValue = "bytes"
+			outLine = fmt.Sprintf("\tproto%s.%s, _ = %s.%s.MarshalJSON()", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
+			inLine = fmt.Sprintf("\t%s.%s.UnmarshalJSON(in.%s)", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 		default:
 			typeValue = "string"
 			outLine = fmt.Sprintf("\tproto%s.%s = %s.%s", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
@@ -99,7 +103,7 @@ func (ep *Entity) BuildGrpc() {
 	lines = append(lines, "")
 	lines = append(lines, fmt.Sprintf("service %sService {", ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Get%s(IDIn) returns (%sResponse);", ep.Name.Camel, ep.Name.Camel))
-	lines = append(lines, fmt.Sprintf("\trpc List%s(%s) returns (%sRepeatResponse);", ep.Name.Camel, ep.Name.Camel, ep.Name.Camel))
+	lines = append(lines, fmt.Sprintf("\trpc Search%s(%s) returns (%sRepeatResponse);", ep.Name.Camel, ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Post%s(%s) returns (%sResponse);", ep.Name.Camel, ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Put%s(%s) returns (Result);", ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Patch%s(%s) returns (Result);", ep.Name.Camel, ep.Name.Camel))

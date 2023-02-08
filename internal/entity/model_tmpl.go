@@ -16,6 +16,9 @@ func (ep *Entity) BuildModelTemplate() {
 		if ep.ProjectFile.UseORM {
 			cArray = append(cArray, fmt.Sprintf(con.MODEL_COLUMN_W_GORM, c.ColumnName.Camel, c.GoType, c.ColumnName.Lower, tagFormat, c.ColumnName.Lower))
 		}
+		if c.GoType == "*json.RawMessage" {
+			ep.ModelIncludeJson = "\n\t\"encoding/json\"\n\n"
+		}
 	}
 	ep.ModelRows = strings.Join(cArray, "\n")
 	if ep.HaveNullColumns {

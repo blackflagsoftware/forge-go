@@ -119,10 +119,13 @@ func (ep *Entity) BuildManagerTemplate() {
 					patchRow += fmt.Sprintf(con.MANAGER_PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, patchLenCheck, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel)
 				}
 			case "null.Time":
-				ep.ManagerImportTest = "\n\t\"time\""
+				ep.ManagerImportTest += "\n\t\"time\"\n"
 				// ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 				patchRow += fmt.Sprintf(con.MANAGER_PATCH_TIME_NULL_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel)
 				ep.ManagerTime = "\n\t\"time\""
+			case "*json.RawMessage":
+				patchRow += fmt.Sprintf(con.MANAGER_PATCH_JSON_NULL_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, c.ColumnName.LowerCamel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel)
+				ep.ManagerImportTest += "\n\t\"encoding/json\"\n"
 			default:
 				patchRow += fmt.Sprintf(con.MANAGER_PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, "", ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel)
 			}
@@ -245,7 +248,7 @@ func TranslateType(columnName, columnType string, length int, valid bool) string
 	case "null.Bool":
 		return fmt.Sprintf("%s: null.NewBool(true, %t)", columnName, valid)
 	case "*json.RawMessage":
-		return fmt.Sprintf("%s: &json.RawMessage(\"{}\")", columnName)
+		return fmt.Sprintf("%s: &json.RawMessage{}", columnName)
 	default:
 		fmt.Println("Missing type in TranslateType:", columnType)
 	}

@@ -25,10 +25,10 @@ func (d *SQL{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) List({{.Abbr}} *[]{{.Camel}}) error {
+func (d *SQL{{.Camel}}) Search({{.Abbr}} *[]{{.Camel}}) error {
 	result := d.DB.Find({{.Abbr}})
 	if result.Error != nil {
-		return ae.DBError("{{.Camel}} List: unable to select records.", result.Error)
+		return ae.DBError("{{.Camel}} Search: unable to select records.", result.Error)
 	}
 	return nil
 }
@@ -41,7 +41,7 @@ func (d *SQL{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Patch({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.Camel}}) Patch({{.Abbr}} {{.Camel}}) error {
 	result := d.DB.Save({{.Abbr}})
 	if result.Error != nil {
 		return ae.DBError("{{.Camel}} Patch: unable to update record.", result.Error)

@@ -18,15 +18,10 @@ import (
 )
 
 func (p *Project) ProjectMenu() {
-
 	if p.ProjectFile.Storage == "s" {
 		p.SqlMenu()
 	} else {
 		p.NonSqlMenu()
-	}
-	// run templating process on endpoints
-	if len(p.Entities) > 0 {
-		p.StartTemplating()
 	}
 }
 
@@ -87,6 +82,7 @@ OuterLoop:
 			break
 		}
 	}
+	p.StartTemplating()
 }
 
 func (p *Project) SqlMenu() {
@@ -117,6 +113,7 @@ func (p *Project) SqlMenu() {
 		case "5":
 			p.AdminMenu()
 		}
+		p.StartTemplating()
 	}
 }
 
@@ -150,7 +147,8 @@ PasteLoop:
 		util.ClearScreen()
 		fmt.Println("** Paste **")
 		fmt.Println("")
-		fmt.Print("Enter table sql schema or (e) to exit: ")
+		fmt.Println("Enter table sql schema or (e) to exit:")
+		fmt.Println("")
 		for {
 			line := util.ParseInput()
 			if line == "" || strings.ToLower(line) == "e" {

@@ -27,13 +27,13 @@ func SetupMenu() (pwd string, err error) {
 func setupHeader() {
 	util.ClearScreen()
 	fmt.Printf("*** Welcome to forge ***\n\n")
-	fmt.Printf("forge needs to initialize with a few questions\n\n")
+	fmt.Printf("*forge* needs to initialize with a few questions\n\n")
 }
 
 func (p *ProjectFile) StorageMenu() {
 	setupHeader()
 	mainMesssge := []string{"Storage Type", "This option will be saved to the project (this can be changed later)"}
-	prompts := []string{"(S) SQL", "(F) File", "(M) MongoDB"}
+	prompts := []string{"(s) SQL", "(f) File", "(m) MongoDB"}
 	acceptablePrompts := []string{"s", "f", "m"}
 	p.Storage = util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "", setupHeader)
 	if p.Storage == "s" {

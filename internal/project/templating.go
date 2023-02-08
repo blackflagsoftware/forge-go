@@ -2,11 +2,13 @@ package project
 
 import (
 	"fmt"
-	"html/template"
 	"os"
+	"os/exec"
+	"text/template"
 
 	c "github.com/blackflagsoftware/forge-go/internal/constant"
 	e "github.com/blackflagsoftware/forge-go/internal/entity"
+	"github.com/blackflagsoftware/forge-go/internal/util"
 )
 
 var (
@@ -18,23 +20,26 @@ func (project *Project) StartTemplating() {
 	sqlProvider := buildStorage(*project)
 	buildMigration(*project)
 
-	for i, ep := range project.Entities {
-		savePath := fmt.Sprintf("%s/%s/%s", project.ProjectFile.FullPath, project.ProjectFile.SubDir, ep.AllLower)
+	for i := range project.Entities {
+		savePath := fmt.Sprintf("%s/%s/%s", project.ProjectFile.FullPath, project.ProjectFile.SubDir, project.Entities[i].AllLower)
 		if _, err := os.Stat(savePath); !os.IsNotExist(err) {
-			fmt.Printf("Object: %s name already exists, skipping!\n", ep.AllLower)
+			fmt.Printf("Object: %s name already exists, skipping!\n", project.Entities[i].AllLower)
 			continue
 		}
 		if errMakeAll := os.MkdirAll(savePath, os.ModeDir|os.ModePerm); errMakeAll != nil {
-			fmt.Printf("Object: %s path was not able to be made: %s\n", ep.AllLower, errMakeAll)
+			fmt.Printf("Object: %s path was not able to be made: %s\n", project.Entities[i].AllLower, errMakeAll)
 			continue
 		}
-		ep.SQLProvider = sqlProvider
-		ep.ProjectFile = project.ProjectFile // TODO: can we get away from this
+		project.Entities[i].SQLProvider = sqlProvider
+		project.Entities[i].ProjectFile = project.ProjectFile // TODO: can we get away from this
 
 		// build the templates
-		buildTemplateParts(&ep)
+		buildTemplateParts(&project.Entities[i])
 		processTemplateFiles(*project, &project.Entities[i], savePath)
 	}
+	updateModFiles(project.ProjectFile.AppName)
+	fmt.Println("Done templating press 'enter' to continue")
+	util.ParseInput()
 }
 
 // send back SQLProvider
@@ -44,7 +49,7 @@ func buildStorage(project Project) (sqlProvider string) {
 		fmt.Println("New storage folder was not able to be made", errMakeAll)
 		return
 	}
-	storageVars := StorageVars{ProjectPath: project.ProjectFile.FullPath}
+	storageVars := StorageVars{ProjectPath: project.ProjectFile.ProjectPath}
 	storageFiles := []string{}
 	if project.ProjectFile.UseORM {
 		storageFiles = append(storageFiles, "gorm")
@@ -52,7 +57,7 @@ func buildStorage(project Project) (sqlProvider string) {
 	switch project.ProjectFile.Storage {
 	case "s":
 		if !project.ProjectFile.UseORM {
-			storageFiles = append(storageFiles, "sql")
+			tmplFiles = append(tmplFiles, "sql")
 		}
 		switch project.ProjectFile.SqlStorage {
 		case "p":
@@ -108,7 +113,7 @@ func buildStorage(project Project) (sqlProvider string) {
 // TODO: write to migration to have all varieties of code an set a env var to determine which sql engine to support
 func buildMigration(project Project) {
 	if project.ProjectFile.Storage == "s" {
-		migrationVars := MigrationVars{ProjectPath: project.ProjectFile.FullPath}
+		migrationVars := MigrationVars{ProjectPath: project.ProjectFile.ProjectPath, ProjectFile: project.ProjectFile}
 		if project.ProjectFile.UseORM {
 			tmplFiles = append(tmplFiles, "gorm")
 		} else {
@@ -234,6 +239,28 @@ func processTemplateFiles(project Project, ep *e.Entity, savePath string) {
 			if err != nil {
 				fmt.Println("Execution of template:", err)
 			}
+		}
+	}
+}
+
+func updateModFiles(projectName string) {
+	// this assumes we are in the root folder
+	wd, _ := os.Getwd()
+	fmt.Println("working dir:", wd)
+	commands := []*exec.Cmd{
+		exec.Command("protoc", "--go_out=./pkg/proto", "--go-grpc_out=./pkg/proto", fmt.Sprintf("./pkg/proto/%s.proto", projectName)),
+		exec.Command("go", "get", "-u", "all"),
+		exec.Command("go", "mod", "tidy"),
+		exec.Command("go", "fmt", "./..."),
+		exec.Command("go", "generate", "./..."),
+		exec.Command("go", "get", "-u", "all"),
+		exec.Command("go", "mod", "tidy"),
+	}
+	for _, command := range commands {
+		output, err := command.CombinedOutput()
+		if err != nil {
+			fmt.Printf("command: %s failed\n", command.String())
+			fmt.Printf("output: %s\n", output)
 		}
 	}
 }
