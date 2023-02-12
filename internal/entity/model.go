@@ -25,6 +25,8 @@ type (
 		ManagerGetRow        string
 		ManagerPostRows      string
 		ManagerPutRows       string
+		ManagerPatchInitArgs string
+		ManagerPatchTestInit string
 		ManagerPatchRows     string
 		ManagerGetTestRow    string
 		ManagerPostTestRow   string
@@ -56,6 +58,7 @@ type (
 		GrpcTranslateIn      string
 		GrpcTranslateOut     string
 		GrpcImport           string
+		GrpcArgsInit         string
 		DefaultColumn        string
 		SortColumns          string
 		n.Name

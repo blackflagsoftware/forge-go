@@ -55,7 +55,7 @@ func (n *Name) BuildName(name string, knownAliases []string) string {
 	n.AllLower = strings.ToLower(n.Camel)
 	n.Upper = strings.ToUpper(n.Camel)
 	n.EnvVar = strings.ToUpper(rawName)
-	return n.CheckAliases(knownAliases)
+	return n.DetermineAbbr(knownAliases)
 }
 
 func BuildAltName(name, mode string) string {
@@ -95,12 +95,56 @@ func BuildAltName(name, mode string) string {
 	return b.String()
 }
 
-func (n *Name) CheckAliases(knownAliases []string) string {
+func (n *Name) DetermineAbbr(knownAliases []string) string {
 	// check all known aliases and create the best Name.Abbr
-	abbr := n.Lower
-	if len(n.Lower) > 2 {
-		abbr = n.Lower[:3]
+	if len(n.Lower) < 3 {
+		n.Abbr = n.Lower
+		return n.Abbr
 	}
-	n.Abbr = abbr
-	return abbr
+	try := 0
+Loop:
+	for {
+		try++
+		var retry bool
+		n.Abbr, retry = nameVersion(try, n.Lower)
+		if !retry {
+			break
+		}
+		for _, ka := range knownAliases {
+			if ka == n.Abbr {
+				continue Loop
+			}
+		}
+		break
+	}
+	return n.Abbr
+}
+
+func nameVersion(tried int, name string) (abbr string, retry bool) {
+	switch tried {
+	case 1:
+		// first 3 character
+		abbr = string(name[:3])
+		retry = true
+	case 2:
+		// first 2 characters
+		abbr = string(name[:2])
+		retry = true
+	case 3, 4:
+		// first letters of each snake case
+		charNumber := tried - 2
+		split := strings.Split(name, "_")
+		if len(split) == 1 {
+			abbr = name
+			return
+		}
+		for _, c := range split {
+			abbr += string(c[:charNumber])
+		}
+		retry = true
+	default:
+		abbr = name
+		retry = false
+	}
+	return
 }

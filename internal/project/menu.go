@@ -41,7 +41,8 @@ OuterLoop:
 		if strings.ToLower(rawName) == "e" {
 			break
 		}
-		name.BuildName(rawName, p.ProjectFile.KnownAliases)
+		entityName := name.BuildName(rawName, p.ProjectFile.KnownAliases)
+		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, entityName)
 		entity := e.Entity{Name: name}
 		for {
 			s.PrintSqlColumns(entity.Columns)
@@ -51,7 +52,7 @@ OuterLoop:
 			if strings.ToLower(name) == "e" {
 				break OuterLoop
 			}
-			column.ColumnName.BuildName(name, p.ProjectFile.KnownAliases)
+			column.ColumnName.BuildName(name, []string{})
 			selection := util.BasicPrompt(messages, prompts, acceptablePrompts, "e", util.ClearScreen)
 
 			switch selection {
@@ -161,7 +162,8 @@ PasteLoop:
 		}
 		sqlEntity := s.ParseSqlLines(sql)
 		entity := e.Entity{}
-		entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
+		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
+		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
 		entity.Columns = sqlEntity.Columns
 		entity.ColumnExistence = sqlEntity.ColExistence
 		if sqlEntity.ColExistence.TimeColumn {
@@ -213,7 +215,8 @@ func (p *Project) BlankMenu() {
 			break
 		}
 		entity := e.Entity{}
-		entity.Name.BuildName(objectName, p.ProjectFile.KnownAliases)
+		name := entity.Name.BuildName(objectName, p.ProjectFile.KnownAliases)
+		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
 		p.Entities = append(p.Entities, entity)
 		p.UseBlank = true
 		cont := util.AskYesOrNo("Another blank entity")
@@ -387,7 +390,8 @@ func processFile(p *Project, filePath string) (entities []e.Entity) {
 	for i := range arraySqlStmt {
 		sqlEntity := s.ParseSqlLines(arraySqlStmt[i])
 		entity := e.Entity{}
-		entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
+		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
+		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
 		entity.Columns = sqlEntity.Columns
 		entity.ColumnExistence = sqlEntity.ColExistence
 		entities = append(entities, entity)

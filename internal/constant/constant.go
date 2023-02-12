@@ -106,7 +106,8 @@ const (
 	%s.%s = int(lastId)
 	`  // Camel, Abbr, ColCamel
 	SQL_POST_QUERY_POSTGRES = `rows, errDB := d.DB.NamedQuery(sqlPost, %s)` // Abbr
-	SQL_LAST_ID_POSTGRES    = `var lastId int64
+	SQL_LAST_ID_POSTGRES    = `defer rows.Close()
+	var lastId int64
 	if rows.Next() {
 		rows.Scan(&lastId)
 	}

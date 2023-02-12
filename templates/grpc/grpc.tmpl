@@ -23,7 +23,7 @@ func New{{.Camel}}Grpc(m{{.Abbr}} Manager{{.Camel}}Adapter) *{{.Camel}}Grpc {
 func (a *{{.Camel}}Grpc) Get{{.Camel}}(ctx context.Context, in *p.IDIn) (*p.{{.Camel}}Response, error) {
 	result := &p.Result{Success: false}
 	response := &p.{{.Camel}}Response{Result: result}
-	{{.Abbr}} := &{{.Camel}}{Id: int(in.Id)}
+	{{.Abbr}} := &{{.Camel}}{ {{.GrpcArgsInit}} }
 	if err := a.manager{{.Camel}}.Get({{.Abbr}}); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
@@ -93,7 +93,7 @@ func (a *{{.Camel}}Grpc) Patch{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) 
 
 func (a *{{.Camel}}Grpc) Delete{{.Camel}}(ctx context.Context, in *p.IDIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
-	{{.Abbr}} := &{{.Camel}}{Id: int(in.Id)}
+	{{.Abbr}} := &{{.Camel}}{ {{.GrpcArgsInit}} }
 	if err := a.manager{{.Camel}}.Delete({{.Abbr}}); err != nil {
 		response.Error = err.Error()
 		return response, err

@@ -13,8 +13,7 @@ func (p *ProjectFile) CreateProjectFile(pwd string) bool {
 	p.FullPath = pwd
 	p.VersionPath = "v1"
 	p.AppName = path.Base(pwd)
-	name := p.Name.BuildName(p.AppName, p.KnownAliases)
-	p.KnownAliases = append(p.KnownAliases, name)
+	p.Name.BuildName(p.AppName, []string{})
 	p.SubDir = "internal/" + p.VersionPath
 
 	// create projectpath and subpackage

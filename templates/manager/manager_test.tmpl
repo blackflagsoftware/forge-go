@@ -73,7 +73,7 @@ func TestManager{{.Camel}}_Patch(t *testing.T) {
 	}{
 		{
 			"successful",
-			{{.Camel}}{Id: 1},
+			{{.Camel}}{ {{.ManagerPatchTestInit}} },
 			false,
 			[]*gomock.Call{
 				mockData{{.Camel}}.EXPECT().Read(gomock.Any()).Return(nil),
@@ -82,7 +82,7 @@ func TestManager{{.Camel}}_Patch(t *testing.T) {
 		},
 		{
 			"invalid id",
-			{{.Camel}}{Id: 1},
+			{{.Camel}}{ {{.ManagerPatchTestInit}} },
 			true,
 			[]*gomock.Call{
 				mockData{{.Camel}}.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),

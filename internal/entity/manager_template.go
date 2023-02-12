@@ -14,6 +14,8 @@ func (ep *Entity) BuildManagerTemplate() {
 	putRow := ""
 	patchRow := ""
 	patchSearch := ""
+	patchInit := []string{}
+	patchTestInit := []string{}
 	setArgs := ""
 	foundOneKey := false
 	getDeleteKeyTestSuccessful := []string{}
@@ -31,6 +33,11 @@ func (ep *Entity) BuildManagerTemplate() {
 				getDeleteKeyTestSuccessful = append(getDeleteKeyTestSuccessful, fmt.Sprintf(`%s: "test id"`, c.ColumnName.Camel))
 				getDeleteKeyTestFailure = append(getDeleteKeyTestFailure, fmt.Sprintf(`%s: ""`, c.ColumnName.Camel))
 				foundOneKey = true
+				patchTest := "test value"
+				if c.DBType == "uuid" {
+					patchTest = "76A21E7C-A155-4472-AEC5-14C84AC82B9A"
+				}
+				patchTestInit = append(patchTestInit, fmt.Sprintf("%s: \"%s\"", c.ColumnName.Camel, patchTest))
 			}
 			if c.GoType == "int" {
 				if foundOneKey {
@@ -42,15 +49,20 @@ func (ep *Entity) BuildManagerTemplate() {
 				getDeleteKeyTestSuccessful = append(getDeleteKeyTestSuccessful, fmt.Sprintf(`%s: 1`, c.ColumnName.Camel))
 				getDeleteKeyTestFailure = append(getDeleteKeyTestFailure, fmt.Sprintf(`%s: 0`, c.ColumnName.Camel))
 				foundOneKey = true
+				patchTestInit = append(patchTestInit, fmt.Sprintf("%s: 1", c.ColumnName.Camel))
 			}
+			patchInit = append(patchInit, fmt.Sprintf("%s: %sIn.%s", c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
 			setArgs += fmt.Sprintf("%s: %s", c.ColumnName.Camel, c.ColumnName.Lower)
 		}
 	}
 	// patchRow = patchSearch + fmt.Sprintf(MANAGER_PATCH_STRUCT_STMT, ep.Abbr, ep.Camel, setArgs) + fmt.Sprintf(MANAGER_PATCH_GET_STMT, ep.Abbr)
+	ep.ManagerPatchInitArgs = strings.Join(patchInit, ", ")
+	ep.ManagerPatchTestInit = strings.Join(patchTestInit, ", ")
 	putTests := []PostPutTest{{Name: "successful", Failure: false}}
 	postTests := []PostPutTest{{Name: "successful", Failure: false}}
 	InitializeColumnTests()
 	sortColumns := []string{}
+	addedTime := false
 	for _, c := range ep.Columns {
 		columnTestStrAdded := false
 		// put rows
@@ -119,7 +131,10 @@ func (ep *Entity) BuildManagerTemplate() {
 					patchRow += fmt.Sprintf(con.MANAGER_PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, patchLenCheck, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel)
 				}
 			case "null.Time":
-				ep.ManagerImportTest += "\n\t\"time\"\n"
+				if !addedTime {
+					ep.ManagerImportTest += "\n\t\"time\"\n"
+					addedTime = true
+				}
 				// ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 				patchRow += fmt.Sprintf(con.MANAGER_PATCH_TIME_NULL_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel)
 				ep.ManagerTime = "\n\t\"time\""

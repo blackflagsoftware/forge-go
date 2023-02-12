@@ -8,7 +8,6 @@ import (
 
 	c "github.com/blackflagsoftware/forge-go/internal/constant"
 	e "github.com/blackflagsoftware/forge-go/internal/entity"
-	"github.com/blackflagsoftware/forge-go/internal/util"
 )
 
 var (
@@ -38,8 +37,6 @@ func (project *Project) StartTemplating() {
 		processTemplateFiles(*project, &project.Entities[i], savePath)
 	}
 	updateModFiles(project.ProjectFile.AppName)
-	fmt.Println("Done templating press 'enter' to continue")
-	util.ParseInput()
 }
 
 // send back SQLProvider
@@ -245,8 +242,6 @@ func processTemplateFiles(project Project, ep *e.Entity, savePath string) {
 
 func updateModFiles(projectName string) {
 	// this assumes we are in the root folder
-	wd, _ := os.Getwd()
-	fmt.Println("working dir:", wd)
 	commands := []*exec.Cmd{
 		exec.Command("protoc", "--go_out=./pkg/proto", "--go-grpc_out=./pkg/proto", fmt.Sprintf("./pkg/proto/%s.proto", projectName)),
 		exec.Command("go", "get", "-u", "all"),

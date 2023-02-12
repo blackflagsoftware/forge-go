@@ -17,7 +17,16 @@ func (ep *Entity) BuildGrpc() {
 	lines = append(lines, fmt.Sprintf("message %s {", ep.Camel))
 	translateInLines := []string{}
 	translateOutLines := []string{}
+	argsInit := []string{}
 	for i, column := range ep.Columns {
+		if column.PrimaryKey {
+			switch column.DBType {
+			case "int":
+				argsInit = append(argsInit, fmt.Sprintf("%s: int(in.%s)", column.ColumnName.Camel, column.ColumnName.Camel))
+			default:
+				argsInit = append(argsInit, fmt.Sprintf("%s: in.%s", column.ColumnName.Camel, column.ColumnName.Camel))
+			}
+		}
 		idx := i + 1 // start the count at 1
 		typeValue := "string"
 		var inLine, outLine string

@@ -4,7 +4,6 @@ import (
 	{{.ManagerTime}}
 
 	ae "{{.ProjectPath}}/internal/api_error"
-	"{{.ProjectPath}}/internal/util"
 	{{.ManagerUtilPath}}
 )
 
@@ -44,7 +43,7 @@ func (m *Manager{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
 }
 
 func (m *Manager{{.Camel}}) Patch({{.Abbr}}In {{.Camel}}) error {
-	{{.Abbr}} := &{{.Camel}}{Id: {{.Abbr}}In.Id}
+	{{.Abbr}} := &{{.Camel}}{ {{.ManagerPatchInitArgs}} }
 	errGet := m.data{{.Camel}}.Read({{.Abbr}})
 	if errGet != nil {
 		return errGet
