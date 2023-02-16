@@ -10,9 +10,9 @@ import (
 	"github.com/blackflagsoftware/forge-go/base/config"
 	ae "github.com/blackflagsoftware/forge-go/base/internal/api_error"
 	m "github.com/blackflagsoftware/forge-go/base/internal/middleware"
+	p "github.com/labstack/echo-contrib/prometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	log "github.com/sirupsen/logrus"
 	// --- replace migration header once text - do not remove ---
 	// --- replace main header text - do not remove ---
 )
@@ -34,7 +34,7 @@ func main() {
 	e := echo.New()
 	e.HTTPErrorHandler = ae.ErrorHandler // set echo's error handler
 	if !strings.Contains(config.Env, "prod") {
-		log.Infoln("Logging set to debug...")
+		m.Default.Infoln("Logging set to debug...")
 		e.Debug = true
 		e.Use(m.DebugHandler)
 	}
@@ -42,9 +42,10 @@ func main() {
 		middleware.Recover(),
 		m.Handler,
 	)
-
-	// set output based on config value
-	m.SetLogOutput(config.LogOutput)
+	if config.EnableMetrics {
+		prom := p.NewPrometheus("echo", nil)
+		prom.Use(e)
+	}
 
 	// set all non-endpoints here
 	e.GET("/", Index)
@@ -58,9 +59,9 @@ func main() {
 func setPidFile() {
 	// purpose: to set the starting applications pid number to file
 	if pidFile, err := os.Create(config.PidPath); err != nil {
-		log.Panicln("Unable to create pid file...")
+		m.Default.Panicln("Unable to create pid file...")
 	} else if _, err := pidFile.Write([]byte(fmt.Sprintf("%d", os.Getpid()))); err != nil {
-		log.Panicln("Unable to write pid to file...")
+		m.Default.Panicln("Unable to write pid to file...")
 	}
 }
 

@@ -3,35 +3,32 @@ package config
 import (
 	"fmt"
 	"os"
-	"time"
 
-	"github.com/client9/reopen"
 	"github.com/kardianos/osext"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
-	AppName       = "forge-go-base"
-	AppVersion    = getEnvOrDefault("FORGE_GO_BASE_APP_VERSION", "1.0.0")
-	RestPort      = getEnvOrDefault("FORGE_GO_BASE_REST_PORT", "12580")
-	GrpcPort      = getEnvOrDefault("FORGE_GO_BASE_GRPC_PORT", "12581")
-	PidPath       = getEnvOrDefault("FORGE_GO_BASE_PID_PATH", fmt.Sprintf("/tmp/%s.pid", AppName))
-	Env           = getEnvOrDefault("FORGE_GO_BASE_ENV", "dev")
-	LogPath       = getEnvOrDefault("FORGE_GO_BASE_LOG_PATH", fmt.Sprintf("/tmp/%s.out", AppName))
-	UseMigration  = true
-	MigrationPath = getEnvOrDefault("FORGE_GO_BASE_MIGRATION_PATH", "")
-	LogOutput     *reopen.FileWriter
-	ExecDir       = ""
+	AppName           = "forge-go-base"
+	AppVersion        = GetEnvOrDefault("FORGE_GO_BASE_APP_VERSION", "1.0.0")
+	RestPort          = GetEnvOrDefault("FORGE_GO_BASE_REST_PORT", "12580")
+	GrpcPort          = GetEnvOrDefault("FORGE_GO_BASE_GRPC_PORT", "12581")
+	PidPath           = GetEnvOrDefault("FORGE_GO_BASE_PID_PATH", fmt.Sprintf("/tmp/%s.pid", AppName))
+	Env               = GetEnvOrDefault("FORGE_GO_BASE_ENV", "dev")
+	LogPath           = GetEnvOrDefault("FORGE_GO_BASE_LOG_PATH", fmt.Sprintf("/tmp/%s.out", AppName))
+	EnableMetrics     = GetEnvOrDefaultBool("FORGE_GO_BASE_ENABLE_METRICS", true)
+	UseMigration      = GetEnvOrDefaultBool("FORGE_GO_BASE_MIGRATION_ENABLED", true)
+	MigrationPath     = GetEnvOrDefault("FORGE_GO_BASE_MIGRATION_PATH", "")
+	MigrationSkipInit = GetEnvOrDefaultBool("FORGE_GO_BASE_MIGRATION_SKIP_INIT", false)
+	LogOutput         = os.Stdout
+	ExecDir           = ""
 	// --- replace config text - do not remove ---
 )
 
 func init() {
 	ExecDir, _ = osext.ExecutableFolder()
-
-	InitializeLogging()
 }
 
-func getEnvOrDefault(envVar string, defEnvVar string) (newEnvVar string) {
+func GetEnvOrDefault(envVar string, defEnvVar string) (newEnvVar string) {
 	if newEnvVar = os.Getenv(envVar); len(newEnvVar) == 0 {
 		return defEnvVar
 	} else {
@@ -39,19 +36,17 @@ func getEnvOrDefault(envVar string, defEnvVar string) (newEnvVar string) {
 	}
 }
 
-func InitializeLogging() {
-	var err error
-	if LogOutput == nil {
-		LogOutput, err = reopen.NewFileWriter(LogPath)
-		if err != nil {
-			log.Fatalf("Log output file was not set: %s", err)
-		}
-
-		// set up log format
-		logFormat := &log.JSONFormatter{}
-		logFormat.TimestampFormat = time.RFC3339Nano
-
-		log.SetOutput(LogOutput)
-		log.SetFormatter(logFormat)
+func GetEnvOrDefaultBool(envVar string, defEnvVar bool) (newEnvVar bool) {
+	newEnvVarStr := os.Getenv(envVar)
+	if len(newEnvVarStr) == 0 {
+		return defEnvVar
 	}
+	return newEnvVarStr == "true"
+}
+
+func GetUniqueNumberForLock() (number int) {
+	for i := range AppName {
+		number += int(AppName[i])
+	}
+	return
 }

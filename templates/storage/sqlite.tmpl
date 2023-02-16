@@ -2,8 +2,8 @@ package storage
 
 import (
 	"fmt"
-	"log"
 
+	m "{{.ProjectPath}}/internal/middleware"
 	"github.com/jmoiron/sqlx"
 	"{{.ProjectPath}}/config"
 	_ "github.com/mattn/go-sqlite3"
@@ -18,7 +18,7 @@ func SqliteInit() *sqlx.DB {
 		sqliteConnection = GetSqliteConnection()
 		SqliteDB, err = sqlx.Open("sqlite3", sqliteConnection)
 		if err != nil {
-			log.Panicln("Could not connect to the DB host: %s*****; %s", sqliteConnection[6:], err)
+			m.Default.Panicln("Could not connect to the DB host: %s*****; %s", sqliteConnection[6:], err)
 		}
 		SqliteDB.SetMaxOpenConns(1)
 	}

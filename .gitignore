@@ -15,7 +15,9 @@
 # vendor/
 
 forge
+clone
 cmd/forge/forge
 cmd/forge/forge.exec
+tools/clone/clone
 
 .vscode

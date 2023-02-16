@@ -3,8 +3,8 @@ package storage
 import (
 	//"database/sql"
 	"fmt"
-	"log"
 
+	m "{{.ProjectPath}}/internal/middleware"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"{{.ProjectPath}}/config"
@@ -19,7 +19,7 @@ func MySqlInit() *sqlx.DB {
 		var err error
 		MysqlDB, err = sqlx.Connect("mysql", mySqlConnection)
 		if err != nil {
-			log.Panicln("Could not connect to the DB host: %s*****; %s", config.DBHost[:6] err)
+			m.Default.Panicln("Could not connect to the DB host: %s*****; %s", config.DBHost[:6] err)
 		}
 	}
 	return MysqlDB

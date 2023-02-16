@@ -1,8 +1,7 @@
 package storage
 
 import (
-	"log"
-
+	m "{{.ProjectPath}}/internal/middleware"
 	"gorm.io/driver/{{.SQLProviderLower}}"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -16,7 +15,7 @@ func GormInit() *gorm.DB {
 		var err error
 		GormDB, err = gorm.Open({{.SQLProviderLower}}.Open(connectionStr), &gorm.Config{NamingStrategy: schema.NamingStrategy{SingularTable: true}})
 		if err != nil {
-			log.Panicln("Could not connect to the DB:", err)
+			m.Default.Panicln("Could not connect to the DB:", err)
 		}
 	}
 	return GormDB

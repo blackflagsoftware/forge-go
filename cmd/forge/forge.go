@@ -9,7 +9,6 @@ import (
 
 	p "github.com/blackflagsoftware/forge-go/internal/project"
 	"github.com/blackflagsoftware/forge-go/internal/util"
-	"github.com/kardianos/osext"
 )
 
 func main() {
@@ -50,11 +49,7 @@ func cloneMe(directory string) {
 		fmt.Println("GOPATH is not set, please set this env. var")
 		return
 	}
-	// projectDirectory := getProjectPath(goPath, directory)
-
-	execDir, _ := osext.ExecutableFolder()
-	scriptDir := execDir + "/../../tools/clone"
-	os.Chdir(scriptDir)
+	os.Chdir("tools/clone")
 	output, _ := exec.Command("go", "run", "clone.go", "-projectPath", directory).CombinedOutput()
 	fmt.Printf("%s\n", output)
 }

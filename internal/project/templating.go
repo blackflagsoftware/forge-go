@@ -17,7 +17,7 @@ var (
 
 func (project *Project) StartTemplating() {
 	sqlProvider := buildStorage(*project)
-	buildMigration(*project)
+	// buildMigration(*project)
 
 	for i := range project.Entities {
 		savePath := fmt.Sprintf("%s/%s/%s", project.ProjectFile.FullPath, project.ProjectFile.SubDir, project.Entities[i].AllLower)
@@ -37,6 +37,8 @@ func (project *Project) StartTemplating() {
 		processTemplateFiles(*project, &project.Entities[i], savePath)
 	}
 	updateModFiles(project.ProjectFile.AppName)
+	// in case you a entity is marekd as 'blank'
+	project.UseBlank = false
 }
 
 // send back SQLProvider
@@ -217,24 +219,26 @@ func processTemplateFiles(project Project, ep *e.Entity, savePath string) {
 			fmt.Println("Execution of template:", err)
 		}
 		// process _test file
-		tmplPath = fmt.Sprintf("%s/%s/%s_test.tmpl", templatePath, tmpl, tmpl)
-		if _, err := os.Stat(tmplPath); !os.IsNotExist(err) {
-			t, errParse := template.ParseFiles(tmplPath)
-			if errParse != nil {
-				fmt.Printf("Template could not parse file: %s; %s", tmplPath, errParse)
-				fmt.Println("Exiting...")
-				return
-			}
-			newFileName := fmt.Sprintf("%s/%s_test.go", savePath, tmpl)
-			file, err := os.Create(newFileName)
-			if err != nil {
-				fmt.Println("File:", tmpl, "was not able to be created", err)
-				fmt.Println("Exiting...")
-				return
-			}
-			err = t.Execute(file, ep)
-			if err != nil {
-				fmt.Println("Execution of template:", err)
+		if !project.UseBlank {
+			tmplPath = fmt.Sprintf("%s/%s/%s_test.tmpl", templatePath, tmpl, tmpl)
+			if _, err := os.Stat(tmplPath); !os.IsNotExist(err) {
+				t, errParse := template.ParseFiles(tmplPath)
+				if errParse != nil {
+					fmt.Printf("Template could not parse file: %s; %s", tmplPath, errParse)
+					fmt.Println("Exiting...")
+					return
+				}
+				newFileName := fmt.Sprintf("%s/%s_test.go", savePath, tmpl)
+				file, err := os.Create(newFileName)
+				if err != nil {
+					fmt.Println("File:", tmpl, "was not able to be created", err)
+					fmt.Println("Exiting...")
+					return
+				}
+				err = t.Execute(file, ep)
+				if err != nil {
+					fmt.Println("Execution of template:", err)
+				}
 			}
 		}
 	}

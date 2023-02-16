@@ -3,8 +3,8 @@ package storage
 import (
 	"context"
 	"fmt"
-	"log"
 
+	m "{{.ProjectPath}}/internal/middleware"
 	"{{.ProjectPath}}/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,11 +17,11 @@ func MongoInit() *mongo.Client {
 		var errNew error
 		MongoDB, errNew = mongo.Connect(context.TODO(), options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s", config.MongoHost, config.MongoPort)))
 		if errNew != nil {
-			log.PanicLn("Unable to connect to mongoDB:", errNew)
+			m.Default.PanicLn("Unable to connect to mongoDB:", errNew)
 		}
 		errPing := MongoDB.Ping(context.TODO(), nil)
 		if errPing != nil {
-			log.Panicln("Unable to ping: mongoDB")
+			m.Default.Panicln("Unable to ping: mongoDB")
 		}
 	}
 	return MongoDB

@@ -116,7 +116,7 @@ func SearchAndReplace(src, find, replace string) error {
 			}
 			continue
 		}
-		if filepath.Ext(newSrc) == ".go" {
+		if filepath.Ext(newSrc) == ".go" || filepath.Ext(newSrc) == ".md" {
 			fileContent, err := os.ReadFile(newSrc)
 			if err != nil {
 				fmt.Printf("Unable to read file content %s: %s", newSrc, err)

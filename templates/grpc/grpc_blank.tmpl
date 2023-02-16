@@ -1,0 +1,56 @@
+package {{.AllLower}}
+
+import (
+	"encoding/json"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	p "{{.ProjectPath}}/pkg/proto"
+)
+
+type (
+	{{.Camel}}Grpc struct {
+		p.Unimplemented{{.Camel}}ServiceServer
+		manager{{.Camel}} Manager{{.Camel}}Adapter
+	}
+)
+
+func New{{.Camel}}Grpc(m{{.Abbr}} Manager{{.Camel}}Adapter) *{{.Camel}}Grpc {
+	return &{{.Camel}}Grpc{manager{{.Camel}}: m{{.Abbr}}}
+}
+
+func translateOut({{.Abbr}} *{{.Camel}}) (*p.{{.Camel}}, error) {
+	proto{{.Camel}} := p.{{.Camel}}{}
+	return &proto{{.Camel}}, nil
+}
+
+func translateIn(in *p.{{.Camel}}) (*{{.Camel}}, error) {
+	{{.Abbr}} := {{.Camel}}{}
+	return &{{.Abbr}}, nil
+}
+
+// found these are slower; deprecated; keep them, just in case
+func translateJsonOut({{.Abbr}} *{{.Camel}}) (*p.{{.Camel}}, error) {
+	proto{{.Camel}} := p.{{.Camel}}{}
+	outBytes, err := json.Marshal({{.Abbr}})
+	if err != nil {
+		return &proto{{.Camel}}, ae.GeneralError("Unable to encode from {{.Camel}}", err)
+	}
+	err = json.Unmarshal(outBytes, &proto{{.Camel}})
+	if err != nil {
+		return &proto{{.Camel}}, ae.GeneralError("Unable to decode to proto.{{.Camel}}", err)
+	}
+	return &proto{{.Camel}}, nil
+}
+
+func translateJsonIn(in *p.{{.Camel}}) (*{{.Camel}}, error) {
+	{{.Abbr}} := {{.Camel}}{}
+	outBytes, err := json.Marshal(in)
+	if err != nil {
+		return &{{.Abbr}}, ae.GeneralError("Unable to encode from proto.{{.Camel}}", err)
+	}
+	err = json.Unmarshal(outBytes, &{{.Abbr}})
+	if err != nil {
+		return &{{.Abbr}}, ae.GeneralError("Unable to decode to {{.Camel}}", err)
+	}
+	return &{{.Abbr}}, nil
+}

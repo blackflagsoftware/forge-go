@@ -313,14 +313,22 @@ func Setup{{.Camel}}(eg *echo.Group) {
 	MIGRATION_CALL = `if config.UseMigration {
 		err := os.MkdirAll(config.MigrationPath, 0744)
 		if err != nil {
-			fmt.Printf("Unable to make scripts\/migrations directory structure: %s\\n", err)
+			m.Default.Printf("Unable to make scripts\/migrations directory structure: %s\\n", err)
 		}
-
-		errVerify := mig.VerifyDBInit(config.DBDB, config.DBHost, config.DBUser, config.DBPass)
-		if errVerify != nil {
-			panic(errVerify)
+		c := mig.Connection{
+			Host:           config.DBHost,
+			DB:             config.DBDB,
+			User:           config.DBUser,
+			Pwd:            config.DBPass,
+			AdminUser:      config.AdminDBUser,
+			AdminPwd:       config.AdminDBPass,
+			MigrationPath:  config.MigrationPath,
+			SkipInitialize: config.MigrationSkipInit,
+			Engine:         "postgres",
 		}
-		mig.RunMigration(config.MigrationPath, config.DBHost, config.DBUser, config.DBPass, config.DBDB)
+		if err := mig.StartMigration(c); err != nil {
+			m.Default.Panicf("Migration failed due to: %s", err)
+		}
 	}
 `
 	MIGRATION_GRPC_HEADER_ONCE = `

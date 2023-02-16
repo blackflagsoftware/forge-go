@@ -123,7 +123,7 @@ func (p *Project) FileMenu() {
 		util.ClearScreen()
 		fmt.Println("** File **")
 		fmt.Println("")
-		fmt.Print("Enter path to file or (e) to exit: ")
+		fmt.Println("Enter full path to file or (e) to exit: ")
 		selection := util.ParseInput()
 		if strings.ToLower(selection) == "e" {
 			return
