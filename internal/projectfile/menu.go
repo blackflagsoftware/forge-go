@@ -49,7 +49,7 @@ func (p *ProjectFile) TagFormatMenu() {
 	setupHeader()
 	mainMesssge := []string{"Tag Format", "What format you want your 'json' tags to be (this can be changed later)?"}
 	prompts := []string{"(s) Snake Case (tag_format)", "(c) Camel Case (tagFormat)", "(p) Pascal Case (TagFormat)", "(k) Kebab Case (tag-format)", "(l) Lower Case (tag format)", "(u) Upper (TAG FORMAT)"}
-	acceptablePrompts := []string{"s", "f", "m"}
+	acceptablePrompts := []string{"s", "c", "p", "k", "l", "u"}
 	tagFormat := util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "", setupHeader)
 	switch tagFormat {
 	case "s":

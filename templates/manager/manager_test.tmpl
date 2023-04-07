@@ -1,12 +1,7 @@
 package {{.AllLower}}
 
 import (
-	"fmt"
-	"testing"{{.ManagerImportTest}}
-
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/guregu/null.v3"
+	{{.ManagerTestImport}}
 )
 
 func TestManager{{.Camel}}_Get(t *testing.T) {

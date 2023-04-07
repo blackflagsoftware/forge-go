@@ -8,95 +8,14 @@ const (
 	MYSQLLOWER      = "mysql"
 	SQLITE3LOWER    = "sqlite"
 
-	MODEL_INCLUDE_NULL   = "\n\t\"gopkg.in/guregu/null.v3\""
-	MODEL_COLUMN_W_GORM  = "\t\t%s\t%s\t`db:\"%s\" json:\"%s\" gorm:\"column:%s\"`"
-	MODEL_COLUMN_WO_GORM = "\t\t%s\t%s\t`db:\"%s\" json:\"%s\"`"
-
 	REST_PRIMARY_INT = `	%sStr := c.Param("%s")
 	%s, err := strconv.ParseInt(%sStr, 10, 64)
 	if err != nil {
 		bindErr := ae.ParseError("Invalid param value, not a number")
 		return c.JSON(bindErr.StatusCode, util.NewOutput(bindErr.BodyError(), &bindErr, nil))
 	}`  // Lower, Lower, Lower, Lower
-	REST_PRIMARY_STR = `	%s := c.Param("%s")` // Lower, Lower
-	REST_GET_DELETE  = `	%s := &%s{%s}`       // CamelLower, Camel, RestArgSet
-	MANAGER_GET_INT  = `	if %s.%s < 1 {
-		return ae.MissingParamError("%s")
-	}
-	`  // Abbr, Camel, Camel
-
-	MANAGER_GET_STRING = `	if %s.%s == "" {
-		return ae.MissingParamError("%s")
-	}
-	`  // Abbr, Camel, Camel
-	MANAGER_POST_AUTOINCREMENT = `if %s.%s < 1 {
-		return ae.MissingParamError("%s")
-	}
-	`  // Abbr, Lower, Camel
-	MANAGER_POST_UUID = `if %s.%s == "" {
-		return ae.MissingParamError("%s")
-	}
-	`  // Abbr, Lower, Camel
-	MANAGER_POST_NULL = `if !%s.%s.Valid {
-		return ae.MissingParamError("%s")
-	}
-	`  // Abbr, Lower, Camel
-	MANAGER_POST_VARCHAR_LEN = `if %s.%s.Valid && len(%s.%s.ValueOrZero()) > %d {
-		return ae.StringLengthError("%s", %d)
-	}
-	`  // Abbr, ColumnCamel, Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
-	MANAGER_GET_TIME = `	if %s.%s.IsZero() {
-		return ae.MissingParamError("%s")
-	}
-	`  // Abbr, Lower, Camel
-	MANAGER_GET_JSON = `	if !%s.%s.ValidJson() {
-		return ae.ParseError("%s is invalid JSON")
-	}
-	`  // Abbr, Lower, Camel
-	MANAGER_PATCH_SEARCH_STRING = `	%s, ok%s := jParsed.Search("%s").Data().(string)
-	if !ok%s {
-		return ae.MissingParamError("%s")
-	}
-	`  // Lower, Camel, Camel, Camel, Camel
-	MANAGER_PATCH_SEARCH_INT = `	%sFlt, ok%sFlt := jParsed.Search("%s").Data().(float64)
-	if !ok%sFlt {
-		return ae.MissingParamError("%s")
-	}
-	%s := int(%sFlt)
-	`  // Lower, Camel, Camel, Camel, Camel, Lower, Lower
-	MANAGER_PATCH_STRUCT_STMT = `	%s := &%s{%s}
-	`  // Abbr, Camel, KeySearchList
-	MANAGER_PATCH_GET_STMT = `	errGet := m.Get(%s)
-	if errGet != nil {
-		return errGet
-	}
-	`  // Abbr
-	MANAGER_PATCH_DEFAULT_ASSIGN = `// %s
-	if %sIn.%s.Valid {%s
-		%s.%s = %sIn.%s
-	}
-	`  // ColCamel, Abbr, ColCamel, StringLenCheck, Abbr, ColCamel, Abbr. ColCamel
-	MANAGER_PATCH_JSON_NULL_ASSIGN = `// %s
-	if %sIn.%s != nil {
-		if !util.ValidJson(*%sIn.%s) {
-			return ae.ParseError("Invalid JSON syntax for %s")
-		}
-		%s.%s = %sIn.%s
-	}
-	`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColLowerCamel, Abbr, ColCamel, Abbr, ColCamel
-	MANAGER_PATCH_TIME_NULL_ASSIGN = `// %s
-	if %sIn.%s.Valid {
-		_, errParse := time.Parse(time.RFC3339, %s.%s.Time.String())
-		if errParse != nil {
-			return ae.ParseError("%s: unable to parse time")
-		}
-		%s.%s = %sIn.%s
-	}
-	`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColCamel, Abbr, ColCamel, Abbr, ColCamel
-	MANAGER_PATCH_VARCHAR_LEN = `
-			if %sIn.%s.Valid && len(%sIn.%s.ValueOrZero()) > %d {
-				return ae.StringLengthError("%s", %d)
-		}`  // Abbr, ColumnCamel, Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
+	REST_PRIMARY_STR     = `	%s := c.Param("%s")`                         // Lower, Lower
+	REST_GET_DELETE      = `	%s := &%s{%s}`                               // CamelLower, Camel, RestArgSet
 	SQL_POST_QUERY       = `_, errDB := d.DB.NamedExec(sqlPost, %s)`      // Abbr
 	SQL_POST_QUERY_MYSQL = `result, errDB := d.DB.NamedExec(sqlPost, %s)` // Abbr
 	SQL_LAST_ID_MYSQL    = `lastId, err := result.LastInsertId()
@@ -313,24 +232,27 @@ func Setup{{.Camel}}(eg *echo.Group) {
 	MIGRATION_CALL = `if config.UseMigration {
 		err := os.MkdirAll(config.MigrationPath, 0744)
 		if err != nil {
-			m.Default.Printf("Unable to make scripts\/migrations directory structure: %s\\n", err)
+			m.Default.Printf("Unable to make scripts\/migrations directory structure: %%s\\n", err)
 		}
-		c := mig.Connection{
+		c := mig.Connection{%s
+			MigrationPath:  config.MigrationPath,
+			SkipInitialize: config.MigrationSkipInit,
+			Engine:         "%s",
+		}
+		if err := mig.StartMigration(c); err != nil {
+			m.Default.Panicf("Migration failed due to: %%s", err)
+		}
+	}
+`
+	MIGRATION_GRPC_HEADER_ONCE = `
+	"os"`
+
+	MIGRATION_NON_SQLITE = `
 			Host:           config.DBHost,
 			DB:             config.DBDB,
 			User:           config.DBUser,
 			Pwd:            config.DBPass,
 			AdminUser:      config.AdminDBUser,
 			AdminPwd:       config.AdminDBPass,
-			MigrationPath:  config.MigrationPath,
-			SkipInitialize: config.MigrationSkipInit,
-			Engine:         "postgres",
-		}
-		if err := mig.StartMigration(c); err != nil {
-			m.Default.Panicf("Migration failed due to: %s", err)
-		}
-	}
-`
-	MIGRATION_GRPC_HEADER_ONCE = `
-	"os"`
+	`
 )

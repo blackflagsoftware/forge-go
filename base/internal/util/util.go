@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 type (
@@ -16,6 +18,10 @@ type (
 		Search map[string]string
 	}
 )
+
+func GenerateUUID() string {
+	return uuid.New().String()
+}
 
 func GetTypeCount(i interface{}) int {
 	switch reflect.ValueOf(i).Kind() {

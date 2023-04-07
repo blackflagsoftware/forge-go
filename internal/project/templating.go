@@ -16,7 +16,7 @@ var (
 )
 
 func (project *Project) StartTemplating() {
-	sqlProvider := buildStorage(*project)
+	sqlProvider, sqlProviderLower := buildStorage(*project)
 	// buildMigration(*project)
 
 	for i := range project.Entities {
@@ -30,6 +30,7 @@ func (project *Project) StartTemplating() {
 			continue
 		}
 		project.Entities[i].SQLProvider = sqlProvider
+		project.Entities[i].SQLProviderLower = sqlProviderLower
 		project.Entities[i].ProjectFile = project.ProjectFile // TODO: can we get away from this
 
 		// build the templates
@@ -42,7 +43,7 @@ func (project *Project) StartTemplating() {
 }
 
 // send back SQLProvider
-func buildStorage(project Project) (sqlProvider string) {
+func buildStorage(project Project) (sqlProvider, sqlProviderLower string) {
 	storagePath := fmt.Sprintf("%s/internal/storage", project.ProjectFile.FullPath)
 	if errMakeAll := os.MkdirAll(storagePath, os.ModeDir|os.ModePerm); errMakeAll != nil {
 		fmt.Println("New storage folder was not able to be made", errMakeAll)
@@ -77,10 +78,13 @@ func buildStorage(project Project) (sqlProvider string) {
 		}
 	case "f":
 		storageFiles = append(storageFiles, "file")
+		tmplFiles = append(tmplFiles, "file")
 	case "m":
 		storageFiles = append(storageFiles, "mongo")
+		tmplFiles = append(tmplFiles, "mongo")
 	}
 	sqlProvider = storageVars.SQLProvider
+	sqlProviderLower = storageVars.SQLProviderLower
 
 	// save and template storage files
 	for _, tmpl := range storageFiles {
@@ -109,7 +113,7 @@ func buildStorage(project Project) (sqlProvider string) {
 	return
 }
 
-// TODO: write to migration to have all varieties of code an set a env var to determine which sql engine to support
+// TODO: remove
 func buildMigration(project Project) {
 	if project.ProjectFile.Storage == "s" {
 		migrationVars := MigrationVars{ProjectPath: project.ProjectFile.ProjectPath, ProjectFile: project.ProjectFile}

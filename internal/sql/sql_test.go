@@ -127,6 +127,17 @@ func Test_columnsParse(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"columnParse - #5",
+			args{
+				columnPart: "client_id int not null, user_id int not null, primary key(client_id, user_id)",
+			},
+			[]c.Column{
+				{ColumnName: n.Name{RawName: "client_id", Lower: "client_id", Camel: "ClientId", LowerCamel: "clientId", Upper: "CLIENTID", Abbr: "cli", EnvVar: "CLIENT_ID", AllLower: "clientid"}, DBType: "int", GoType: "null.Int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: true},
+				{ColumnName: n.Name{RawName: "user_id", Lower: "user_id", Camel: "UserId", LowerCamel: "userId", Upper: "USERID", Abbr: "use", EnvVar: "USER_ID", AllLower: "userid"}, DBType: "int", GoType: "null.Int", GoTypeNonSql: "int", Null: false, DefaultValue: "", Length: 0, PrimaryKey: true},
+			},
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

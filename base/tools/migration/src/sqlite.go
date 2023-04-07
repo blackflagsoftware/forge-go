@@ -2,7 +2,6 @@ package src
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -16,8 +15,7 @@ func (s *Sqlite) ConnectDB(c Connection, rootDB bool) (*sqlx.DB, error) {
 	conn := fmt.Sprintf("%s?cache=shared&mode=wrc", c.Host)
 	db, err := sqlx.Open("sqlite3", conn)
 	if err != nil {
-		fmt.Println("Could not connect with connection string:", conn)
-		os.Exit(1)
+		return db, fmt.Errorf("Could not connect with connection string: %s", conn)
 	}
 	db.SetMaxOpenConns(1)
 	return db, nil
@@ -28,6 +26,10 @@ func (s *Sqlite) CheckDB(db *sqlx.DB, dbName string) error {
 }
 
 func (s *Sqlite) CheckTable(db *sqlx.DB) error {
+	createSql := "CREATE TABLE IF NOT EXISTS migration (id integer primary key autoincrement, file_name varchar(100) NOT NULL)"
+	if _, err := db.Exec(createSql); err != nil {
+		return fmt.Errorf("CheckTable[sqlite]: unable to create table; %s", err)
+	}
 	return nil
 }
 

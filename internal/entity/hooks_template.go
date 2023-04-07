@@ -52,7 +52,12 @@ func (ep *Entity) BuildAPIHooks() {
 		}
 		if ep.SQLProvider != "" {
 			// handling sql add migration
-			migRestMain := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration once text - do not remove ---/%s/g' %s`, con.MIGRATION_CALL, apiFile)
+			nonSqlite := con.MIGRATION_NON_SQLITE
+			if ep.SQLProvider == "Sqlite" {
+				nonSqlite = "\n\t\t\tc.Host = config.SqlitePath"
+			}
+			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite, ep.SQLProviderLower)
+			migRestMain := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration once text - do not remove ---/%s/g' %s`, migCall, apiFile)
 			execRestMain := exec.Command("bash", "-c", migRestMain)
 			errExecRestMain := execRestMain.Run()
 			if errExecRestMain != nil {
@@ -128,7 +133,12 @@ func (ep *Entity) BuildAPIHooks() {
 		}
 		if ep.SQLProvider != "" {
 			// handling sql add migration
-			migGrpcMain := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration once text - do not remove ---/%s/g' %s`, con.MIGRATION_CALL, grpcFile)
+			nonSqlite := con.MIGRATION_NON_SQLITE
+			if ep.SQLProvider == "Sqlite" {
+				nonSqlite = "\n\t\t\tc.Host = config.SqlitePath"
+			}
+			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite, ep.SQLProviderLower)
+			migGrpcMain := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration once text - do not remove ---/%s/g' %s`, migCall, grpcFile)
 			execGrpcMain := exec.Command("bash", "-c", migGrpcMain)
 			errExecGrpcMain := execGrpcMain.Run()
 			if errExecGrpcMain != nil {
@@ -173,8 +183,8 @@ func (ep *Entity) BuildAPIHooks() {
 			configLines = append(configLines, "SqlitePath = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_SQLITE_PATH\", \"/tmp/{{.Name.Lower}}.db\")")
 		case "m":
 			configLines = append(configLines, "StorageMongo = true")
-			configLines = append(configLines, "MongoHost = GetEnvOrDefault(\"{{ProjectFile.Name.EnvVar}}_MONGO_HOST\", \"localhost\"")
-			configLines = append(configLines, "MongoPort = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_MONGO_PORT\", \"27017\"")
+			configLines = append(configLines, "MongoHost = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_MONGO_HOST\", \"localhost\")")
+			configLines = append(configLines, "MongoPort = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_MONGO_PORT\", \"27017\")")
 		}
 		configLine := strings.Join(configLines, "\n\t")
 

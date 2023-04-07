@@ -19,7 +19,7 @@ func PostgresInit() *sqlx.DB {
 		var err error
 		PsqlDB, err = sqlx.Connect("postgres", postgresConnection)
 		if err != nil {
-			m.Default.Panicln("Could not connect to the DB host: %s*****; %s", config.DBHost[6:], err)
+			m.Default.Panicf("Could not connect to the DB host: %s*****; %s", string(config.DBHost[6:]), err)
 		}
 	}
 	return PsqlDB

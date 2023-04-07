@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	c "github.com/blackflagsoftware/forge-go/internal/column"
+	con "github.com/blackflagsoftware/forge-go/internal/constant"
 	e "github.com/blackflagsoftware/forge-go/internal/entity"
 	n "github.com/blackflagsoftware/forge-go/internal/name"
 	pf "github.com/blackflagsoftware/forge-go/internal/projectfile"
@@ -35,7 +36,7 @@ OuterLoop:
 		util.ClearScreen()
 		fmt.Println("** File/MongoDB Storage Menu **")
 		fmt.Println("")
-		fmt.Print("Enter name of your object (e) to exit: ")
+		fmt.Print("Enter name of your entity (e) to exit: ")
 		name := n.Name{}
 		rawName := util.ParseInput()
 		if strings.ToLower(rawName) == "e" {
@@ -47,7 +48,7 @@ OuterLoop:
 		for {
 			s.PrintSqlColumns(entity.Columns)
 			column := c.Column{}
-			fmt.Print("Field Name: (e) to exit")
+			fmt.Print("Field Name (e) to exit: ")
 			name := util.ParseInput()
 			if strings.ToLower(name) == "e" {
 				break OuterLoop
@@ -57,19 +58,23 @@ OuterLoop:
 
 			switch selection {
 			case "1":
-				column.GoType = "string"
+				column.GoType = "null.String"
 			case "2":
-				column.GoType = "int"
+				column.GoType = "null.Int"
+				column.DBType = "int" // need this in grpc_template.go
 			case "3":
-				column.GoType = "float64"
+				column.GoType = "null.Float"
 			case "4":
-				column.GoType = "time.Time"
+				column.GoType = "null.Time"
 			case "5":
-				column.GoType = "bool"
+				column.GoType = "null.Bool"
 			case "6":
 				column.GoType = "string"
 			case "e", "E":
 				break OuterLoop
+			}
+			if util.AskYesOrNo("Is this a primary or part of composite/primary key") {
+				column.PrimaryKey = true
 			}
 			entity.Columns = append(entity.Columns, column)
 			anotherColumn := util.AskYesOrNo("Add another field?")
@@ -78,7 +83,7 @@ OuterLoop:
 			}
 		}
 		p.Entities = append(p.Entities, entity)
-		anotherEndpoint := util.AskYesOrNo("Add another object?")
+		anotherEndpoint := util.AskYesOrNo("Add another entity?")
 		if !anotherEndpoint {
 			break
 		}
@@ -114,7 +119,11 @@ func (p *Project) SqlMenu() {
 		case "5":
 			p.AdminMenu()
 		}
-		p.StartTemplating()
+		if len(p.Entities) > 0 {
+			p.StartTemplating()
+		}
+		// remove entities already processed
+		p.Entities = []e.Entity{}
 	}
 }
 
@@ -123,7 +132,7 @@ func (p *Project) FileMenu() {
 		util.ClearScreen()
 		fmt.Println("** File **")
 		fmt.Println("")
-		fmt.Println("Enter full path to file or (e) to exit: ")
+		fmt.Print("Enter full path to file or (e) to exit: ")
 		selection := util.ParseInput()
 		if strings.ToLower(selection) == "e" {
 			return
@@ -160,7 +169,10 @@ PasteLoop:
 			}
 			sql = append(sql, line)
 		}
-		sqlEntity := s.ParseSqlLines(sql)
+		sqlEntity, err := s.ParseSqlLines(sql)
+		if err != nil {
+			return
+		}
 		entity := e.Entity{}
 		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
@@ -184,14 +196,17 @@ func (p *Project) PromptMenu() {
 		fmt.Println("** Prompt **")
 		fmt.Println("")
 		fmt.Print("Enter entity name or (e) to exit: ")
-		objectName := util.ParseInput()
-		if strings.ToLower(objectName) == "e" {
+		entityName := util.ParseInput()
+		if strings.ToLower(entityName) == "e" {
 			break
 		}
-		sql = append(sql, fmt.Sprintf("create table %s (", objectName))
+		sql = append(sql, fmt.Sprintf("create table %s (", entityName))
 		sql = append(sql, processColumns()...)
 		sql = append(sql, ")")
-		sqlEntity := s.ParseSqlLines(sql)
+		sqlEntity, err := s.ParseSqlLines(sql)
+		if err != nil {
+			return
+		}
 		entity := e.Entity{}
 		entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
 		entity.Columns = sqlEntity.Columns
@@ -202,6 +217,7 @@ func (p *Project) PromptMenu() {
 			break
 		}
 	}
+	p.saveOutSql()
 }
 
 func (p *Project) BlankMenu() {
@@ -210,12 +226,12 @@ func (p *Project) BlankMenu() {
 		fmt.Println("** Blank **")
 		fmt.Println("")
 		fmt.Print("Enter entity name or (e) to exit: ")
-		objectName := util.ParseInput()
-		if objectName == "e" {
+		entityName := util.ParseInput()
+		if entityName == "e" {
 			break
 		}
 		entity := e.Entity{}
-		name := entity.Name.BuildName(objectName, p.ProjectFile.KnownAliases)
+		name := entity.Name.BuildName(entityName, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
 		p.Entities = append(p.Entities, entity)
 		p.UseBlank = true
@@ -261,7 +277,7 @@ func processColumns() []string {
 		switch sel {
 		case "1":
 			col.DBType = "varchar"
-			col.Length = askLengthPrompt(fmt.Sprintf("What is the %s length?", col.DBType))
+			col.Length = askLengthPrompt(fmt.Sprintf("What is the %s length? ", col.DBType))
 			col.DBType = fmt.Sprintf("%s(%d)", col.DBType, col.Length)
 			col.Null, col.DefaultValue = askNullDefaultPrompt(true, true)
 		case "2":
@@ -288,7 +304,7 @@ func processColumns() []string {
 			col.Null, col.DefaultValue = askNullDefaultPrompt(true, false)
 		case "10":
 			col.DBType = "char"
-			col.Length = askLengthPrompt(fmt.Sprintf("What is the %s length?", col.DBType))
+			col.Length = askLengthPrompt(fmt.Sprintf("What is the %s length? ", col.DBType))
 			col.DBType = fmt.Sprintf("%s(%d)", col.DBType, col.Length)
 			col.Null, col.DefaultValue = askNullDefaultPrompt(true, true)
 		case "11":
@@ -299,6 +315,7 @@ func processColumns() []string {
 			util.ParseInput()
 			continue
 		}
+		columns = append(columns, col)
 		sql = append(sql, buildSqlColumn(col))
 		if !util.AskYesOrNo("Add another column") {
 			break
@@ -362,7 +379,7 @@ func processFile(p *Project, filePath string) (entities []e.Entity) {
 	sqlStmt := []string{}
 	tableCount := 0
 	for _, bLine := range bArray {
-		if bytes.Contains(bytes.ToLower(bLine), []byte("create")) {
+		if bytes.Contains(bytes.ToLower(bLine), []byte("create table")) {
 			// found an create stmt, add all lines already acquired and add to arraySql if not empty
 			if len(sqlStmt) > 0 {
 				tableCount++
@@ -370,10 +387,10 @@ func processFile(p *Project, filePath string) (entities []e.Entity) {
 				sqlStmt = []string{string(bLine)}
 				continue
 			}
-			// else just add if not empty
-			if len(bytes.TrimSpace(bLine)) != 0 {
-				sqlStmt = append(sqlStmt, string(bLine))
-			}
+		}
+		// else just add if not empty
+		if len(bytes.TrimSpace(bLine)) != 0 {
+			sqlStmt = append(sqlStmt, string(bLine))
 		}
 	}
 	// add the last set of lines if not empty
@@ -388,13 +405,95 @@ func processFile(p *Project, filePath string) (entities []e.Entity) {
 		return
 	}
 	for i := range arraySqlStmt {
-		sqlEntity := s.ParseSqlLines(arraySqlStmt[i])
+		sqlEntity, err := s.ParseSqlLines(arraySqlStmt[i])
+		if err != nil {
+			return
+		}
 		entity := e.Entity{}
 		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
+		if sqlEntity.ColExistence.TimeColumn {
+			entity.GrpcImport = "\"time\""
+		}
 		entity.Columns = sqlEntity.Columns
 		entity.ColumnExistence = sqlEntity.ColExistence
 		entities = append(entities, entity)
 	}
 	return
+}
+
+func (p *Project) saveOutSql() {
+	sqlProvider := ""
+	switch p.ProjectFile.Storage {
+	case "m":
+		sqlProvider = con.MYSQL
+	case "p":
+		sqlProvider = con.POSTGRESQL
+	case "s":
+		sqlProvider = con.SQLITE3
+	}
+	fileName := "./prompt_schema"
+	lines := []string{}
+	for e, ep := range p.Entities {
+		primaryKeys := []string{}
+		lines = append(lines, fmt.Sprintf("create table if not exists %s (", ep.Name.Lower))
+		for i, c := range ep.Columns {
+			null := " null"
+			defaultValue := ""
+			length := ""
+			if !c.Null {
+				null = " not null"
+			}
+			dbType := c.DBType
+			if dbType == "autoincrement" || dbType == "serial" {
+				null = ""
+				if sqlProvider == con.SQLITE3 {
+					dbType = "integer primary key autoincrement"
+				}
+				if sqlProvider == con.MYSQL {
+					dbType = "integer auto_increment"
+				}
+				if sqlProvider == con.POSTGRESQL {
+					dbType = "serial"
+				}
+			}
+			if c.PrimaryKey && !(dbType == "autoincrement" && ep.SQLProvider == con.SQLITE3) {
+				primaryKeys = append(primaryKeys, c.ColumnName.Lower)
+			}
+			if c.DefaultValue != "" {
+				if c.DBType == "varchar" || c.DBType == "char" || c.DBType == "text" {
+					defaultValue = fmt.Sprintf(" default '%s'", c.DefaultValue)
+				} else {
+					defaultValue = fmt.Sprintf(" default %s", c.DefaultValue)
+				}
+			}
+			if c.Length > 0 {
+				length = fmt.Sprintf("(%d)", c.Length)
+			}
+			if i < len(ep.Columns)-1 || (i == len(ep.Columns)-1 && len(primaryKeys) > 0) {
+				lines = append(lines, fmt.Sprintf("\t%s %s%s%s%s,", c.ColumnName.Lower, dbType, length, null, defaultValue))
+			} else {
+				lines = append(lines, fmt.Sprintf("\t%s %s%s%s%s", c.ColumnName.Lower, dbType, length, null, defaultValue))
+			}
+		}
+		if sqlProvider != con.SQLITE3 && len(primaryKeys) > 0 {
+			lines = append(lines, fmt.Sprintf("\tprimary key(%s)", strings.Join(primaryKeys, ", ")))
+		}
+		lines = append(lines, ");")
+		if e > 0 {
+			lines = append(lines, "")
+		}
+	}
+	lines = append(lines, "\n")
+	if len(lines) > 0 {
+		file, errOpen := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if errOpen != nil {
+			fmt.Println("Unable to save schema to:", fileName)
+			return
+		}
+		defer file.Close()
+		if _, errWrite := file.WriteString(strings.Join(lines, "\n")); errWrite != nil {
+			fmt.Println("Unable to write lines to:", fileName)
+		}
+	}
 }

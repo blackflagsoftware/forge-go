@@ -1,10 +1,7 @@
 package {{.AllLower}}
 
 import (
-	{{.ManagerTime}}
-
-	ae "{{.ProjectPath}}/internal/api_error"
-	{{.ManagerUtilPath}}
+	{{.ManagerImport}}
 )
 
 //go:generate mockgen -source=manager.go -destination=mock.go -package={{.AllLower}}
@@ -27,7 +24,7 @@ func NewManager{{.Camel}}(c{{.Abbr}} Data{{.Camel}}Adapter) *Manager{{.Camel}} {
 }
 
 func (m *Manager{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
-{{.ManagerGetRow}}
+	{{.ManagerGetRows}}
 	return m.data{{.Camel}}.Read({{.Abbr}})
 }
 
@@ -38,7 +35,7 @@ func (m *Manager{{.Camel}}) Search({{.Abbr}} *[]{{.Camel}}, {{.LowerCamel}}Param
 }
 
 func (m *Manager{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
-{{.ManagerPostRows}}
+	{{.ManagerPostRows}}
 	return m.data{{.Camel}}.Create({{.Abbr}})
 }
 
@@ -48,11 +45,11 @@ func (m *Manager{{.Camel}}) Patch({{.Abbr}}In {{.Camel}}) error {
 	if errGet != nil {
 		return errGet
 	}
-{{.ManagerPatchRows}}
+	{{.ManagerPatchRows}}
 	return m.data{{.Camel}}.Update(*{{.Abbr}})
 }
 
 func (m *Manager{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
-{{.ManagerGetRow}}
+	{{.ManagerGetRows}}
 	return m.data{{.Camel}}.Delete({{.Abbr}})
 }

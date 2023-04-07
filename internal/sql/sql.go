@@ -12,7 +12,7 @@ import (
 	"github.com/blackflagsoftware/forge-go/internal/util"
 )
 
-func ParseSqlLines(lines []string) (sqlEntity SqlEntity) {
+func ParseSqlLines(lines []string) (sqlEntity SqlEntity, err error) {
 	line := util.FormatSql(lines)
 	tableName, columnPart, err := tableNameParse(line)
 	if err != nil {
@@ -45,16 +45,15 @@ func tableNameParse(line string) (tableName, columnPart string, err error) {
 }
 
 func columnsParse(columnPart string) (columns []c.Column, err error) {
+	// parse primary key () line
+	columnPart, keys := parsePrimaryKey(columnPart)
 	columnPart = replaceNumericPart(columnPart)
 	reg := regexp.MustCompile(`(?P<field_name>[a-zA-Z_]+) (?P<field_type>[a-zA-Z0-9\(\)_]+)(?P<the_rest>.+)?`)
-	keys := []string{}
 	// split columns and go through each column
 	lines := strings.Split(columnPart, ",")
 	for i := range lines {
 		line := strings.ReplaceAll(strings.TrimSpace(strings.ToLower(lines[i])), "`", "")
 		if strings.Index(line, "primary") == 0 {
-			// parse primary key () line
-			keys = parsePrimaryKey(line)
 			continue
 		}
 		matches := reg.FindStringSubmatch(line)
@@ -70,7 +69,7 @@ func columnsParse(columnPart string) (columns []c.Column, err error) {
 		col.ColumnName.BuildName(rawName, []string{})
 		col.DBType = matches[fieldTypeIdx]
 		theRest := strings.TrimSpace(matches[theRestIdx])
-		theRestParse(&col, theRest)
+		theRestParse(&col, theRest) // TODO: this could have PRIMARY KEY
 		setGoType(&col)
 		columns = append(columns, col)
 	}
@@ -85,12 +84,12 @@ func replaceNumericPart(columnPart string) string {
 	return columnPart
 }
 
-func parsePrimaryKey(line string) (keyNames []string) {
-	reg := regexp.MustCompile(`primary key ?\((?P<keys>.+)\)`)
+func parsePrimaryKey(columnPart string) (newColumnPart string, keyNames []string) {
+	newColumnPart = columnPart
+	reg := regexp.MustCompile(`(?i)primary key ?\((?P<keys>.+)\)`)
 
-	matches := reg.FindStringSubmatch(line)
+	matches := reg.FindStringSubmatch(columnPart)
 	if len(matches) < 1 {
-		fmt.Println("parsePrimaryKey: sql parse invalid")
 		return
 	}
 	keysIdx := reg.SubexpIndex("keys")
@@ -99,6 +98,9 @@ func parsePrimaryKey(line string) (keyNames []string) {
 	for i := range split {
 		keyNames = append(keyNames, strings.TrimSpace(split[i]))
 	}
+	// replace the ',' in (key1, key2) if needed
+	regReplace := regexp.MustCompile(`(?i)primary key ?\((.+), *?(.+)\)`)
+	newColumnPart = regReplace.ReplaceAllString(columnPart, `primary key (${1}_${2})`)
 	return
 }
 

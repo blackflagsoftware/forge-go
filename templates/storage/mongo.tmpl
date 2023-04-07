@@ -17,7 +17,7 @@ func MongoInit() *mongo.Client {
 		var errNew error
 		MongoDB, errNew = mongo.Connect(context.TODO(), options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s", config.MongoHost, config.MongoPort)))
 		if errNew != nil {
-			m.Default.PanicLn("Unable to connect to mongoDB:", errNew)
+			m.Default.Panicln("Unable to connect to mongoDB:", errNew)
 		}
 		errPing := MongoDB.Ping(context.TODO(), nil)
 		if errPing != nil {

@@ -20,7 +20,7 @@ func New{{.Camel}}Grpc(m{{.Abbr}} Manager{{.Camel}}Adapter) *{{.Camel}}Grpc {
 	return &{{.Camel}}Grpc{manager{{.Camel}}: m{{.Abbr}}}
 }
 
-func (a *{{.Camel}}Grpc) Get{{.Camel}}(ctx context.Context, in *p.IDIn) (*p.{{.Camel}}Response, error) {
+func (a *{{.Camel}}Grpc) Get{{.Camel}}(ctx context.Context, in *p.{{.Camel}}IDIn) (*p.{{.Camel}}Response, error) {
 	result := &p.Result{Success: false}
 	response := &p.{{.Camel}}Response{Result: result}
 	{{.Abbr}} := &{{.Camel}}{ {{.GrpcArgsInit}} }
@@ -41,12 +41,12 @@ func (a *{{.Camel}}Grpc) Search{{.Camel}}(ctx context.Context, in *p.{{.Camel}})
 	{{.LowerCamel}}Param := {{.Camel}}Param{}
 	result := &p.Result{Success: false}
 	response := &p.{{.Camel}}RepeatResponse{Result: result}
-	{{.Abbr}} := &[]{{.Camel}}{}
-	if err := a.manager{{.Camel}}.Search({{.Abbr}}, {{.LowerCamel}}Param); err != nil {
+	{{.Abbr}}s := &[]{{.Camel}}{}
+	if err := a.manager{{.Camel}}.Search({{.Abbr}}s, {{.LowerCamel}}Param); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
-	for _, a := range *{{.Abbr}} {
+	for _, a := range *{{.Abbr}}s {
 		proto{{.Camel}}, err := translateOut(&a)
 		if err != nil {
 			return response, err
@@ -91,7 +91,7 @@ func (a *{{.Camel}}Grpc) Patch{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) 
 	return response, nil
 }
 
-func (a *{{.Camel}}Grpc) Delete{{.Camel}}(ctx context.Context, in *p.IDIn) (*p.Result, error) {
+func (a *{{.Camel}}Grpc) Delete{{.Camel}}(ctx context.Context, in *p.{{.Camel}}IDIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
 	{{.Abbr}} := &{{.Camel}}{ {{.GrpcArgsInit}} }
 	if err := a.manager{{.Camel}}.Delete({{.Abbr}}); err != nil {

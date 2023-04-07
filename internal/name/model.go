@@ -54,7 +54,7 @@ func (n *Name) BuildName(name string, knownAliases []string) string {
 	n.Lower = BuildAltName(rawName, "lowerCase")
 	n.AllLower = strings.ToLower(n.Camel)
 	n.Upper = strings.ToUpper(n.Camel)
-	n.EnvVar = strings.ToUpper(rawName)
+	n.EnvVar = strings.ReplaceAll(strings.ToUpper(rawName), "-", "_")
 	return n.DetermineAbbr(knownAliases)
 }
 

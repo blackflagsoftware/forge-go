@@ -18,14 +18,17 @@ func (ep *Entity) BuildGrpc() {
 	translateInLines := []string{}
 	translateOutLines := []string{}
 	argsInit := []string{}
+	keys := []string{}
 	for i, column := range ep.Columns {
 		if column.PrimaryKey {
 			switch column.DBType {
-			case "int":
+			case "int", "autoincrement":
 				argsInit = append(argsInit, fmt.Sprintf("%s: int(in.%s)", column.ColumnName.Camel, column.ColumnName.Camel))
 			default:
 				argsInit = append(argsInit, fmt.Sprintf("%s: in.%s", column.ColumnName.Camel, column.ColumnName.Camel))
 			}
+			idx := len(keys) + 1
+			keys = append(keys, fmt.Sprintf("\t%s %s = %d;", translateGoToProtoType(column.GoType), column.ColumnName.Camel, idx))
 		}
 		idx := i + 1 // start the count at 1
 		typeValue := "string"
@@ -111,12 +114,17 @@ func (ep *Entity) BuildGrpc() {
 	lines = append(lines, "}")
 	lines = append(lines, "")
 	lines = append(lines, fmt.Sprintf("service %sService {", ep.Name.Camel))
-	lines = append(lines, fmt.Sprintf("\trpc Get%s(IDIn) returns (%sResponse);", ep.Name.Camel, ep.Name.Camel))
+	lines = append(lines, fmt.Sprintf("\trpc Get%s(%sIDIn) returns (%sResponse);", ep.Name.Camel, ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Search%s(%s) returns (%sRepeatResponse);", ep.Name.Camel, ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Post%s(%s) returns (%sResponse);", ep.Name.Camel, ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Put%s(%s) returns (Result);", ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Patch%s(%s) returns (Result);", ep.Name.Camel, ep.Name.Camel))
-	lines = append(lines, fmt.Sprintf("\trpc Delete%s(IDIn) returns (Result);", ep.Name.Camel))
+	lines = append(lines, fmt.Sprintf("\trpc Delete%s(%sIDIn) returns (Result);", ep.Name.Camel, ep.Name.Camel))
+	lines = append(lines, "}")
+	lines = append(lines, "")
+	// add the IDIn lines
+	lines = append(lines, fmt.Sprintf("message %sIDIn {", ep.Camel))
+	lines = append(lines, keys...)
 	lines = append(lines, "}")
 	lines = append(lines, "")
 
@@ -130,7 +138,23 @@ func (ep *Entity) BuildGrpc() {
 	if err != nil {
 		fmt.Printf("%s: unable to write to file with error: %s\n", protoFile, err)
 	}
+	ep.GrpcArgsInit = strings.Join(argsInit, ", ")
 	// save off translateIn/Out
 	ep.GrpcTranslateIn = strings.Join(translateInLines, "\n\t")
 	ep.GrpcTranslateOut = strings.Join(translateOutLines, "\n\t")
+}
+
+func translateGoToProtoType(goType string) string {
+	switch goType {
+	case "float32", "float64":
+		return "double"
+	case "int":
+		return "int64"
+	case "uint32", "uint64":
+		return "fixed"
+	case "[]byte":
+		return "byte"
+	default:
+		return goType
+	}
 }

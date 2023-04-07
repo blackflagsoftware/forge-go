@@ -22,7 +22,7 @@ func InitMongo() *Mongo{{.Camel}} {
 
 func (d *Mongo{{.Camel}}) Read({{.Abbr}} *{{.Camel}}) error {
 	collection := d.DB.Database("{{.Lower}}").Collection("{{.Abbr}}")
-	filter := bson.M{"id": {{.Abbr}}.Id}
+	filter := bson.M{ {{.ManagerPatchInitArgs}} }
 	err := collection.FindOne(context.TODO(), filter).Decode({{.Abbr}})
 	if err != nil {
 		return ae.DBError("{{.Camel}} Get: unable to get record.", err)
@@ -30,7 +30,7 @@ func (d *Mongo{{.Camel}}) Read({{.Abbr}} *{{.Camel}}) error {
 	return nil
 }
 
-func (d *Mongo{{.Camel}}) Select({{.Abbr}} *[]{{.Camel}}) error {
+func (d *Mongo{{.Camel}}) Select({{.Abbr}} *[]{{.Camel}}, {{.LowerCamel}}Param {{.Camel}}Param) error {
 	collection := d.DB.Database("{{.Lower}}").Collection("{{.Abbr}}")
 	filter := bson.D{}
 	cur, err := collection.Find(context.TODO(), filter)
@@ -61,7 +61,7 @@ func (d *Mongo{{.Camel}}) Create({{.Abbr}} *{{.Camel}}) error {
 func (d *Mongo{{.Camel}}) Update({{.Abbr}} {{.Camel}}) error {
 	obj, err := bson.Marshal({{.Abbr}})
 	if err != nil {
-		return ae.GeneralError("{{.Camel}} Put: unable to decode object.", err)
+		return ae.GeneralError("{{.Camel}} Put: unable to decode entity.", err)
 	}
 	var updateDoc bson.D
 	err = bson.Unmarshal(obj, &updateDoc)
@@ -70,7 +70,7 @@ func (d *Mongo{{.Camel}}) Update({{.Abbr}} {{.Camel}}) error {
 	}
 
 	collection := d.DB.Database("{{.Lower}}").Collection("{{.Abbr}}")
-	filter := bson.M{"id": {{.Abbr}}.Id}
+	filter := bson.M{ {{.ManagerPatchInitArgs}} }
 	update := bson.M{"$set": updateDoc}
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
@@ -81,7 +81,7 @@ func (d *Mongo{{.Camel}}) Update({{.Abbr}} {{.Camel}}) error {
 
 func (d *Mongo{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
 	collection := d.DB.Database("{{.Lower}}").Collection("{{.Abbr}}")
-	filter := bson.M{"id": {{.Abbr}}.Id}
+	filter := bson.M{ {{.ManagerPatchInitArgs}} }
 	_, err := collection.DeleteOne(context.TODO(), filter)
 	if err != nil {
 		return ae.GeneralError("{{.Camel}} Put: unable to delete record.", err)

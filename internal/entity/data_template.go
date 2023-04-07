@@ -66,7 +66,11 @@ func (ep *Entity) BuildDataTemplate() {
 			if ep.SQLProvider == con.MYSQL {
 				keys += fmt.Sprintf("%s = ?", c.ColumnName.Lower)
 			} else {
-				keys += fmt.Sprintf("%s = $%d", c.ColumnName.Lower, keyCount)
+				if c.DBType == "uuid" {
+					keys += fmt.Sprintf("text(%s) = $%d", c.ColumnName.Lower, keyCount)
+				} else {
+					keys += fmt.Sprintf("%s = $%d", c.ColumnName.Lower, keyCount)
+				}
 			}
 			patchKeys += fmt.Sprintf("%s = :%s", c.ColumnName.Lower, c.ColumnName.Lower)
 			keyCount++

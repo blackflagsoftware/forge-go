@@ -19,7 +19,7 @@ func MySqlInit() *sqlx.DB {
 		var err error
 		MysqlDB, err = sqlx.Connect("mysql", mySqlConnection)
 		if err != nil {
-			m.Default.Panicln("Could not connect to the DB host: %s*****; %s", config.DBHost[:6] err)
+			m.Default.Panicf("Could not connect to the DB host: %s*****; %s", string(config.DBHost[:6]), err)
 		}
 	}
 	return MysqlDB

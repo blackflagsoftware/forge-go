@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	m "github.com/blackflagsoftware/forge-go/base/internal/middleware"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -47,20 +48,20 @@ type (
 const (
 	POSTGRES EngineType = "postgres"
 	MYSQL    EngineType = "mysql"
-	SQLITE   EngineType = "sqlite3"
+	SQLITE   EngineType = "sqlite"
 )
 
 func StartMigration(c Connection) error {
-	fmt.Println("Running: StartMigration")
+	m.Default.Infoln("Running: StartMigration")
 	ea := DetermineEnginerAdapter(c.Engine)
 	if err := InitializeDB(ea, c); err != nil {
-		fmt.Println("StartMigration: InitializeDB error", err)
+		m.Default.Infoln("StartMigration: InitializeDB error", err)
 		return err
 	}
 	// brings back the db connector that will be used in the rest of the process
 	db, err := InitializeMigrationTable(ea, c)
 	if err != nil {
-		fmt.Println("StartMigration: InitializeMigrationTable error:", err)
+		m.Default.Infoln("StartMigration: InitializeMigrationTable error:", err)
 		return err
 	}
 	defer db.Close()
@@ -70,12 +71,12 @@ func StartMigration(c Connection) error {
 		if ea.LockTable(db) {
 			break
 		}
-		fmt.Println("lock is on: waiting...")
+		m.Default.Infoln("lock is on: waiting...")
 		time.Sleep(500 * time.Millisecond)
 	}
 	migrationsMap, err := BuildMigrationMap(db)
 	if err != nil {
-		fmt.Println("StartMigration: BuildMigrationMap error:", err)
+		m.Default.Infoln("StartMigration: BuildMigrationMap error:", err)
 		return err
 	}
 	return ProcessFiles(db, migrationsMap, c.MigrationPath)
@@ -98,7 +99,7 @@ func InitializeDB(ea EngineAdapter, c Connection) error {
 	// user admin* if need, but make sure the database is made
 	// use interface to make sure to get the correct sql
 	if !c.SkipInitialize {
-		fmt.Println("Running: InitializDB")
+		m.Default.Infoln("Running: InitializDB")
 		db, err := ea.ConnectDB(c, true)
 		if err != nil {
 			return err
@@ -113,7 +114,7 @@ func InitializeDB(ea EngineAdapter, c Connection) error {
 
 func InitializeMigrationTable(ea EngineAdapter, c Connection) (*sqlx.DB, error) {
 	// make sure the table is created and the lock control record is created
-	fmt.Println("Running: InitializMigrationTable")
+	m.Default.Infoln("Running: InitializMigrationTable")
 	db, err := ea.ConnectDB(c, false)
 	if err != nil {
 		return db, err
@@ -127,7 +128,7 @@ func InitializeMigrationTable(ea EngineAdapter, c Connection) (*sqlx.DB, error) 
 func BuildMigrationMap(db *sqlx.DB) (migrationsMap map[string]struct{}, err error) {
 	// build map of all known files ran via the DB
 	migrationsMap = make(map[string]struct{})
-	fmt.Println("Running: BuildMigrtionMap")
+	m.Default.Infoln("Running: BuildMigrtionMap")
 	migrations := []Migration{}
 	// get the known migrations per service
 	sqlMigration := "SELECT id, file_name FROM migration ORDER BY id"
@@ -145,7 +146,7 @@ func BuildMigrationMap(db *sqlx.DB) (migrationsMap map[string]struct{}, err erro
 
 func ProcessFiles(db *sqlx.DB, migrationsMap map[string]struct{}, migrationPath string) error {
 	// read the directory
-	fmt.Println("Running: ProcessFiles")
+	m.Default.Infoln("Running: ProcessFiles")
 	files, err := os.ReadDir(migrationPath)
 	if err != nil {
 		return fmt.Errorf("ProcessingFiles: unable to read directory; %s", err)
@@ -205,7 +206,7 @@ func ProcessMigration(db *sqlx.DB, migrationPath, fileName string) error {
 			return fmt.Errorf("ProcessMigration: unable to run file binary: %s; %s\n\tOutput: %s", migrationPath, errCmd, stdOut)
 		}
 	default:
-		fmt.Println("ProcessMigration: not the correct extention:", ext)
+		m.Default.Infoln("ProcessMigration: not the correct extention:", ext)
 		return nil
 	}
 	migration := Migration{FileName: fileName}
