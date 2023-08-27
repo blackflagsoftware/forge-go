@@ -54,7 +54,7 @@ func (ep *Entity) BuildAPIHooks() {
 			// handling sql add migration
 			nonSqlite := con.MIGRATION_NON_SQLITE
 			if ep.SQLProvider == "Sqlite" {
-				nonSqlite = "\n\t\t\tc.Host = config.SqlitePath"
+				nonSqlite = "\n\t\t\tHost: config.SqlitePath,"
 			}
 			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite, ep.SQLProviderLower)
 			migRestMain := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration once text - do not remove ---/%s/g' %s`, migCall, apiFile)
@@ -135,7 +135,7 @@ func (ep *Entity) BuildAPIHooks() {
 			// handling sql add migration
 			nonSqlite := con.MIGRATION_NON_SQLITE
 			if ep.SQLProvider == "Sqlite" {
-				nonSqlite = "\n\t\t\tc.Host = config.SqlitePath"
+				nonSqlite = "\n\t\t\tHost: config.SqlitePath,"
 			}
 			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite, ep.SQLProviderLower)
 			migGrpcMain := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration once text - do not remove ---/%s/g' %s`, migCall, grpcFile)
@@ -200,6 +200,26 @@ func (ep *Entity) BuildAPIHooks() {
 			if errConfigCmd != nil {
 				fmt.Printf("%s: error in replace for config text [%s]\n", configFile, errConfigCmd)
 			}
+		}
+	}
+	// audit
+	auditFile := fmt.Sprintf("%s/internal/audit/audit.go", ep.ProjectFile.FullPath)
+	if _, err := os.Stat(auditFile); os.IsNotExist(err) {
+		fmt.Printf("%s is missing unable to write in hooks\n", auditFile)
+	} else {
+		onceReplace := fmt.Sprintf(`stor "%s\/internal\/storage"`, ep.ProjectPathEncoded)
+		auditOnce := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace storage once text - do not remove ---/%s/g' %s`, onceReplace, auditFile)
+		execServerOnce := exec.Command("bash", "-c", auditOnce)
+		errServerOnceCmd := execServerOnce.Run()
+		if errServerOnceCmd != nil {
+			fmt.Printf("%s: error in replace for audit once [%s]\n", auditFile, errServerOnceCmd)
+		}
+		onceReference := fmt.Sprintf("DB: stor.%sInit(),", ep.SQLProvider)
+		auditOnceReference := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace storage reference once text - do not remove ---/%s/g' %s`, onceReference, auditFile)
+		execServerOnce = exec.Command("bash", "-c", auditOnceReference)
+		errServerOnceCmd = execServerOnce.Run()
+		if errServerOnceCmd != nil {
+			fmt.Printf("%s: error in replace for audit reference once [%s]\n", auditFile, errServerOnceCmd)
 		}
 	}
 }

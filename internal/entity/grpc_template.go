@@ -22,23 +22,27 @@ func (ep *Entity) BuildGrpc() {
 	for i, column := range ep.Columns {
 		if column.PrimaryKey {
 			switch column.DBType {
-			case "int", "autoincrement":
+			case "int", "autoincrement", "integer":
 				argsInit = append(argsInit, fmt.Sprintf("%s: int(in.%s)", column.ColumnName.Camel, column.ColumnName.Camel))
 			default:
 				argsInit = append(argsInit, fmt.Sprintf("%s: in.%s", column.ColumnName.Camel, column.ColumnName.Camel))
 			}
 			idx := len(keys) + 1
-			keys = append(keys, fmt.Sprintf("\t%s %s = %d;", translateGoToProtoType(column.GoType), column.ColumnName.Camel, idx))
+			keys = append(keys, fmt.Sprintf("\t%s %s = %d;", translateGoToProtoType(column.GoTypeNonSql), column.ColumnName.Camel, idx))
 		}
 		idx := i + 1 // start the count at 1
 		typeValue := "string"
 		var inLine, outLine string
-		switch column.GoType {
+		columnType := column.GoType
+		if column.PrimaryKey {
+			columnType = column.GoTypeNonSql
+		}
+		switch columnType {
 		case "float64", "null.Float":
 			typeValue = "double"
 			outLine = fmt.Sprintf("\tproto%s.%s = float64(%s.%s)", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 			inLine = fmt.Sprintf("\t%s.%s = in.%s", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
-			if column.GoType == "null.Float" {
+			if columnType == "null.Float" {
 				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.Float64", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			}
@@ -54,7 +58,7 @@ func (ep *Entity) BuildGrpc() {
 			typeValue = "int64"
 			outLine = fmt.Sprintf("\tproto%s.%s = int64(%s.%s)", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 			inLine = fmt.Sprintf("\t%s.%s = int(in.%s)", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
-			if column.GoType == "null.Int" {
+			if columnType == "null.Int" {
 				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.Int64", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			}
@@ -70,7 +74,7 @@ func (ep *Entity) BuildGrpc() {
 			typeValue = "bool"
 			outLine = fmt.Sprintf("\tproto%s.%s = %s.%s", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 			inLine = fmt.Sprintf("\t%s.%s = in.%s", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
-			if column.GoType == "null.Bool" {
+			if columnType == "null.Bool" {
 				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.Bool", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			}
@@ -86,14 +90,14 @@ func (ep *Entity) BuildGrpc() {
 			typeValue = "string"
 			outLine = fmt.Sprintf("\tproto%s.%s = %s.%s", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 			inLine = fmt.Sprintf("\t%s.%s = in.%s", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
-			if column.GoType == "null.String" {
+			if columnType == "null.String" {
 				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.String", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			}
-			if column.GoType == "null.Time" {
+			if columnType == "null.Time" {
 				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.Time.Format(time.RFC3339)", ep.Camel, column.ColumnName.Camel, ep.Abbr, column.ColumnName.Camel)
 			}
-			if column.GoType == "null.Time" {
+			if columnType == "null.Time" {
 				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", ep.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			}
 		}
@@ -117,7 +121,6 @@ func (ep *Entity) BuildGrpc() {
 	lines = append(lines, fmt.Sprintf("\trpc Get%s(%sIDIn) returns (%sResponse);", ep.Name.Camel, ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Search%s(%s) returns (%sRepeatResponse);", ep.Name.Camel, ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Post%s(%s) returns (%sResponse);", ep.Name.Camel, ep.Name.Camel, ep.Name.Camel))
-	lines = append(lines, fmt.Sprintf("\trpc Put%s(%s) returns (Result);", ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Patch%s(%s) returns (Result);", ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, fmt.Sprintf("\trpc Delete%s(%sIDIn) returns (Result);", ep.Name.Camel, ep.Name.Camel))
 	lines = append(lines, "}")

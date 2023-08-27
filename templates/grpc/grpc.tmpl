@@ -42,7 +42,7 @@ func (a *{{.Camel}}Grpc) Search{{.Camel}}(ctx context.Context, in *p.{{.Camel}})
 	result := &p.Result{Success: false}
 	response := &p.{{.Camel}}RepeatResponse{Result: result}
 	{{.Abbr}}s := &[]{{.Camel}}{}
-	if err := a.manager{{.Camel}}.Search({{.Abbr}}s, {{.LowerCamel}}Param); err != nil {
+	if _, err := a.manager{{.Camel}}.Search({{.Abbr}}s, {{.LowerCamel}}Param); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}

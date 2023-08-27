@@ -31,19 +31,29 @@ func (d *SQL{{.Camel}}) Read({{.Abbr}} *{{.Camel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Select({{.Abbr}} *[]{{.Camel}}, {{.LowerCamel}}Param {{.Camel}}Param) error {
-	args := []interface{}{}
-	searchStr := util.BuildSearchString({{.LowerCamel}}Param.Search, false, &args)
+func (d *SQL{{.Camel}}) ReadAll({{.Abbr}} *[]{{.Camel}}, param {{.Camel}}Param) (int, error) {
+	searchStmt, args := util.BuildSearchString(param.Search)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
 			{{.SqlGetColumns}}
 		FROM {{.DataTable}}
 		%s
-		ORDER BY %s %s`, searchStr, {{.LowerCamel}}Param.Sort, {{.LowerCamel}}Param.Limit)
+		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+	sqlSearch = d.DB.Rebind(sqlSearch)
 	if errDB := d.DB.Select({{.Abbr}}, sqlSearch, args...); errDB != nil {
-		return ae.DBError("{{.Camel}} Search: unable to select records.", errDB)
+		return 0, ae.DBError("{{.Camel}} Search: unable to select records.", errDB)
 	}
-	return nil
+	sqlCount := fmt.Sprintf(`
+		SELECT
+			COUNT(*)
+		FROM {{.DataTable}}
+		%s`, searchStmt)
+	var count int
+	sqlCount = d.DB.Rebind(sqlCount)
+	if errDB := d.DB.Get(&count, sqlCount, args...); errDB != nil {
+		return 0, ae.DBError("{{.DataTable}} Search: unable to select count.", errDB)
+	}
+	return count, nil
 }
 
 func (d *SQL{{.Camel}}) Create({{.Abbr}} *{{.Camel}}) error {

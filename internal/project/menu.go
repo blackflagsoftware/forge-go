@@ -124,6 +124,9 @@ func (p *Project) SqlMenu() {
 		}
 		// remove entities already processed
 		p.Entities = []e.Entity{}
+		fmt.Println("")
+		fmt.Println("Entities have been processed, press 'enter' to continue")
+		util.ParseInput()
 	}
 }
 

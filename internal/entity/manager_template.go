@@ -22,7 +22,10 @@ func (ep *Entity) BuildManagerTemplate() {
 	if ep.HasTimeColumn() {
 		importLines = append(importLines, "\"time\"\n")
 	}
-	importLines = append(importLines, fmt.Sprintf("ae \"%s/internal/api_error\"", ep.ProjectPath))
+	if ep.ManagerGetRows != "" {
+		importLines = append(importLines, fmt.Sprintf("ae \"%s/internal/api_error\"", ep.ProjectPath))
+	}
+	importLines = append(importLines, fmt.Sprintf("a \"%s/internal/audit\"", ep.ProjectFile.ProjectPath))
 	if ep.HasPrimaryUUIDColumn() {
 		importLines = append(importLines, fmt.Sprintf("\"%s/internal/util\"", ep.ProjectPath))
 	}
@@ -36,6 +39,9 @@ func (ep *Entity) BuildManagerTemplate() {
 	importLines = append(importLines, "\"testing\"")
 	if ep.HasTimeColumn() {
 		importLines = append(importLines, "\"time\"")
+	}
+	if ep.HasJsonColumn() {
+		importLines = append(importLines, "\"encoding/json\"")
 	}
 	importLines = append(importLines, "\n\"github.com/golang/mock/gomock\"")
 	importLines = append(importLines, "\"github.com/stretchr/testify/assert\"")
@@ -104,10 +110,12 @@ func (ep *Entity) buildPost() {
 func (ep *Entity) buildPatch() {
 	rows := []string{}
 	patchInit := []string{}
+	auditKey := []string{}
 	setUpdatedAt := false
 	for _, c := range ep.Columns {
 		if c.PrimaryKey {
 			patchInit = append(patchInit, fmt.Sprintf("%s: %sIn.%s", c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
+			auditKey = append(auditKey, fmt.Sprintf("\"%s\", %s.%s", c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
 			continue
 		}
 		switch c.GoType {
@@ -119,15 +127,15 @@ func (ep *Entity) buildPatch() {
 			if c.Length > 0 {
 				patchLenCheck = fmt.Sprintf(PATCH_VARCHAR_LEN, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, c.Length, c.ColumnName.Camel, c.Length)
 			}
-			rows = append(rows, fmt.Sprintf(PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, patchLenCheck, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
+			rows = append(rows, fmt.Sprintf(PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, patchLenCheck, c.ColumnName.Lower, ep.Abbr, c.ColumnName.Camel, typeConversion(c.GoType), ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
 		case "null.Time":
 			if !(c.ColumnName.Lower == "created_at" || c.ColumnName.Lower == "updated_at") {
 				rows = append(rows, fmt.Sprintf(PATCH_TIME_NULL_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
 			}
 		case "*json.RawMessage":
-			rows = append(rows, fmt.Sprintf(PATCH_JSON_NULL_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, c.ColumnName.LowerCamel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
+			rows = append(rows, fmt.Sprintf(PATCH_JSON_NULL_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, c.ColumnName.LowerCamel, c.ColumnName.Lower, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
 		default:
-			rows = append(rows, fmt.Sprintf(PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, "", ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
+			rows = append(rows, fmt.Sprintf(PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel, "", c.ColumnName.Lower, ep.Abbr, c.ColumnName.Camel, typeConversion(c.GoType), ep.Abbr, c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
 		}
 		if c.ColumnName.Lower == "updated_at" {
 			setUpdatedAt = true
@@ -138,6 +146,7 @@ func (ep *Entity) buildPatch() {
 	}
 	ep.ManagerPatchRows = strings.Join(rows, "\n\t")
 	ep.ManagerPatchInitArgs = strings.Join(patchInit, ", ")
+	ep.ManagerAuditKey = strings.Join(auditKey, ", ")
 }
 
 func (ep *Entity) buildTest() {
@@ -172,25 +181,25 @@ func (ep *Entity) buildTest() {
 			if c.DBType == "uuid" {
 				if !c.PrimaryKey {
 					AppendColumnTest(c.ColumnName.Camel, c.GoType, c.DBType, false)
-					postTests = append(postTests, PostPutTest{Name: fmt.Sprintf("invalid %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel})
+					postTests = append(postTests, PostPutTest{Name: fmt.Sprintf("failed - %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel})
 					columnTestStrAdded = true
 				}
 			} else {
 				if !c.Null {
 					AppendColumnTest(c.ColumnName.Camel, c.GoType, c.DBType, false)
-					postTests = append(postTests, PostPutTest{Name: fmt.Sprintf("invalid %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel})
+					postTests = append(postTests, PostPutTest{Name: fmt.Sprintf("failed - %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel})
 					columnTestStrAdded = true
 				}
 				if c.Length > 0 {
 					AppendColumnTest(c.ColumnName.Camel, c.GoType, c.DBType, false)
-					postTests = append(postTests, PostPutTest{Name: fmt.Sprintf("length %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel, ColumnLength: int(c.Length)})
+					postTests = append(postTests, PostPutTest{Name: fmt.Sprintf("failed - length %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel, ColumnLength: int(c.Length)})
 					columnTestStrAdded = true
 				}
 			}
 		} else {
 			if !c.Null && !c.PrimaryKey {
 				AppendColumnTest(c.ColumnName.Camel, c.GoType, c.DBType, false)
-				postTests = append(postTests, PostPutTest{Name: fmt.Sprintf("invalid %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel})
+				postTests = append(postTests, PostPutTest{Name: fmt.Sprintf("failed - %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel})
 				columnTestStrAdded = true
 			}
 		}
@@ -297,6 +306,21 @@ func TranslateType(columnName, columnType, dbType string, length int, valid bool
 	return ""
 }
 
+func typeConversion(goType string) string {
+	switch goType {
+	case "null.String":
+		return ".String"
+	case "null.Int":
+		return ".Int64"
+	case "null.Float":
+		return ".Float64"
+	case "null.Bool":
+		return ".Bool"
+	default:
+		return ""
+	}
+}
+
 const (
 	GET_DELETE_INT = `if %s.%s < 1 {
 		return ae.MissingParamError("%s")
@@ -325,23 +349,22 @@ const (
 	}`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 	PATCH_DEFAULT_ASSIGN = `// %s
 	if %sIn.%s.Valid {%s
+		existingValues["%s"] = %s.%s%s
 		%s.%s = %sIn.%s
-	}`  // ColCamel, Abbr, ColCamel, StringLenCheck, Abbr, ColCamel, Abbr. ColCamel
+	}`  // ColCamel, Abbr, ColCamel, StringLenCheck, ColLower, Abbr, ColCamel, typeConversion(), Abbr, ColCamel, Abbr. ColCamel
 	PATCH_JSON_NULL_ASSIGN = `// %s
 	if %sIn.%s != nil {
 		if !util.ValidJson(*%sIn.%s) {
 			return ae.ParseError("Invalid JSON syntax for %s")
 		}
+		existingValues["%s"] = %s.%s
 		%s.%s = %sIn.%s
-	}`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColLowerCamel, Abbr, ColCamel, Abbr, ColCamel
+	}`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColLowerCamel, ColLower, Abbr, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 	PATCH_TIME_NULL_ASSIGN = `// %s
 	if %sIn.%s.Valid {
-		_, errParse := time.Parse(time.RFC3339, %s.%s.Time.String())
-		if errParse != nil {
-			return ae.ParseError("%s: unable to parse time")
-		}
+		existingValues["%s"] = %s.%s.Time.Format(time.RFC3339)
 		%s.%s = %sIn.%s
-	}`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColCamel, Abbr, ColCamel, Abbr, ColCamel
+	}`  // ColCamel, Abbr, ColCamel, ColLower, Abbr, Camel, Abbr, ColCamel, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 	PATCH_VARCHAR_LEN = `
 		if %sIn.%s.Valid && len(%sIn.%s.ValueOrZero()) > %d {
 			return ae.StringLengthError("%s", %d)

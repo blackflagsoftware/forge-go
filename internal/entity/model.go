@@ -71,6 +71,7 @@ type (
 		ManagerPostTestRow   string
 		ManagerPatchTestInit string
 		ManagerDeleteTestRow string
+		ManagerAuditKey      string
 	}
 
 	PostPutTest struct {

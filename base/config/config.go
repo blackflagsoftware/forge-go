@@ -19,6 +19,9 @@ var (
 	UseMigration      = GetEnvOrDefaultBool("FORGE_GO_BASE_MIGRATION_ENABLED", true)
 	MigrationPath     = GetEnvOrDefault("FORGE_GO_BASE_MIGRATION_PATH", "")
 	MigrationSkipInit = GetEnvOrDefaultBool("FORGE_GO_BASE_MIGRATION_SKIP_INIT", false)
+	EnableAuditing    = GetEnvOrDefaultBool("FORGE_GO_BASE_ENABLE_AUDITING", false)
+	AuditStorage      = GetEnvOrDefault("FORGE_GO_BASE_AUDIT_STORAGE", "file") // file or sql
+	AuditFilePath     = GetEnvOrDefault("FORGE_GO_BASE_AUDIT_FILE_PATH", "./audit")
 	LogOutput         = os.Stdout
 	ExecDir           = ""
 	// --- replace config text - do not remove ---

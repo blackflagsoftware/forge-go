@@ -1,7 +1,8 @@
 package {{.AllLower}}
 
 import (
-	"net/http"{{.RestStrConv}}
+	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 
@@ -12,7 +13,7 @@ import (
 type (
 	Manager{{.Camel}}Adapter interface {
 		Get(*{{.Camel}}) error
-		Search(*[]{{.Camel}}, {{.Camel}}Param) error
+		Search(*[]{{.Camel}}, {{.Camel}}Param) (int, error)
 		Post(*{{.Camel}}) error
 		Patch({{.Camel}}) error
 		Delete(*{{.Camel}}) error
@@ -48,46 +49,70 @@ func (h *Rest{{.Camel}}) Get(c echo.Context) error {
 	if err := h.manager{{.Camel}}.Get({{.LowerCamel}}); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
-		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
-	return c.JSON(http.StatusOK, util.NewOutput(*{{.LowerCamel}}, nil, nil))
+	return c.JSON(http.StatusOK, util.NewOutput(c, *{{.LowerCamel}}, nil, nil))
 }
 
 func (h *Rest{{.Camel}}) Search(c echo.Context) error {
-	{{.LowerCamel}}Param := {{.Camel}}Param{}
+	param := {{.Camel}}Param{}
+	numberStr := c.QueryParam("page[number]")
+	if numberStr != "" {
+		var errNumber error
+		param.Number, errNumber = strconv.Atoi(numberStr)
+		if errNumber != nil {
+			parse := ae.ParamError("page[number]", nil)
+			return c.JSON(parse.StatusCode, util.NewOutput(c, nil, &parse, nil))
+		}
+	}
+	sizeStr := c.QueryParam("page[size]")
+	if sizeStr != "" {
+		var errSize error
+		param.Size, errSize = strconv.Atoi(sizeStr)
+		if errSize != nil {
+			parse := ae.ParamError("page[size]", nil)
+			return c.JSON(parse.StatusCode, util.NewOutput(c, nil, &parse, nil))
+		}
+	}
+	param.Sort = c.QueryParam("sort")
+	if err := c.Bind(&param); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
 	{{.LowerCamel}}s := &[]{{.Camel}}{}
-	if err := h.manager{{.Camel}}.Search({{.LowerCamel}}s, {{.LowerCamel}}Param); err != nil {
+	totalCount, err := h.manager{{.Camel}}.Search({{.LowerCamel}}s, param)
+	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
-		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
-	return c.JSON(http.StatusOK, util.NewOutput(*{{.LowerCamel}}s, nil, nil))
+	return c.JSON(http.StatusOK, util.NewOutput(c, *{{.LowerCamel}}s, nil, &totalCount))
 }
 
 func (h *Rest{{.Camel}}) Post(c echo.Context) error {
 	{{.Abbr}} := &{{.Camel}}{}
 	if err := c.Bind({{.Abbr}}); err != nil {
 		bindErr := ae.BindError(err)
-		return c.JSON(bindErr.StatusCode, util.NewOutput(bindErr.BodyError(), &bindErr, nil))
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
 	if err := h.manager{{.Camel}}.Post({{.Abbr}}); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
-		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
-	return c.JSON(http.StatusOK, util.NewOutput(*{{.Abbr}}, nil, nil))
+	return c.JSON(http.StatusOK, util.NewOutput(c, *{{.Abbr}}, nil, nil))
 }
 
 func (h *Rest{{.Camel}}) Patch(c echo.Context) error {
 	{{.Abbr}} := {{.Camel}}{}
-	if err := c.Bind({{.Abbr}}); err != nil {
+	if err := c.Bind(&{{.Abbr}}); err != nil {
 		bindErr := ae.BindError(err)
-		return c.JSON(bindErr.StatusCode, util.NewOutput(bindErr.BodyError(), &bindErr, nil))
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
 	if err := h.manager{{.Camel}}.Patch({{.Abbr}}); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
-		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
 	return c.NoContent(http.StatusOK)
 }
@@ -98,7 +123,7 @@ func (h *Rest{{.Camel}}) Delete(c echo.Context) error {
 	if err := h.manager{{.Camel}}.Delete({{.LowerCamel}}); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
-		return c.JSON(be.StatusCode, util.NewOutput(nil, &apiError, nil))
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
 	return c.NoContent(http.StatusOK)
 }

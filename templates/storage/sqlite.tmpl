@@ -18,7 +18,7 @@ func SqliteInit() *sqlx.DB {
 		sqliteConnection = GetSqliteConnection()
 		SqliteDB, err = sqlx.Open("sqlite3", sqliteConnection)
 		if err != nil {
-			m.Default.Panicln("Could not connect to the DB host: %s*****; %s", sqliteConnection[6:], err)
+			m.Default.Panicf("Could not connect to the DB host: %s*****; %s", sqliteConnection[6:], err)
 		}
 		SqliteDB.SetMaxOpenConns(1)
 	}
@@ -26,5 +26,8 @@ func SqliteInit() *sqlx.DB {
 }
 
 func GetSqliteConnection() string {
+	if _, err := os.Stat; os.IsNotExist(err) {
+		
+	}
 	return fmt.Sprintf("%s?cache=shared&mode=wrc", config.SqlitePath)
 }

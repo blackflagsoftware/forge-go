@@ -119,9 +119,7 @@ func InitializeMigrationTable(ea EngineAdapter, c Connection) (*sqlx.DB, error) 
 	if err != nil {
 		return db, err
 	}
-	if !c.SkipInitialize {
-		err = ea.CheckTable(db)
-	}
+	err = ea.CheckTable(db)
 	return db, err
 }
 

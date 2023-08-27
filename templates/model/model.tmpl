@@ -15,6 +15,8 @@ type (
     }
 )
 
+const {{.Camel}}Const = "{{.Lower}}"
+
 func InitStorage() Data{{.Camel}}Adapter {
 {{.ModelInitStorage}}
     return nil

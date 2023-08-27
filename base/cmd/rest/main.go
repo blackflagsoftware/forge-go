@@ -49,7 +49,8 @@ func main() {
 
 	// set all non-endpoints here
 	e.GET("/", Index)
-	e.GET("/status", ServerStatus)
+	e.HEAD("/status", ServerStatus) // for traditional server check
+	e.GET("/liveness", Liveness)    // for k8s liveness
 
 	InitializeRoutes(e)
 
@@ -70,6 +71,12 @@ func Index(c echo.Context) error {
 }
 
 func ServerStatus(c echo.Context) error {
+	c.Response().Header().Add("FORGE_GO_BASE", config.AppVersion)
+	c.Response().WriteHeader(http.StatusOK)
+	return nil
+}
+
+func Liveness(c echo.Context) error {
 	return c.String(http.StatusOK, "live")
 }
 

@@ -16,9 +16,13 @@ func (ep *Entity) BuildModelTemplate() {
 	cArray := []string{}
 	for _, c := range ep.Columns {
 		tagFormat := n.BuildAltName(c.ColumnName.RawName, ep.TagFormat)
-		cArray = append(cArray, fmt.Sprintf(COLUMN_WO_GORM, c.ColumnName.Camel, c.GoType, c.ColumnName.Lower, tagFormat))
+		colType := c.GoType
+		if c.PrimaryKey {
+			colType = c.GoTypeNonSql
+		}
+		cArray = append(cArray, fmt.Sprintf(COLUMN_WO_GORM, c.ColumnName.Camel, colType, c.ColumnName.Lower, tagFormat))
 		if ep.ProjectFile.UseORM {
-			cArray = append(cArray, fmt.Sprintf(COLUMN_W_GORM, c.ColumnName.Camel, c.GoType, c.ColumnName.Lower, tagFormat, c.ColumnName.Lower))
+			cArray = append(cArray, fmt.Sprintf(COLUMN_W_GORM, c.ColumnName.Camel, colType, c.ColumnName.Lower, tagFormat, c.ColumnName.Lower))
 		}
 	}
 	ep.ModelRows = strings.Join(cArray, "\n")

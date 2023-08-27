@@ -15,7 +15,13 @@ type (
 		Number int
 		Size   int
 		Sort   string
-		Search map[string]string
+		Search []ParamSearch
+	}
+
+	ParamSearch struct {
+		Column  string      `json:"column"`
+		Compare string      `json:"compare"`
+		Value   interface{} `json:"value"`
 	}
 )
 
@@ -83,24 +89,4 @@ func (p *Param) CalculateParam(primarySort string, availableSort map[string]stri
 	}
 	p.Sort = strings.Join(sorted, ", ")
 	return
-}
-
-func BuildSearchString(searchMap map[string]string, preWhere bool, args *[]interface{}) string {
-	searchSql := ""
-	searchAnd := []string{}
-	usedWhere := false
-	if len(searchMap) > 0 {
-		for name, str := range searchMap {
-			if !preWhere && !usedWhere {
-				searchAnd = append(searchAnd, fmt.Sprintf("WHERE %s LIKE ?", name))
-				usedWhere = !usedWhere
-			} else {
-				searchAnd = append(searchAnd, fmt.Sprintf("\tAND %s LIKE ?", name))
-			}
-			s := "%" + str + "%"
-			*args = append(*args, s)
-		}
-		searchSql = strings.Join(searchAnd, "\n")
-	}
-	return searchSql
 }
