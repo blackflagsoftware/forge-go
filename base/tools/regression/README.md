@@ -99,35 +99,35 @@ example:
 		}
 	},
 	{
-		"name": "my pathc call - PATCH",
+		"name": "my patch call - PATCH",
 		"path": "/v1/endpoint/dyn:post_uid"
 		...
 	}
 ]
-```
-By default this works for `strings`.  In order for it to work other types, i.e.: int, float, bool; tack on an extra `:int|float|boolean`.  This is mostly used for the request body, so that the json works in the test file and is sent with the correct type as the request payload.
-
-example:
-```
+or
 [
 	{
 		"name": "my creation call - POST",
 		...
 		"expected_response_body": {
-			"id": "dyn:post_id:int",
+			"id": "dyn:post_id",
 			...
 		}
 	},
 	{
-		"name": "my pathc call - PATCH",
+		"name": "my patch call - PATCH",
+		"path": "/v1/endpoint"
 		...
 		"request_body": {
-			"id": "dyn:post_id:int",
-			...
+			"data": {
+				"id": "dyn:post_id"
+			}
 		}
 	}
 ]
 ```
+The logic is designed to deal with strings until if finds that the string can convert to a boolean or float, once that happens it marks the dynamic variable to `non-string` and when it is used in json payload, the double quotes are removed, to make the type formatting work within json.
+
 There are other `DynamicValues` provided for you if you need current dates that are consistent each time you run the tests, use these like a custom DynamicValue: e.g.: `dyn:DynDateNow`
 ```
 DynDateMinusSeven

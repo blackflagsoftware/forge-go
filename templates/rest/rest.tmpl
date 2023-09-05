@@ -37,7 +37,7 @@ func NewRest{{.Camel}}(m{{.Abbr}} Manager{{.Camel}}Adapter) *Rest{{.Camel}} {
 
 func (h *Rest{{.Camel}}) Load{{.Camel}}Routes(eg *echo.Group) {
 	eg.GET("/{{.AllLower}}/{{.RestGetDeleteUrl}}", h.Get)
-	eg.GET("/{{.AllLower}}", h.Search)
+	eg.POST("/{{.AllLower}}/search", h.Search)
 	eg.POST("/{{.AllLower}}", h.Post)
 	eg.PATCH("/{{.AllLower}}", h.Patch)
 	eg.DELETE("/{{.AllLower}}/{{.RestGetDeleteUrl}}", h.Delete)
@@ -90,26 +90,28 @@ func (h *Rest{{.Camel}}) Search(c echo.Context) error {
 }
 
 func (h *Rest{{.Camel}}) Post(c echo.Context) error {
-	{{.Abbr}} := &{{.Camel}}{}
-	if err := c.Bind({{.Abbr}}); err != nil {
+	{{.Abbr}} := {{.Camel}}{}
+	{{.Abbr}}Data := {{.Camel}}Data{Data: {{.Abbr}} }
+	if err := c.Bind(&{{.Abbr}}Data); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.manager{{.Camel}}.Post({{.Abbr}}); err != nil {
+	if err := h.manager{{.Camel}}.Post(&{{.Abbr}}Data.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
-	return c.JSON(http.StatusOK, util.NewOutput(c, *{{.Abbr}}, nil, nil))
+	return c.JSON(http.StatusOK, util.NewOutput(c, {{.Abbr}}Data.Data, nil, nil))
 }
 
 func (h *Rest{{.Camel}}) Patch(c echo.Context) error {
 	{{.Abbr}} := {{.Camel}}{}
-	if err := c.Bind(&{{.Abbr}}); err != nil {
+	{{.Abbr}}Data := {{.Camel}}Data{Data: {{.Abbr}} }
+	if err := c.Bind(&{{.Abbr}}Data); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.manager{{.Camel}}.Patch({{.Abbr}}); err != nil {
+	if err := h.manager{{.Camel}}.Patch({{.Abbr}}Data.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))

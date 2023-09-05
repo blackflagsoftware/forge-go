@@ -15,7 +15,7 @@ type (
 		Number int
 		Size   int
 		Sort   string
-		Search []ParamSearch
+		Search []ParamSearch `json:"search"`
 	}
 
 	ParamSearch struct {

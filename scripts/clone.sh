@@ -50,6 +50,7 @@ sed -i '' "s/FORGE_GO_BASE/$upper_name_env/g" ./config/config.go
 
 # replace rest/main.go
 sed -i '' "s/FORGE_GO_BASE/$upper_name/g" ./cmd/rest/main.go
+sed -i '' "s/FORGE_GO/$upper_name/g" ./tools/regression/main.go
 
 # mac
 find . -type f -print0 -exec sed -i '' "s/github\.com\/blackflagsoftware\/forge-go-base/$encoded/g" {} +

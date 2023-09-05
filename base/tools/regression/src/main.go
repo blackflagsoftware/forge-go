@@ -59,6 +59,7 @@ func RunTests(tests []mod.Test, args mod.Args) {
 		if !tests[i].Active {
 			tests[i].Status = "SKIPPED"
 			tests[i].Messages = append(tests[i].Messages, "test is not active, skipping")
+			tests[i].PrintResults(fileName)
 			continue
 		}
 		// if "run_environments" is empty, set at least one to "dev"
@@ -76,6 +77,7 @@ func RunTests(tests []mod.Test, args mod.Args) {
 		if !found {
 			tests[i].Status = "SKIPPED"
 			tests[i].Messages = append(tests[i].Messages, fmt.Sprintf("test's run_enviroment does not match current environment: %s, skipping", args.Environment))
+			tests[i].PrintResults(fileName)
 			continue
 		}
 		switch strings.ToLower(tests[i].TestType) {

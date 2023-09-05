@@ -57,7 +57,7 @@ func (a *{{.Camel}}Grpc) Search{{.Camel}}(ctx context.Context, in *p.{{.Camel}})
 	return response, nil
 }
 
-func (a *{{.Camel}}Grpc) Post{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) (*p.{{.Camel}}Response, error) {
+func (a *{{.Camel}}Grpc) Create{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) (*p.{{.Camel}}Response, error) {
 	result := &p.Result{Success: false}
 	response := &p.{{.Camel}}Response{Result: result}
 	{{.Abbr}}, err := translateIn(in)
@@ -77,7 +77,7 @@ func (a *{{.Camel}}Grpc) Post{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) (
 	return response, nil
 }
 
-func (a *{{.Camel}}Grpc) Patch{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) (*p.Result, error) {
+func (a *{{.Camel}}Grpc) Update{{.Camel}}(ctx context.Context, in *p.{{.Camel}}) (*p.Result, error) {
 	response := &p.Result{Success: false}
 	{{.Abbr}}, err := translateIn(in)
 	if err != nil {

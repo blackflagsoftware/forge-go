@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -16,7 +17,7 @@ const DynamicConst = "dyn:"
 type (
 	Dynamic struct {
 		Value    string
-		CastType string // can be: string | int | float | boolean (string is infered)
+		CastType string // can be: string | non-string
 	}
 )
 
@@ -38,18 +39,13 @@ func DynamicInputString(input *string) {
 
 func DynamicInputByte(input *[]byte) {
 	// check if there is a DynamicConst contained in a byte
-	// this is called on the body, we might want to substitute for string or one of the other types (int | float | bool)
+	// this is called on the body, we might want to substitute for string or non-string which will remove the double quotes
 	// since this will go into a json payload the type "format" is important
 	// this will replace all occurences
 	if bytes.Contains(*input, []byte(DynamicConst)) {
 		for key, value := range DynamicValues {
 			search := []byte(DynamicConst + key)
-			if value.CastType != "" {
-				castType := []byte(value.CastType)
-				search = append(search, byte(':'))
-				search = append(search, castType...)
-			}
-			if !(value.CastType == "string" || value.CastType == "") {
+			if value.CastType == "non-string" {
 				search = []byte(fmt.Sprintf("\"%s\"", search))
 			}
 			*input = bytes.ReplaceAll(*input, search, []byte(value.Value))
@@ -65,8 +61,14 @@ func IsDynamicInput(expectedByte, responseByte []byte) bool {
 		dynKey := string(bytes.Trim(parts[1], "\""))
 		dynValue := string(bytes.Trim(responseByte, "\""))
 		dynCastType := "string"
-		if len(parts) == 3 {
-			dynCastType = string(bytes.Trim(parts[2], "\""))
+		// determine if the value is either true/false => boolean
+		// determine if the value is a number => int/float
+		// if any are true, set the dynCastType = "non-string"
+		if _, err := strconv.ParseBool(dynValue); err == nil {
+			dynCastType = "non-string"
+		}
+		if _, err := strconv.ParseFloat(dynValue, 64); err == nil {
+			dynCastType = "non-string"
 		}
 		DynamicValues[dynKey] = Dynamic{Value: dynValue, CastType: dynCastType}
 		return true

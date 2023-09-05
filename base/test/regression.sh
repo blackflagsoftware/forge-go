@@ -3,10 +3,12 @@
 
 # you can also add a setup script to import data to work with
 
+mkdir -p regression_results/rest_output
+
 pwd=$(pwd)
 compile_and_run() {
 	cd ../cmd/rest && go build
-	./rest > /dev/null &
+	./rest > "$pwd/regression_results/rest_output/rest.out" &
 	echo "$!"
 }
 

@@ -9,6 +9,10 @@ type (
 {{.ModelRows}}
     }
 
+    {{.Camel}}Data struct {
+        Data {{.Camel}} `json:"data"`
+    }
+
     {{.Camel}}Param struct {
         // TODO: add any other custom params here
         util.Param
