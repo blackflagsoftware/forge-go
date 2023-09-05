@@ -1,0 +1,25 @@
+[
+	{
+		"name": "",
+		"active": true,
+		"host": "",
+		"path": "",
+		"test_type": "rest",
+		"run_environments": ["dev"],
+		"method": "",
+		"auth_user": "",
+		"auth_pwd": "",
+		"request_headers": {
+			"Content-Type": "application/json"
+		},
+		"request_body": {
+		},
+		"request_timeout": 30,
+		"expected_response_body": {
+			"data": {
+			}
+		},
+		"expected_response_status": 200,
+		"wait_time": 0
+	}
+]

@@ -115,7 +115,7 @@ func (ep *Entity) buildPatch() {
 	for _, c := range ep.Columns {
 		if c.PrimaryKey {
 			patchInit = append(patchInit, fmt.Sprintf("%s: %sIn.%s", c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
-			auditKey = append(auditKey, fmt.Sprintf("\"%s\", %s.%s", c.ColumnName.Camel, ep.Abbr, c.ColumnName.Camel))
+			auditKey = append(auditKey, fmt.Sprintf("\"%s\", %s.%s", c.ColumnName.Lower, ep.Abbr, c.ColumnName.Camel))
 			continue
 		}
 		switch c.GoType {

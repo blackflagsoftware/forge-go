@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Jeffail/gabs/v2"
@@ -18,48 +20,53 @@ import (
 
 type (
 	Args struct {
-		Content     []byte
-		Environment string
+		FileName          string
+		Environment       string
+		PrintDebug        bool
+		DynamicValuesPath string
 	}
 
 	Test struct {
-		Name                 string            `json:"name"`
-		Active               bool              `json:"active"`
-		Host                 string            `json:"host"`
-		Path                 string            `json:"path"`
-		TestType             string            `json:"test_type"` // rest or grpc
-		Method               string            `json:"method"`    // for rest: e.g. GET, POST, PUT, etc
-		AuthUser             string            `json:"auth_user"`
-		AuthPwd              string            `json:"auth_pwd"`
-		RequestBody          interface{}       `json:"request_body"`
-		RequestHeaders       map[string]string `json:"request_header"`
-		ExpectedResponseBody interface{}       `json:"expected_response_body"`
-		ExpectedStatus       int               `json:"expected_response_status"`
-		ActualResponseBody   interface{}       `json:"acutal_response_body"`
-		ActualStatus         string            `json:"acutal_status"`
-		Messages             []string          `json:"messages"`
-		Status               string            `json:"status"`
-		WaitTime             int               `json:"wait_time"`
+		Name                 string            `json:"name" yaml:"name"`
+		Status               string            `json:"status" yaml:"status"`
+		Active               bool              `json:"active" yaml:"active"`
+		Host                 string            `json:"host" yaml:"host"`
+		Path                 string            `json:"path" yaml:"path"`
+		TestType             string            `json:"test_type" yaml:"test_type"`               // rest or grpc
+		RunEnvironments      []string          `json:"run_environments" yaml:"run_environments"` // array of environments this test can run against
+		Method               string            `json:"method" yaml:"method"`                     // for rest: e.g. GET, POST, PUT, etc
+		AuthUser             string            `json:"auth_user" yaml:"auth_user"`
+		AuthPwd              string            `json:"auth_pwd" yaml:"auth_pwd"`
+		RequestBody          interface{}       `json:"request_body" yaml:"request_body"`
+		RequestHeaders       map[string]string `json:"request_headers" yaml:"request_headers"`
+		RequestTimeout       int               `json:"request_timeout" yaml:"request_timeout"`
+		ExpectedResponseBody interface{}       `json:"expected_response_body" yaml:"expected_response_body"`
+		ExpectedStatus       int               `json:"expected_response_status" yaml:"expected_response_status"`
+		ActualResponseBody   interface{}       `json:"actual_response_body" yaml:"actual_response_body"`
+		ActualStatus         int               `json:"actual_status" yaml:"actual_status"`
+		Messages             []string          `json:"messages" yaml:"messages"`
+		WaitTime             int               `json:"wait_time" yaml:"wait_time"`
 	}
 )
 
 func (t *Test) RunRest() {
-	if !t.Active {
-		t.Status = "SKIPPED"
-		return
+	// if request timeout is 0 (empty) then set default to 30
+	if t.RequestTimeout == 0 {
+		t.RequestTimeout = 30
 	}
-	t.Status = "SUCCEEDED"
 	// check to replace all dynamic values
 	util.DynamicInputString(&t.Path)
 	// build url
-	urlCall := url.URL{}
-	urlCall.Host = t.Host
-	urlCall.Path = t.Path
+	urlCall, err := url.PathUnescape(fmt.Sprintf("%s/%s", t.Host, t.Path))
+	if err != nil {
+		t.AppendMessage(fmt.Sprintf("unable to make url: %s", err))
+		return
+	}
 	// transform request body
 	// only make it a new reader if there is something there
 	bodyByte, err := json.Marshal(t.RequestBody)
 	if err != nil {
-		t.AppendMessage("Error: unable to make request body into bytes")
+		t.AppendMessage("unable to make request body into bytes")
 		return
 	}
 	util.DynamicInputByte(&bodyByte)
@@ -71,16 +78,28 @@ func (t *Test) RunRest() {
 		fmt.Println(err.Error())
 		return
 	}
-	req, err := http.NewRequest(t.Method, urlCall.String(), body)
+	req, err := http.NewRequest(t.Method, urlCall, body)
 	if err != nil {
-		t.AppendMessage(fmt.Sprintf("Error: unable to making request: %s", err))
+		t.AppendMessage(fmt.Sprintf("unable to making request: %s", err))
 	} else {
+		ctx, cancel := context.WithTimeout(req.Context(), time.Duration(t.RequestTimeout*int(time.Second)))
+		defer cancel()
+		req = req.WithContext(ctx)
+		// set up basic auth
+		if t.AuthUser != "" && t.AuthPwd != "" {
+			req.SetBasicAuth(t.AuthUser, t.AuthPwd)
+		}
+		for key, value := range t.RequestHeaders {
+			req.Header.Add(key, value)
+		}
 		responseBody, responseStatus, err := cli.HTTPRequest(req)
 		if err != nil {
-			t.AppendMessage(fmt.Sprintf("Error: http call failed - %s", err))
+			t.AppendMessage(fmt.Sprintf("http call failed - %s", err))
 		}
+		t.ActualStatus = responseStatus
 		if responseStatus != t.ExpectedStatus {
-			t.AppendMessage(fmt.Sprintf("Status => want: %d; got: %d", t.ExpectedStatus, responseStatus))
+			t.Status = "FAILED"
+			t.AppendMessage(fmt.Sprintf("Status - want: %d; got: %d", t.ExpectedStatus, responseStatus))
 			return
 		}
 		t.BodyCompare(responseBody)
@@ -94,9 +113,16 @@ func (t *Test) RunRest() {
 }
 
 func (t *Test) BodyCompare(responseBody []byte) {
+	if (t.ExpectedResponseBody == nil || t.ExpectedResponseBody == "") && len(responseBody) != 0 {
+		t.AppendMessage(fmt.Sprintf("expected request body is expecting null (or empty), actual response body has data: %s", responseBody))
+		return
+	}
+	if t.ExpectedResponseBody == nil || t.ExpectedResponseBody == "" {
+		return
+	}
 	responseContainer, err := gabs.ParseJSON(responseBody)
 	if err != nil {
-		t.AppendMessage("Error: unable to covert response body to generic container")
+		t.AppendMessage("unable to covert response body to generic container")
 		t.ActualResponseBody = string(responseBody)
 		return
 	}
@@ -109,7 +135,7 @@ func (t *Test) BodyCompare(responseBody []byte) {
 	if ok {
 		expBodyByte, err = json.Marshal(expectedBodyMap)
 		if err != nil {
-			t.AppendMessage("Error: unable to marshal expected body, not a map")
+			t.AppendMessage("unable to marshal expected body, not a map")
 			return
 		}
 	} else {
@@ -121,18 +147,18 @@ func (t *Test) BodyCompare(responseBody []byte) {
 				expectedBodyArray = append(expectedBodyArray, s.Index(i).Interface())
 			}
 		default:
-			t.AppendMessage("Error: not an array")
+			t.AppendMessage("not an array")
 			return
 		}
 		expBodyByte, err = json.Marshal(expectedBodyArray)
 		if err != nil {
-			t.AppendMessage("Error: unable to marshal expected body, not an array")
+			t.AppendMessage("unable to marshal expected body, not an array")
 			return
 		}
 	}
 	expectedContainer, err := gabs.ParseJSON(expBodyByte)
 	if err != nil {
-		t.AppendMessage("Error: unable to covert expected body to generic container")
+		t.AppendMessage("unable to covert expected body to generic container")
 		return
 	}
 	// now that we have a container of containers thanks to gabs
@@ -141,7 +167,7 @@ func (t *Test) BodyCompare(responseBody []byte) {
 	if len(expectedMap) != 0 {
 		for key, value := range expectedMap {
 			if !responseContainer.Exists(key) {
-				t.AppendMessage("Error: key not found")
+				t.AppendMessage(fmt.Sprintf("key: %s; not found", key))
 			}
 			path := []string{key}
 			t.BodyCompareRecursive(path, value, responseContainer)
@@ -161,7 +187,7 @@ func (t *Test) BodyCompareRecursive(path []string, expectedContainer, responseCo
 	expectedMap := expectedContainer.ChildrenMap()
 	if len(expectedMap) != 0 {
 		for key, value := range expectedMap {
-			path = append(path, key)
+			path := append(path, key)
 			t.BodyCompareRecursive(path, value, responseContainer)
 		}
 	} else {
@@ -180,7 +206,7 @@ func (t *Test) BodyCompareRecursive(path []string, expectedContainer, responseCo
 				return
 			}
 			if bytes.Compare(expectedElementBytes, responseElementBytes) != 0 {
-				t.AppendMessage(fmt.Sprintf("Mismatch => want: %s; got: %s", expectedElementBytes, responseElementBytes))
+				t.AppendMessage(fmt.Sprintf("mismatch [%s] => want: %s; got: %s", strings.Join(path, "/"), expectedElementBytes, responseElementBytes))
 			}
 		}
 	}
@@ -189,4 +215,15 @@ func (t *Test) BodyCompareRecursive(path []string, expectedContainer, responseCo
 func (t *Test) AppendMessage(msg string) {
 	// yes, it is a simple one-liner but... much less typing when calling this over and over
 	t.Messages = append(t.Messages, msg)
+}
+
+func (t Test) PrintResults(fileName string) {
+	fmt.Printf("* Test: %s [%s]\n", t.Name, fileName)
+	fmt.Printf("\tStatus: %s\n", t.Status)
+	if t.Status == "FAILED" || t.Status == "SKIPPED" {
+		fmt.Println("\tErrors:")
+	}
+	for _, errorMessage := range t.Messages {
+		fmt.Printf("\t\t%s\n", errorMessage)
+	}
 }

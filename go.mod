@@ -15,6 +15,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	google.golang.org/grpc v1.52.3
 	gopkg.in/guregu/null.v3 v3.5.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

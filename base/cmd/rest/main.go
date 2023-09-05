@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/blackflagsoftware/forge-go/base/config"
 	ae "github.com/blackflagsoftware/forge-go/base/internal/api_error"
@@ -54,7 +57,20 @@ func main() {
 
 	InitializeRoutes(e)
 
-	e.Start(fmt.Sprintf(":%s", restPort))
+	go func() {
+		if err := e.Start(fmt.Sprintf(":%s", restPort)); err != nil && err != http.ErrServerClosed {
+			m.Default.Printf("graceful server stop with error: %s", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		m.Default.Printf("gracefult shutdown with error: %s", err)
+	}
 }
 
 func setPidFile() {

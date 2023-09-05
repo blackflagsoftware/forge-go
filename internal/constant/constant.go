@@ -12,7 +12,7 @@ const (
 	%s, err := strconv.ParseInt(%sStr, 10, 64)
 	if err != nil {
 		bindErr := ae.ParseError("Invalid param value, not a number")
-		return c.JSON(bindErr.StatusCode, util.NewOutput(bindErr.BodyError(), &bindErr, nil))
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}`  // Lower, Lower, Lower, Lower
 	REST_PRIMARY_STR     = `	%s := c.Param("%s")`                         // Lower, Lower
 	REST_GET_DELETE      = `	%s := &%s{%s}`                               // CamelLower, Camel, RestArgSet

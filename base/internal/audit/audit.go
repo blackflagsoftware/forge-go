@@ -77,67 +77,69 @@ func AuditInit() AuditAdapter {
 }
 
 func AuditCreate(a AuditAdapter, entity interface{}, entityName, entityId string) {
-	if a != nil {
-		entityMap := GroupStructToMap(entity, "db")
-		audit := Audit{Entity: entityName, EntityID: entityId, CreatedAt: time.Now().UTC(), Created: entityMap}
-		a.WriteAudit(audit)
+	if config.EnableAuditing {
+		if a != nil {
+			entityMap := GroupStructToMap(entity, "db")
+			audit := Audit{Entity: entityName, EntityID: entityId, CreatedAt: time.Now().UTC(), Created: entityMap}
+			a.WriteAudit(audit)
+		}
 	}
 }
 
 func AuditPatch(a AuditAdapter, entity interface{}, entityName, entityId string, existingValues map[string]interface{}) {
-	if a != nil {
-		entityMap := GroupStructToMapUpdated(entity, "db", existingValues)
-		audit := Audit{Entity: entityName, EntityID: entityId, CreatedAt: time.Now().UTC(), Updated: entityMap}
-		a.WriteAudit(audit)
+	if config.EnableAuditing {
+		if a != nil {
+			entityMap := GroupStructToMapUpdated(entity, "db", existingValues)
+			audit := Audit{Entity: entityName, EntityID: entityId, CreatedAt: time.Now().UTC(), Updated: entityMap}
+			a.WriteAudit(audit)
+		}
 	}
 }
 
 func AuditDelete(a AuditAdapter, entity interface{}, entityName, entityId string) {
-	if a != nil {
-		entityMap := GroupStructToMap(entity, "db")
-		audit := Audit{Entity: entityName, EntityID: entityId, CreatedAt: time.Now().UTC(), Delete: entityMap}
-		a.WriteAudit(audit)
+	if config.EnableAuditing {
+		if a != nil {
+			entityMap := GroupStructToMap(entity, "db")
+			audit := Audit{Entity: entityName, EntityID: entityId, CreatedAt: time.Now().UTC(), Delete: entityMap}
+			a.WriteAudit(audit)
+		}
 	}
 }
 
 func (h AuditFile) WriteAudit(audit Audit) {
-	if config.EnableAuditing {
-		bAudit, err := json.Marshal(audit)
-		if err != nil {
-			fmt.Println("WriteAudit: unable to marshal object:", err)
-			return
-		}
-		bAudit = append(bAudit, []byte(",\n")...)
-		file, err := os.OpenFile(h.FilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-		defer file.Close()
-		_, err = file.Write(bAudit)
-		if err != nil {
-			fmt.Println("WriteAudit: unable to write to file:", err)
-		}
+	bAudit, err := json.Marshal(audit)
+	if err != nil {
+		fmt.Println("WriteAudit: unable to marshal object:", err)
+		return
+	}
+	bAudit = append(bAudit, []byte(",\n")...)
+	file, err := os.OpenFile(h.FilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	defer file.Close()
+	_, err = file.Write(bAudit)
+	if err != nil {
+		fmt.Println("WriteAudit: unable to write to file:", err)
 	}
 }
 
 func (h AuditSQL) WriteAudit(audit Audit) {
-	if config.EnableAuditing {
-		if h.DB == nil {
-			fmt.Println("WriteAudit: DB not set")
-			return
-		}
-		auditColumn := AuditColumns{Created: audit.Created, Updated: audit.Updated, Delete: audit.Delete}
-		bAuditColumn, err := json.Marshal(auditColumn)
-		if err != nil {
-			fmt.Println("WriteAudit: unable to marshal columns")
-			return
-		}
-		h.CreatedAt = time.Now().UTC()
-		h.Changed = bAuditColumn
-		h.UserID = audit.UserID
-		h.Entity = audit.Entity
-		h.EntityID = audit.EntityID
-		insertSql := `INSERT INTO audit (created_at, changes, user_id, entity, entity_id) VALUES (:created_at, :changes, :user_id, :entity, :entity_id)`
-		if _, err := h.DB.NamedExec(insertSql, h); err != nil {
-			fmt.Println("WriteAudit: error insert record", err)
-		}
+	if h.DB == nil {
+		fmt.Println("WriteAudit: DB not set")
+		return
+	}
+	auditColumn := AuditColumns{Created: audit.Created, Updated: audit.Updated, Delete: audit.Delete}
+	bAuditColumn, err := json.Marshal(auditColumn)
+	if err != nil {
+		fmt.Println("WriteAudit: unable to marshal columns")
+		return
+	}
+	h.CreatedAt = time.Now().UTC()
+	h.Changed = bAuditColumn
+	h.UserID = audit.UserID
+	h.Entity = audit.Entity
+	h.EntityID = audit.EntityID
+	insertSql := `INSERT INTO audit (created_at, changes, user_id, entity, entity_id) VALUES (:created_at, :changes, :user_id, :entity, :entity_id)`
+	if _, err := h.DB.NamedExec(insertSql, h); err != nil {
+		fmt.Println("WriteAudit: error insert record", err)
 	}
 }
 
@@ -197,7 +199,7 @@ func KeysToString(keys ...interface{}) string {
 	output := []string{}
 	field := ""
 	for i, k := range keys {
-		if !(i%2 == 0) {
+		if i%2 == 0 {
 			field = k.(string)
 			continue
 		}
