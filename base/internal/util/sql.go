@@ -39,7 +39,7 @@ func (s *SearchBuilder) AppendCompare(param, compare string, value interface{}) 
 }
 
 func (s *SearchBuilder) AppendLike(param, value string) {
-	s.Params = append(s.Params, fmt.Sprintf("%s LIKE %%%s%%", param, value))
+	s.Params = append(s.Params, fmt.Sprintf("%s LIKE '%%%s%%'", param, value))
 }
 
 func (s *SearchBuilder) AppendNull(param string, wantNull bool) {

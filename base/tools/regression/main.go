@@ -25,7 +25,7 @@ func main() {
 
 	// set defaults if needed
 	// environment: what comes over via flags, trumps; set to 'default' if nothing is set via flags or env var
-	varEnvironment := os.Getenv("FORGE_GO_REGRESSION_ENVIRONMENT")
+	varEnvironment := os.Getenv("FORGE_GO_BASE_REGRESSION_ENVIRONMENT")
 	if environment == "" && varEnvironment != "" {
 		environment = varEnvironment
 	}

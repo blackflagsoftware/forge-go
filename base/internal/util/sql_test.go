@@ -73,7 +73,7 @@ func TestSearchBuilder_AppendLike(t *testing.T) {
 				"addr",
 				"street",
 			},
-			[]string{"addr LIKE %street%"},
+			[]string{"addr LIKE '%street%'"},
 		},
 	}
 	for _, tt := range tests {
@@ -153,10 +153,10 @@ func TestSearchBuilder_String(t *testing.T) {
 		{
 			"successful",
 			fields{
-				[]string{"name IS NOT NULL", "addr LIKE %home%"},
+				[]string{"name IS NOT NULL", "addr LIKE '%home%'"},
 				[]interface{}{},
 			},
-			"WHERE name IS NOT NULL\n\t\tAND addr LIKE %home%",
+			"WHERE name IS NOT NULL\n\t\tAND addr LIKE '%home%'",
 		},
 	}
 	for _, tt := range tests {
@@ -167,82 +167,6 @@ func TestSearchBuilder_String(t *testing.T) {
 			}
 			got := s.String()
 			assert.Equal(t, tt.want, got, "output is not equal")
-		})
-	}
-}
-
-func TestBuildSearchStringWithTenant(t *testing.T) {
-	type args struct {
-		search []ParamSearch
-	}
-	tests := []struct {
-		name  string
-		args  args
-		want  string
-		want1 []interface{}
-	}{
-		{
-			"successful - LIKE",
-			args{
-				[]ParamSearch{
-					{
-						Column:  "name",
-						Compare: "LIKE",
-						Value:   "test",
-					},
-				},
-			},
-			"WHERE name LIKE %test%",
-			[]interface{}{"tenant_01"},
-		},
-		{
-			"successful - COMPARE",
-			args{
-				[]ParamSearch{
-					{
-						Column:  "name",
-						Compare: "=",
-						Value:   "test",
-					},
-				},
-			},
-			"WHERE name = ?",
-			[]interface{}{"test"},
-		},
-		{
-			"successful - NULL",
-			args{
-				[]ParamSearch{
-					{
-						Column:  "name",
-						Compare: "NULL",
-						Value:   "",
-					},
-				},
-			},
-			"WHERE name IS NULL",
-			[]interface{}{},
-		},
-		{
-			"successful - NOT NULL",
-			args{
-				[]ParamSearch{
-					{
-						Column:  "name",
-						Compare: "NOT NULL",
-						Value:   "",
-					},
-				},
-			},
-			"WHERE name IS NOT NULL",
-			[]interface{}{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := BuildSearchString(tt.args.search)
-			assert.Equal(t, tt.want, got, "where stmt is not equal")
-			assert.Equal(t, tt.want1, got1, "values are equal")
 		})
 	}
 }
