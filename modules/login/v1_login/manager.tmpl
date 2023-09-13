@@ -1,0 +1,259 @@
+package login
+
+import (
+	"net/mail"
+	"time"
+
+	"github.com/powerchordinc/finance/config"
+	ae "github.com/powerchordinc/finance/internal/api_error"
+	a "github.com/powerchordinc/finance/internal/audit"
+	mid "github.com/powerchordinc/finance/internal/middleware"
+	"github.com/powerchordinc/finance/internal/util"
+	"github.com/powerchordinc/finance/internal/util/email"
+	"gopkg.in/guregu/null.v3"
+)
+
+//go:generate mockgen -source=manager.go -destination=mock.go -package=login
+type (
+	DataLoginAdapter interface {
+		Read(*Login) error
+		ReadAll(*[]Login, LoginParam) (int, error)
+		Create(*Login, ResetRequest) error
+		Update(Login) error
+		UpdatePwd(Login) error
+		Delete(*Login) error
+		GetByEmailAddr(*Login) error
+		GetResetRequest(*ResetRequest) error
+		ResetRequest(*ResetRequest) error
+	}
+
+	ManagerLogin struct {
+		dataLogin   DataLoginAdapter
+		auditWriter a.AuditAdapter
+		emailer     email.Emailer
+	}
+)
+
+func NewManagerLogin(clog DataLoginAdapter, em email.Emailer) *ManagerLogin {
+	aw := a.AuditInit()
+	return &ManagerLogin{dataLogin: clog, auditWriter: aw, emailer: em}
+}
+
+func (m *ManagerLogin) Get(log *Login) error {
+	if log.Uid == "" {
+		return ae.MissingParamError("Uid")
+	}
+	return m.dataLogin.Read(log)
+}
+
+func (m *ManagerLogin) Search(log *[]Login, param LoginParam) (int, error) {
+	param.Param.CalculateParam("email_addr", map[string]string{"email_addr": "email_addr", "pwd": "pwd", "active": "active", "set_pwd": "set_pwd", "created_at": "created_at", "updated_at": "updated_at"})
+
+	return m.dataLogin.ReadAll(log, param)
+}
+
+func (m *ManagerLogin) Post(log *Login) error {
+	if !log.EmailAddr.Valid {
+		return ae.MissingParamError("EmailAddress")
+	}
+	if log.EmailAddr.Valid && len(log.EmailAddr.ValueOrZero()) > 100 {
+		return ae.StringLengthError("EmailAddress", 100)
+	}
+	if _, err := mail.ParseAddress(log.EmailAddr.String); err != nil {
+		return ae.EmailValidError(err.Error())
+	}
+	// check if email is already used before
+	logDup := &Login{EmailAddr: log.EmailAddr}
+	if err := m.dataLogin.GetByEmailAddr(logDup); err != nil {
+		return err
+	}
+	if logDup.Uid != "" {
+		return ae.DuplicateEmailError(logDup.EmailAddr.String)
+	}
+	// set this to empty string
+	log.Pwd = null.NewString("", true)
+	log.SetPwd = null.BoolFrom(true)
+	log.Active = null.BoolFrom(true)
+	log.CreatedAt.Scan(time.Now().UTC())
+	log.Uid = util.GenerateUUID()
+	resetRequest := ResetRequest{LoginUid: log.Uid, ResetToken: util.GenerateUUID(), CreatedAt: time.Now().UTC()}
+	if err := m.dataLogin.Create(log, resetRequest); err != nil {
+		return err
+	}
+	go m.emailer.SendReset(log.EmailAddr.String, resetRequest.ResetToken)
+	go a.AuditCreate(m.auditWriter, *log, LoginConst, a.KeysToString("uid", log.Uid))
+	return nil
+}
+
+// Patch only allows to update the email or active, see PatchPwd to update the pwd
+func (m *ManagerLogin) Patch(logIn Login) error {
+	log := &Login{Uid: logIn.Uid}
+	errGet := m.dataLogin.Read(log)
+	if errGet != nil {
+		return errGet
+	}
+	existingValues := make(map[string]interface{})
+	// EmailAddr
+	if logIn.EmailAddr.Valid {
+		if logIn.EmailAddr.Valid && len(logIn.EmailAddr.ValueOrZero()) > 100 {
+			return ae.StringLengthError("EmailAddress", 100)
+		}
+		existingValues["email_addr"] = log.EmailAddr.String
+		log.EmailAddr = logIn.EmailAddr
+	}
+	// Active
+	if logIn.Active.Valid {
+		existingValues["active"] = log.Active.Bool
+		log.Active = logIn.Active
+	}
+
+	log.UpdatedAt.Scan(time.Now().UTC())
+	if err := m.dataLogin.Update(*log); err != nil {
+		return err
+	}
+	go a.AuditPatch(m.auditWriter, *log, LoginConst, a.KeysToString("uid", log.Uid), existingValues)
+	return nil
+}
+
+// PatchPwd only allows to change the pwd, see Patch to update the email
+func (m *ManagerLogin) PatchPwd(logIn Login) error {
+	if logIn.Uid == "" {
+		return ae.MissingParamError("Uid")
+	}
+	log := &Login{Uid: logIn.Uid}
+	errGet := m.dataLogin.Read(log)
+	if errGet != nil {
+		return errGet
+	}
+	existingValues := make(map[string]interface{})
+	if logIn.Pwd.Valid {
+		if log.Pwd.Valid && len(logIn.Pwd.ValueOrZero()) > 72 {
+			return ae.StringLengthError("Pwd", 72)
+		}
+		existingValues["pwd"] = log.Pwd.String
+	}
+	if err := util.PasswordValidator(logIn.Pwd.String, logIn.ConfirmPwd.String); err != nil {
+		return err
+	}
+	hashPwd, errHash := util.EncryptPassword(logIn.Pwd.String)
+	if errHash != nil {
+		return errHash
+	}
+	log.Pwd.Scan(hashPwd)
+	if err := m.dataLogin.UpdatePwd(*log); err != nil {
+		return err
+	}
+	go a.AuditPatch(m.auditWriter, *log, LoginConst, a.KeysToString("uid", log.Uid), existingValues)
+	return nil
+}
+
+func (m *ManagerLogin) Delete(log *Login) error {
+	if log.Uid == "" {
+		return ae.MissingParamError("Uid")
+	}
+	if err := m.dataLogin.Delete(log); err != nil {
+		return err
+	}
+	go a.AuditDelete(m.auditWriter, *log, LoginConst, a.KeysToString("uid", log.Uid))
+	return nil
+}
+
+// ResetPwd takes email, pwd, confirmPwd
+func (m *ManagerLogin) PwdReset(pwd PasswordReset) error {
+	if pwd.EmailAddr == "" {
+		return ae.MissingParamError("EmailAddress")
+	}
+	log := Login{EmailAddr: null.StringFrom(pwd.EmailAddr)}
+	if errLogin := m.dataLogin.GetByEmailAddr(&log); errLogin != nil {
+		return errLogin
+	}
+	// reset login is still valid
+	resetRequest := ResetRequest{LoginUid: log.Uid}
+	if errReset := m.dataLogin.GetResetRequest(&resetRequest); errReset != nil {
+		detail := errReset.(ae.ApiError).BodyError().Detail
+		if detail == "No Results Error" {
+			return ae.ResetTokenInvalidError()
+		}
+		return errReset
+	}
+	now := time.Now().UTC()
+	expired := resetRequest.CreatedAt.Add(time.Duration(config.GetExpiresAtDuration()*24) * time.Hour)
+	if now.After(expired) {
+		return ae.ResetTokenInvalidError()
+	}
+	// makes sure the login record is in the correct state for pwd reset
+	if !log.Active.Bool {
+		return ae.LoginActiveError()
+	}
+	if !log.SetPwd.Bool {
+		return ae.ResetTokenInvalidError()
+	}
+	// validates the pwd, save to storage if all is good
+	existingValues := make(map[string]interface{})
+	if pwd.Pwd.Valid {
+		if pwd.Pwd.Valid && len(pwd.Pwd.ValueOrZero()) > 72 {
+			return ae.StringLengthError("Pwd", 72)
+		}
+		existingValues["pwd"] = log.Pwd.String
+	}
+	if err := util.PasswordValidator(pwd.Pwd.String, pwd.ConfirmPwd.String); err != nil {
+		return err
+	}
+	hashPwd, errHash := util.EncryptPassword(pwd.Pwd.String)
+	if errHash != nil {
+		return errHash
+	}
+	log.Pwd.Scan(hashPwd)
+	if err := m.dataLogin.UpdatePwd(log); err != nil {
+		return err
+	}
+	go a.AuditPatch(m.auditWriter, log, LoginConst, a.KeysToString("uid", log.Uid), existingValues)
+	return nil
+}
+
+func (m *ManagerLogin) ResetRequest(res *ResetRequest) error {
+	if res.EmailAddr == "" {
+		return ae.MissingParamError("EmailAddress")
+	}
+	log := &Login{EmailAddr: null.StringFrom(res.EmailAddr)}
+	err := m.dataLogin.GetByEmailAddr(log)
+	if err != nil {
+		detail := err.(ae.ApiError).BodyError().Detail
+		if detail == "No Results Error" {
+			// no valid email, send back success
+			return nil
+		}
+		return err // all other errors, at least let the caller know there was an issue
+	}
+	if log.Active.Valid && !log.Active.Bool {
+		// TODO: email address was not active, report here
+		return nil
+	}
+	res.LoginUid = log.Uid
+	res.ResetToken = util.GenerateUUID()
+	res.CreatedAt = time.Now().UTC()
+	return m.dataLogin.ResetRequest(res)
+}
+
+func (m *ManagerLogin) SignIn(logIn Login) (string, error) {
+	if !logIn.EmailAddr.Valid {
+		return "", ae.MissingParamError("EmailAddress")
+	}
+	log := &Login{EmailAddr: logIn.EmailAddr}
+	err := m.dataLogin.GetByEmailAddr(log)
+	if err != nil {
+		detail := err.(ae.ApiError).BodyError().Detail
+		if detail == "No Results Error" {
+			return "", ae.EmailPasswordComboError()
+		}
+		return "", err
+	}
+	if err := util.CheckPassword(logIn.Pwd.String, log.Pwd.String); err != nil {
+		return "", err
+	}
+	token, err := mid.AuthBuild([]string{"admin"})
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}

@@ -1,0 +1,195 @@
+package login
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/jmoiron/sqlx"
+	ae "github.com/powerchordinc/finance/internal/api_error"
+	stor "github.com/powerchordinc/finance/internal/storage"
+	"github.com/powerchordinc/finance/internal/util"
+)
+
+type (
+	SQLLogin struct {
+		DB *sqlx.DB
+	}
+)
+
+func InitSQL() *SQLLogin {
+	db := stor.PostgresInit()
+	return &SQLLogin{DB: db}
+}
+
+func (d *SQLLogin) Read(log *Login) error {
+	sqlGet := `
+		SELECT
+			uid,
+			email_addr,
+			pwd,
+			active,
+			set_pwd,
+			created_at,
+			updated_at
+		FROM login WHERE text(uid) = $1`
+	if errDB := d.DB.Get(log, sqlGet, log.Uid); errDB != nil {
+		return ae.DBError("Login Get: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLLogin) ReadAll(log *[]Login, param LoginParam) (int, error) {
+	searchStmt, args := util.BuildSearchString(param.Search)
+	sqlSearch := fmt.Sprintf(`
+		SELECT
+			uid,
+			email_addr,
+			pwd,
+			active,
+			set_pwd,
+			created_at,
+			updated_at
+		FROM login
+		%s
+		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+	sqlSearch = d.DB.Rebind(sqlSearch)
+	if errDB := d.DB.Select(log, sqlSearch, args...); errDB != nil {
+		return 0, ae.DBError("Login Search: unable to select records.", errDB)
+	}
+	sqlCount := fmt.Sprintf(`
+		SELECT
+			COUNT(*)
+		FROM login
+		%s`, searchStmt)
+	var count int
+	sqlCount = d.DB.Rebind(sqlCount)
+	if errDB := d.DB.Get(&count, sqlCount, args...); errDB != nil {
+		return 0, ae.DBError("login Search: unable to select count.", errDB)
+	}
+	return count, nil
+}
+
+func (d *SQLLogin) Create(log *Login, res ResetRequest) (err error) {
+	txn := d.DB.MustBegin()
+	defer util.TxnFinish(txn, &err)
+
+	sqlPost := `
+		INSERT INTO login (
+			uid,
+			email_addr,
+			pwd,
+			active,
+			set_pwd,
+			created_at,
+			updated_at
+		) VALUES (
+			:uid,
+			:email_addr,
+			:pwd,
+			:active,
+			:set_pwd,
+			:created_at,
+			:updated_at
+		)`
+	_, errDB := txn.NamedExec(sqlPost, log)
+	if errDB != nil {
+		err = ae.DBError("Login Post: unable to insert record.", errDB)
+		return err
+	}
+
+	sqlResetInsert := `INSERT INTO reset_login (login_uid, reset_token, created_at) VALUES ($1, $2, $3)`
+	if _, errDB := txn.Exec(sqlResetInsert, res.LoginUid, res.ResetToken, res.CreatedAt); errDB != nil {
+		err = ae.DBError("Create: reset request, unable to insert.", errDB)
+		return
+	}
+	return err
+}
+
+func (d *SQLLogin) Update(log Login) error {
+	sqlPatch := `
+		UPDATE login SET
+			email_addr = :email_addr,
+			active = :active,
+			updated_at = :updated_at
+		WHERE uid = :uid`
+	if _, errDB := d.DB.NamedExec(sqlPatch, log); errDB != nil {
+		return ae.DBError("Login Patch: unable to update record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLLogin) UpdatePwd(log Login) (err error) {
+	txn := d.DB.MustBegin()
+	defer util.TxnFinish(txn, &err)
+
+	sqlPatch := `
+		UPDATE login SET
+			pwd = :pwd,
+			updated_at = :updated_at,
+			set_pwd = false
+		WHERE uid = :uid`
+	if _, errDB := txn.NamedExec(sqlPatch, log); errDB != nil {
+		err = ae.DBError("Login UpdatePwd: unable to update record.", errDB)
+		return
+	}
+	// update all reset records (tokens) if any
+	now := time.Now().UTC()
+	sqlReset := `UPDATE reset_login SET updated_at = $1 WHERE text(login_uid) = $2`
+	if _, errDB := txn.Exec(sqlReset, now, log.Uid); errDB != nil {
+		err = ae.DBError("Login UpdatePwd: unable to set finish reset.", errDB)
+		return
+	}
+	return nil
+}
+
+func (d *SQLLogin) Delete(log *Login) error {
+	sqlDelete := `
+		DELETE FROM login WHERE text(uid) = $1`
+	if _, errDB := d.DB.Exec(sqlDelete, log.Uid); errDB != nil {
+		return ae.DBError("Login Delete: unable to delete record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLLogin) GetByEmailAddr(log *Login) error {
+	sqlGet := `SELECT uid, pwd, active, set_pwd FROM login WHERE email_addr = $1`
+	if errDB := d.DB.Get(log, sqlGet, log.EmailAddr); errDB != nil {
+		return ae.DBError("GetByEmailAddr: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLLogin) GetResetRequest(resetRequest *ResetRequest) error {
+	sqlGet := `SELECT login_uid, reset_token, created_at FROM reset_login WHERE text(login_uid) = $1 AND updated_at IS NULL LIMIT 1`
+	if errDB := d.DB.Get(resetRequest, sqlGet, resetRequest.LoginUid); errDB != nil {
+		return ae.DBError("GetByEmailAddr: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLLogin) ResetRequest(res *ResetRequest) (err error) {
+	// update any reset records (tokens) if any
+	// insert a new record
+	// update login record
+	txn := d.DB.MustBegin()
+	defer util.TxnFinish(txn, &err)
+
+	now := time.Now().UTC()
+	sqlResetUpdate := `UPDATE reset_login SET updated_at = $1 WHERE text(login_uid) = $2`
+	if _, errDB := txn.Exec(sqlResetUpdate, now, res.LoginUid); errDB != nil {
+		err = ae.DBError("Login Reset: unable to update.", errDB)
+		return
+	}
+	sqlResetInsert := `INSERT INTO reset_login (login_uid, reset_token, created_at) VALUES ($1, $2, $3)`
+	if _, errDB := txn.Exec(sqlResetInsert, res.LoginUid, res.ResetToken, now); errDB != nil {
+		err = ae.DBError("Login Reset: unable to insert.", errDB)
+		return
+	}
+	// this assumes, from the check before, that the user was active
+	sqlLoginUpdate := `UPDATE login SET set_pwd = true WHERE text(uid) = $1`
+	if _, errDB := txn.Exec(sqlLoginUpdate, res.LoginUid); errDB != nil {
+		err = ae.DBError("Login Reset: unable to update login.", errDB)
+		return
+	}
+	return err
+}

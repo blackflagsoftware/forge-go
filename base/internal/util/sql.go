@@ -64,7 +64,7 @@ func TxnFinish(tx *sqlx.Tx, err *error) {
 	} else if *err != nil {
 		tx.Rollback()
 	} else {
-		if errCommit := tx.Commit(); err != nil {
+		if errCommit := tx.Commit(); errCommit != nil {
 			err = &errCommit
 		}
 	}

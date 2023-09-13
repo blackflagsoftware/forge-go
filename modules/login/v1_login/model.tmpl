@@ -1,0 +1,62 @@
+package login
+
+import (
+	"time"
+
+	"github.com/powerchordinc/finance/config"
+	"github.com/powerchordinc/finance/internal/util"
+	"gopkg.in/guregu/null.v3"
+)
+
+type (
+	Login struct {
+		Uid        string      `db:"uid" json:"uid"`
+		EmailAddr  null.String `db:"email_addr" json:"email_address"`
+		Pwd        null.String `db:"pwd" json:"password"`
+		ConfirmPwd null.String `json:"confirm_password,omitempty"`
+		Active     null.Bool   `db:"active" json:"active"`
+		SetPwd     null.Bool   `db:"set_pwd" json:"set_password"`
+		CreatedAt  null.Time   `db:"created_at" json:"created_at"`
+		UpdatedAt  null.Time   `db:"updated_at" json:"updated_at"`
+	}
+
+	LoginData struct {
+		Data Login `json:"data"`
+	}
+
+	LoginParam struct {
+		// TODO: add any other custom params here
+		util.Param
+	}
+
+	ResetRequest struct {
+		EmailAddr  string    `db:"email_addr" json:"email_addr"`
+		LoginUid   string    `db:"login_uid"`
+		ResetToken string    `db:"reset_token"`
+		CreatedAt  time.Time `db:"created_at"`
+	}
+
+	ResetRequestData struct {
+		Data ResetRequest `json:"data"`
+	}
+
+	PasswordReset struct {
+		EmailAddr  string      `json:"email_address"`
+		ResetToken string      `json:"reset_token"`
+		Pwd        null.String `json:"password"`
+		ConfirmPwd null.String `json:"confirm_password"`
+	}
+
+	PasswordResetData struct {
+		Data PasswordReset `json:"data"`
+	}
+)
+
+const LoginConst = "login"
+
+func InitStorage() DataLoginAdapter {
+	if config.StorageSQL {
+		return InitSQL()
+	}
+	return nil
+}

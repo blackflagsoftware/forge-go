@@ -16,7 +16,7 @@ pid=$(compile_and_run)
 sleep 1
 
 cd $pwd
-file_path=./your-file-here.json # see README.md for other directory/multiple file options
+file_path=./test_file.json # see README.md for other directory/multiple file options
 regression -testPathFile=$file_path -environment=dev -printDebug=true
 
 kill $pid

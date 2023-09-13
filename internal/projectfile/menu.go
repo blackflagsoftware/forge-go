@@ -41,7 +41,7 @@ func (p *ProjectFile) StorageMenu() {
 		prompts = []string{"(p) Postgres", "(m) Mysql", "(s) Sqlite"}
 		acceptablePrompts = []string{"p", "m", "s"} // haha... get it?!??!!  pms... haha
 		p.SqlStorage = util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "", setupHeader)
-		p.UseORM = util.AskYesOrNo("Would you like to use an ORM")
+		// p.UseORM = util.AskYesOrNo("Would you like to use an ORM") only have this as an option in an "admin" screen
 	}
 }
 

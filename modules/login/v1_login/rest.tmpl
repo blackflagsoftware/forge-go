@@ -1,0 +1,208 @@
+package login
+
+import (
+	"net/http"
+	"strconv"
+
+	echojwt "github.com/labstack/echo-jwt/v4"
+	"github.com/labstack/echo/v4"
+	ae "github.com/powerchordinc/finance/internal/api_error"
+	m "github.com/powerchordinc/finance/internal/middleware"
+	util "github.com/powerchordinc/finance/internal/util"
+	"github.com/powerchordinc/finance/internal/util/email"
+)
+
+type (
+	ManagerLoginAdapter interface {
+		Get(*Login) error
+		Search(*[]Login, LoginParam) (int, error)
+		Post(*Login) error
+		Patch(Login) error
+		PatchPwd(Login) error
+		Delete(*Login) error
+		PwdReset(PasswordReset) error
+		ResetRequest(*ResetRequest) error
+		SignIn(Login) (string, error)
+	}
+
+	RestLogin struct {
+		managerLogin ManagerLoginAdapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	el := email.Email{}
+	sl := InitStorage()
+	ml := NewManagerLogin(sl, el)
+	hl := NewRestLogin(ml)
+	hl.LoadInsecureLoginRoutes(eg)
+	eg.Use(echojwt.WithConfig(m.AuthConfig()))
+	hl.LoadLoginRoutes(eg)
+}
+
+func NewRestLogin(mfin ManagerLoginAdapter) *RestLogin {
+	return &RestLogin{managerLogin: mfin}
+}
+
+func (h *RestLogin) LoadLoginRoutes(eg *echo.Group) {
+	eg.GET("/login/:uid", h.Get)
+	eg.POST("/login/search", h.Search)
+	eg.POST("/login", h.Post)
+	eg.PATCH("/login", h.Patch)
+	eg.PATCH("/login/pwd", h.PatchPwd)
+	eg.DELETE("/login/:uid", h.Delete)
+}
+
+func (h *RestLogin) LoadInsecureLoginRoutes(eg *echo.Group) {
+	eg.POST("/login/reset/pwd", h.PostPwd)
+	eg.GET("/login/reset/:email_addr", h.ResetRequest)
+	eg.POST("/login/signin", h.SignIn)
+}
+
+func (h *RestLogin) Get(c echo.Context) error {
+	uid := c.Param("uid")
+	login := &Login{Uid: uid}
+	if err := h.managerLogin.Get(login); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *login, nil, nil))
+}
+
+func (h *RestLogin) Search(c echo.Context) error {
+	param := LoginParam{}
+	numberStr := c.QueryParam("page[number]")
+	if numberStr != "" {
+		var errNumber error
+		param.Number, errNumber = strconv.Atoi(numberStr)
+		if errNumber != nil {
+			parse := ae.ParamError("page[number]", nil)
+			return c.JSON(parse.StatusCode, util.NewOutput(c, nil, &parse, nil))
+		}
+	}
+	sizeStr := c.QueryParam("page[size]")
+	if sizeStr != "" {
+		var errSize error
+		param.Size, errSize = strconv.Atoi(sizeStr)
+		if errSize != nil {
+			parse := ae.ParamError("page[size]", nil)
+			return c.JSON(parse.StatusCode, util.NewOutput(c, nil, &parse, nil))
+		}
+	}
+	param.Sort = c.QueryParam("sort")
+	if err := c.Bind(&param); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
+	logins := &[]Login{}
+	totalCount, err := h.managerLogin.Search(logins, param)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *logins, nil, &totalCount))
+}
+
+func (h *RestLogin) Post(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	log := Login{}
+	logData := LoginData{Data: log}
+	if err := c.Bind(&logData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerLogin.Post(&logData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, logData.Data, nil, nil))
+}
+
+func (h *RestLogin) Patch(c echo.Context) error {
+	log := Login{}
+	logData := LoginData{Data: log}
+	if err := c.Bind(&logData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerLogin.Patch(logData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestLogin) PatchPwd(c echo.Context) error {
+	log := Login{}
+	logData := LoginData{Data: log}
+	if err := c.Bind(&logData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerLogin.PatchPwd(logData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestLogin) Delete(c echo.Context) error {
+	uid := c.Param("uid")
+	login := &Login{Uid: uid}
+	if err := h.managerLogin.Delete(login); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestLogin) PostPwd(c echo.Context) error {
+	pwd := PasswordReset{}
+	pwdData := PasswordResetData{Data: pwd}
+	if err := c.Bind(&pwdData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerLogin.PwdReset(pwdData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestLogin) ResetRequest(c echo.Context) error {
+	emailAddr := c.Param("email_addr")
+	resetRequest := &ResetRequest{EmailAddr: emailAddr}
+	if err := h.managerLogin.ResetRequest(resetRequest); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	resetRequestData := ResetRequestData{Data: *resetRequest}
+	return c.JSON(http.StatusOK, util.NewOutput(c, resetRequestData, nil, nil))
+}
+
+func (h *RestLogin) SignIn(c echo.Context) error {
+	log := Login{}
+	logData := LoginData{Data: log}
+	if err := c.Bind(&logData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	token, err := h.managerLogin.SignIn(logData.Data)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, echo.Map{"token": token})
+}

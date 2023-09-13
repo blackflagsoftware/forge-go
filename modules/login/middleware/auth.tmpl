@@ -1,0 +1,65 @@
+package middleware
+
+import (
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v4"
+	"github.com/labstack/echo/v4"
+	"github.com/powerchordinc/finance/config"
+	ae "github.com/powerchordinc/finance/internal/api_error"
+)
+
+type (
+	CustomClaims struct {
+		Roles []string `json:"roles"`
+		jwt.RegisteredClaims
+	}
+)
+
+func AuthConfig() echojwt.Config {
+	return echojwt.Config{
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(CustomClaims)
+		},
+		SigningKey: []byte(config.LoginAuthSecret),
+	}
+}
+
+func AuthContext(compareRole []string, c echo.Context) bool {
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(*CustomClaims)
+	for _, c := range claims.Roles {
+		for _, r := range compareRole {
+			if c == r {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func AuthBuild(roles []string) (string, error) {
+	secret := config.LoginAuthSecret
+	if secret == "" {
+		return "", ae.GeneralError("auth: secret is empty", nil)
+	}
+	secretByte := []byte(secret)
+	now := time.Now().UTC()
+	hours := config.GetExpiresAtDuration()
+	expiresAt := now.Add(time.Duration(hours) * time.Hour).UTC()
+	claims := &CustomClaims{
+		Roles: roles,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := token.SignedString(secretByte)
+	if err != nil {
+		Default.Println("AuthBuild: error getting signed token:", err)
+		return "", ae.GeneralError("auth: unable to sign token", nil)
+	}
+	return tokenStr, nil
+}

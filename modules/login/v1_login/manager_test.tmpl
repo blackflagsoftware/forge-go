@@ -1,0 +1,209 @@
+package login
+
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/powerchordinc/finance/internal/util/email"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/guregu/null.v3"
+)
+
+func TestManagerLogin_Get(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataLogin := NewMockDataLoginAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		fin     *Login
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			&Login{Uid: "test id"},
+			false,
+			[]*gomock.Call{
+				mockDataLogin.EXPECT().Read(gomock.Any()).Return(nil),
+			},
+		},
+		{
+			"invalid id",
+			&Login{Uid: ""},
+			true,
+			[]*gomock.Call{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerLogin{dataLogin: mockDataLogin}
+			err := m.Get(tt.fin)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerLogin.Get().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerLogin.Get().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerLogin_Post(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataLogin := NewMockDataLoginAdapter(ctrl)
+	mockEmail := email.NewMockEmailer(ctrl)
+
+	tests := []struct {
+		name    string
+		fin     *Login
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			&Login{EmailAddr: null.NewString("test@email.com", true), Pwd: null.NewString("a", true), Active: null.NewBool(true, true), SetPwd: null.NewBool(true, true), CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), UpdatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			false,
+			[]*gomock.Call{
+				mockDataLogin.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil).AnyTimes(),
+				mockEmail.EXPECT().SendReset(gomock.Any(), gomock.Any()).Return(nil),
+			},
+		},
+		{
+			"failed - emailAddr",
+			&Login{EmailAddr: null.NewString("a", false), Pwd: null.NewString("a", true), Active: null.NewBool(true, true), SetPwd: null.NewBool(true, true), CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), UpdatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length emailAddr",
+			&Login{SetPwd: null.NewBool(true, true), CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), UpdatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), EmailAddr: null.NewString("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true), Pwd: null.NewString("a", true), Active: null.NewBool(true, true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - pwd",
+			&Login{EmailAddr: null.NewString("a", true), Pwd: null.NewString("a", false), Active: null.NewBool(true, true), SetPwd: null.NewBool(true, true), CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), UpdatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length pwd",
+			&Login{Active: null.NewBool(true, true), SetPwd: null.NewBool(true, true), CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), UpdatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), EmailAddr: null.NewString("a", true), Pwd: null.NewString("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - active",
+			&Login{CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), UpdatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), EmailAddr: null.NewString("a", true), Pwd: null.NewString("a", true), Active: null.NewBool(true, false), SetPwd: null.NewBool(true, true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - setPwd",
+			&Login{Pwd: null.NewString("a", true), Active: null.NewBool(true, true), SetPwd: null.NewBool(true, false), CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), UpdatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), EmailAddr: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - createdAt",
+			&Login{CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), false), UpdatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), EmailAddr: null.NewString("a", true), Pwd: null.NewString("a", true), Active: null.NewBool(true, true), SetPwd: null.NewBool(true, true)},
+			true,
+			[]*gomock.Call{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerLogin{dataLogin: mockDataLogin, emailer: mockEmail}
+			err := m.Post(tt.fin)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerLogin.Create().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerLogin.Create().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerLogin_Patch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataLogin := NewMockDataLoginAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		body    Login
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			Login{Uid: "76A21E7C-A155-4472-AEC5-14C84AC82B9A"},
+			false,
+			[]*gomock.Call{
+				mockDataLogin.EXPECT().Read(gomock.Any()).Return(nil),
+				mockDataLogin.EXPECT().Update(gomock.Any()).Return(nil),
+			},
+		},
+		{
+			"invalid id",
+			Login{Uid: "76A21E7C-A155-4472-AEC5-14C84AC82B9A"},
+			true,
+			[]*gomock.Call{
+				mockDataLogin.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerLogin{dataLogin: mockDataLogin}
+			err := m.Patch(tt.body)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerLogin.Update().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerLogin.Update().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerLogin_Delete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataLogin := NewMockDataLoginAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		fin     *Login
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			&Login{Uid: "test id"},
+			false,
+			[]*gomock.Call{
+				mockDataLogin.EXPECT().Delete(gomock.Any()).Return(nil),
+			},
+		},
+		{
+			"invalid id",
+			&Login{Uid: ""},
+			true,
+			[]*gomock.Call{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerLogin{dataLogin: mockDataLogin}
+			err := m.Delete(tt.fin)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerLogin.Delete().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerLogin.Delete().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
