@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/powerchordinc/finance/internal/util/email"
-	l "github.com/powerchordinc/finance/internal/v1/login"
+	"{{.ProjectPath}}/config"
+	"{{.ProjectPath}}/internal/util/email"
+	l "{{.ProjectPath}}/internal/v1/login"
 	"gopkg.in/guregu/null.v3"
 )
 
@@ -12,7 +13,7 @@ import (
 // and populate the reset pwd process
 
 func main() {
-	login := &l.Login{EmailAddr: null.StringFrom("admin@powerchordsystem.com"), SetPwd: null.BoolFrom(true)}
+	login := &l.Login{EmailAddr: null.StringFrom(config.LoginAdminEmail), SetPwd: null.BoolFrom(true)}
 	eh := email.Email{}
 	dh := l.InitStorage()
 	mh := l.NewManagerLogin(dh, eh)

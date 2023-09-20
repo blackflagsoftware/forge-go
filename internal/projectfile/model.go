@@ -23,6 +23,8 @@ type (
 		TagFormat            string   `json:"tag_format"`             // TODO: make an option to change this
 		KnownAliases         []string `json:"known_aliases"`
 		VersionPath          string   `json:"version_path"` // TODO: make an option to change this
+		Modules              []string `json:"modules"`
+		LoadedConfig         bool     `json:"loaded_config"` // tells the code to only run once
 		n.Name
 	}
 )

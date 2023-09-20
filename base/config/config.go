@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	// --- replace config import text - do not remove ---
+
 	"github.com/kardianos/osext"
 )
 

@@ -43,13 +43,20 @@ func main() {
 }
 
 func cloneMe(directory string) {
+	if os.Getenv("FORGE_PATH") == "" {
+		fmt.Println("FORGE_PATH is not set... Goodbye")
+		return
+	}
 	util.ClearScreen()
 	goPath := os.Getenv("GOPATH")
 	if goPath == "" {
 		fmt.Println("GOPATH is not set, please set this env. var")
 		return
 	}
-	os.Chdir("tools/clone")
+	err := os.Chdir(os.Getenv("FORGE_PATH") + "/tools/clone")
+	if err != nil {
+		fmt.Println(err)
+	}
 	output, _ := exec.Command("go", "run", "clone.go", "-projectPath", directory).CombinedOutput()
 	fmt.Printf("%s\n", output)
 }

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/smtp"
 
-	"github.com/powerchordinc/finance/config"
-	m "github.com/powerchordinc/finance/internal/middleware"
+	"{{.ProjectPath}}/config"
+	m "{{.ProjectPath}}/internal/middleware"
 )
 
 //go:generate mockgen -source=email.go -destination=mock.go -package=email

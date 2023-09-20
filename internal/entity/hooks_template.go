@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	con "github.com/blackflagsoftware/forge-go/internal/constant"
+	pf "github.com/blackflagsoftware/forge-go/internal/projectfile"
 )
 
 func (ep *Entity) BuildAPIHooks() {
@@ -159,49 +160,7 @@ func (ep *Entity) BuildAPIHooks() {
 		}
 	}
 	// hook into config.go
-	configFile := fmt.Sprintf("%s/config/config.go", ep.ProjectFile.FullPath)
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		fmt.Printf("%s is missing unable to write in hooks\n", configFile)
-	} else {
-		// env lines
-		configLines := []string{}
-		switch ep.ProjectFile.Storage {
-		case "s":
-			configLines = append(configLines, "StorageSQL = true")
-			if ep.ProjectFile.SqlStorage == "p" || ep.ProjectFile.SqlStorage == "m" {
-				configLines = append(configLines, "DBHost = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_DB_HOST\", \"\")")
-				configLines = append(configLines, "DBDB = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_DB_DB\", \"\")")
-				configLines = append(configLines, "DBUser = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_DB_USER\",\"\")")
-				configLines = append(configLines, "DBPass = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_DB_PASS\", \"\")")
-				configLines = append(configLines, "AdminDBUser = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_ADMIN_DB_USER\",\"\")")
-				configLines = append(configLines, "AdminDBPass = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_ADMIN_DB_PASS\", \"\")")
-			} else {
-				configLines = append(configLines, "SqlitePath = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_SQLITE_PATH\",\"\")")
-			}
-		case "f":
-			configLines = append(configLines, "StorageFile = true")
-			configLines = append(configLines, "SqlitePath = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_SQLITE_PATH\", \"/tmp/{{.Name.Lower}}.db\")")
-		case "m":
-			configLines = append(configLines, "StorageMongo = true")
-			configLines = append(configLines, "MongoHost = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_MONGO_HOST\", \"localhost\")")
-			configLines = append(configLines, "MongoPort = GetEnvOrDefault(\"{{.ProjectFile.Name.EnvVar}}_MONGO_PORT\", \"27017\")")
-		}
-		configLine := strings.Join(configLines, "\n\t")
-
-		var configReplace bytes.Buffer
-		tConfig := template.Must(template.New("config").Parse(configLine))
-		errConfig := tConfig.Execute(&configReplace, ep)
-		if errConfig != nil {
-			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
-		} else {
-			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
-			execConfig := exec.Command("bash", "-c", cmdConfig)
-			errConfigCmd := execConfig.Run()
-			if errConfigCmd != nil {
-				fmt.Printf("%s: error in replace for config text [%s]\n", configFile, errConfigCmd)
-			}
-		}
-	}
+	PopulateConfig(&ep.ProjectFile)
 	// audit
 	auditFile := fmt.Sprintf("%s/internal/audit/audit.go", ep.ProjectFile.FullPath)
 	if _, err := os.Stat(auditFile); os.IsNotExist(err) {
@@ -221,5 +180,57 @@ func (ep *Entity) BuildAPIHooks() {
 		if errServerOnceCmd != nil {
 			fmt.Printf("%s: error in replace for audit reference once [%s]\n", auditFile, errServerOnceCmd)
 		}
+	}
+}
+
+func PopulateConfig(projectFile *pf.ProjectFile) {
+	// only run this once, sets this to true at the end of this function
+	if projectFile.LoadedConfig {
+		return
+	}
+	configFile := fmt.Sprintf("%s/config/config.go", projectFile.FullPath)
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		fmt.Printf("%s is missing unable to write in hooks\n", configFile)
+	} else {
+		// env lines
+		configLines := []string{}
+		switch projectFile.Storage {
+		case "s":
+			configLines = append(configLines, "StorageSQL = true")
+			if projectFile.SqlStorage == "p" || projectFile.SqlStorage == "m" {
+				configLines = append(configLines, "DBHost = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_HOST\", \"\")")
+				configLines = append(configLines, "DBDB = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_DB\", \"\")")
+				configLines = append(configLines, "DBUser = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_USER\",\"\")")
+				configLines = append(configLines, "DBPass = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_PASS\", \"\")")
+				configLines = append(configLines, "AdminDBUser = GetEnvOrDefault(\"{{.Name.EnvVar}}_ADMIN_DB_USER\",\"\")")
+				configLines = append(configLines, "AdminDBPass = GetEnvOrDefault(\"{{.Name.EnvVar}}_ADMIN_DB_PASS\", \"\")")
+			} else {
+				configLines = append(configLines, "SqlitePath = GetEnvOrDefault(\"{{.Name.EnvVar}}_SQLITE_PATH\",\"\")")
+			}
+		case "f":
+			configLines = append(configLines, "StorageFile = true")
+			configLines = append(configLines, "SqlitePath = GetEnvOrDefault(\"{{.Name.EnvVar}}_SQLITE_PATH\", \"/tmp/{{.Name.Lower}}.db\")")
+		case "m":
+			configLines = append(configLines, "StorageMongo = true")
+			configLines = append(configLines, "MongoHost = GetEnvOrDefault(\"{{.Name.EnvVar}}_MONGO_HOST\", \"localhost\")")
+			configLines = append(configLines, "MongoPort = GetEnvOrDefault(\"{{.Name.EnvVar}}_MONGO_PORT\", \"27017\")")
+		}
+		configLines = append(configLines, `\/\/ --- replace config text - do not remove ---`)
+		configLine := strings.Join(configLines, "\n\t")
+
+		var configReplace bytes.Buffer
+		tConfig := template.Must(template.New("config").Parse(configLine))
+		errConfig := tConfig.Execute(&configReplace, projectFile)
+		if errConfig != nil {
+			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
+		} else {
+			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
+			execConfig := exec.Command("bash", "-c", cmdConfig)
+			errConfigCmd := execConfig.Run()
+			if errConfigCmd != nil {
+				fmt.Printf("%s: error in replace for config text [%s]\n", configFile, errConfigCmd)
+			}
+		}
+		projectFile.LoadedConfig = true
 	}
 }

@@ -121,12 +121,12 @@ func (p *Project) SqlMenu() {
 		}
 		if len(p.Entities) > 0 {
 			p.StartTemplating()
+			// remove entities already processed
+			p.Entities = []e.Entity{}
+			fmt.Println("")
+			fmt.Println("Entities have been processed, press 'enter' to continue")
+			util.ParseInput()
 		}
-		// remove entities already processed
-		p.Entities = []e.Entity{}
-		fmt.Println("")
-		fmt.Println("Entities have been processed, press 'enter' to continue")
-		util.ParseInput()
 	}
 }
 
@@ -246,8 +246,47 @@ func (p *Project) BlankMenu() {
 }
 
 func (p *Project) AdminMenu() {
-	fmt.Println("Admin menu")
-	util.ParseInput()
+	mainMessage := []string{"** Admin Menu **", "", "Please make a selection:"}
+	prompts := []string{"(1) Change Storage Type", "(2) Change TagFormat", "(3) Add a module", "(4) SQL only - use an ORM"}
+	acceptablePrompts := []string{"1", "2", "3", "4"}
+	for {
+		util.ClearScreen()
+		sel := util.BasicPrompt(mainMessage, prompts, acceptablePrompts, "e", util.ClearScreen)
+		if sel == "e" {
+			break
+		}
+		switch sel {
+		case "1":
+			fmt.Println("Change Storage")
+		case "2":
+			fmt.Println("Change TagFormat")
+		case "3":
+			p.ModuleMenu()
+		case "4":
+			fmt.Println("ORM")
+		}
+		fmt.Println("temp 'enter' here")
+		util.ParseInput()
+	}
+}
+
+func (p *Project) ModuleMenu() {
+	mainMessage := []string{"** Add Module **", "", "Which module do you wish to add?"}
+	prompts := []string{"(1) Login"}
+	acceptablePrompt := []string{"1"}
+	for {
+		util.ClearScreen()
+		sel := util.BasicPrompt(mainMessage, prompts, acceptablePrompt, "e", util.ClearScreen)
+		if sel == "e" {
+			break
+		}
+		switch sel {
+		case "1":
+			p.ModuleAddLogin()
+		}
+		fmt.Println("temp 'enter' here")
+		util.ParseInput()
+	}
 }
 
 func processColumns() []string {
@@ -499,4 +538,18 @@ func (p *Project) saveOutSql() {
 			fmt.Println("Unable to write lines to:", fileName)
 		}
 	}
+}
+
+func (p *Project) ModuleAddLogin() {
+	for _, m := range p.ProjectFile.Modules {
+		if m == "login" {
+			fmt.Println("The 'Login' module has already been added to this project, press 'enter' to continue")
+			util.ParseInput()
+			return
+		}
+	}
+	// add all the modules
+	p.AddLogin()
+	// mark it as complete
+	p.ProjectFile.Modules = append(p.ProjectFile.Modules, "login")
 }

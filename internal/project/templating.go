@@ -16,7 +16,7 @@ var (
 )
 
 func (project *Project) StartTemplating() {
-	sqlProvider, sqlProviderLower := buildStorage(*project)
+	sqlProvider, sqlProviderLower := BuildStorage(*project)
 	// buildMigration(*project)
 
 	for i := range project.Entities {
@@ -37,13 +37,13 @@ func (project *Project) StartTemplating() {
 		buildTemplateParts(&project.Entities[i])
 		processTemplateFiles(*project, &project.Entities[i], savePath)
 	}
-	updateModFiles(project.ProjectFile.AppName)
-	// in case you a entity is marekd as 'blank'
+	UpdateModFiles(project.ProjectFile.AppName)
+	// in case you a entity is marked as 'blank'
 	project.UseBlank = false
 }
 
 // send back SQLProvider
-func buildStorage(project Project) (sqlProvider, sqlProviderLower string) {
+func BuildStorage(project Project) (sqlProvider, sqlProviderLower string) {
 	storagePath := fmt.Sprintf("%s/internal/storage", project.ProjectFile.FullPath)
 	if errMakeAll := os.MkdirAll(storagePath, os.ModeDir|os.ModePerm); errMakeAll != nil {
 		fmt.Println("New storage folder was not able to be made", errMakeAll)
@@ -248,7 +248,7 @@ func processTemplateFiles(project Project, ep *e.Entity, savePath string) {
 	}
 }
 
-func updateModFiles(projectName string) {
+func UpdateModFiles(projectName string) {
 	// this assumes we are in the root folder
 	commands := []*exec.Cmd{
 		exec.Command("protoc", "--go_out=./pkg/proto", "--go-grpc_out=./pkg/proto", fmt.Sprintf("./pkg/proto/%s.proto", projectName)),
@@ -264,6 +264,16 @@ func updateModFiles(projectName string) {
 		if err != nil {
 			fmt.Printf("command: %s failed\n", command.String())
 			fmt.Printf("output: %s\n", output)
+		}
+	}
+	fileName := "pkg/proto/reset_proto.sh"
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		// push out the helper file, has not been created
+		content := fmt.Sprintf(`#! /bin/bash
+cd ../.. && protoc --go_out=./pkg/proto --go-grpc_out=./pkg/proto ./pkg/proto/%s.proto`, projectName)
+		err := os.WriteFile(fileName, []byte(content), 0766)
+		if err != nil {
+			fmt.Println("Error creating reset_proto.sh")
 		}
 	}
 }
