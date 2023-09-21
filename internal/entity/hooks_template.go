@@ -232,5 +232,6 @@ func PopulateConfig(projectFile *pf.ProjectFile) {
 			}
 		}
 		projectFile.LoadedConfig = true
+		projectFile.SaveProjectFile()
 	}
 }

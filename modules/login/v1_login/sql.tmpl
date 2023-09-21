@@ -21,7 +21,7 @@ func InitSQL() *SQLLogin {
 	return &SQLLogin{DB: db}
 }
 
-func (d *SQLLogin) Read(log *Login) error {
+func (d *SQLLogin) Read(login *Login) error {
 	sqlGet := `
 		SELECT
 			uid,
@@ -32,13 +32,13 @@ func (d *SQLLogin) Read(log *Login) error {
 			created_at,
 			updated_at
 		FROM login WHERE text(uid) = $1`
-	if errDB := d.DB.Get(log, sqlGet, log.Uid); errDB != nil {
+	if errDB := d.DB.Get(login, sqlGet, login.Uid); errDB != nil {
 		return ae.DBError("Login Get: unable to get record.", errDB)
 	}
 	return nil
 }
 
-func (d *SQLLogin) ReadAll(log *[]Login, param LoginParam) (int, error) {
+func (d *SQLLogin) ReadAll(login *[]Login, param LoginParam) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Search)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
@@ -53,7 +53,7 @@ func (d *SQLLogin) ReadAll(log *[]Login, param LoginParam) (int, error) {
 		%s
 		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
 	sqlSearch = d.DB.Rebind(sqlSearch)
-	if errDB := d.DB.Select(log, sqlSearch, args...); errDB != nil {
+	if errDB := d.DB.Select(login, sqlSearch, args...); errDB != nil {
 		return 0, ae.DBError("Login Search: unable to select records.", errDB)
 	}
 	sqlCount := fmt.Sprintf(`
@@ -69,7 +69,7 @@ func (d *SQLLogin) ReadAll(log *[]Login, param LoginParam) (int, error) {
 	return count, nil
 }
 
-func (d *SQLLogin) Create(log *Login, res ResetRequest) (err error) {
+func (d *SQLLogin) Create(login *Login, res ResetRequest) (err error) {
 	txn := d.DB.MustBegin()
 	defer util.TxnFinish(txn, &err)
 
@@ -91,7 +91,7 @@ func (d *SQLLogin) Create(log *Login, res ResetRequest) (err error) {
 			:created_at,
 			:updated_at
 		)`
-	_, errDB := txn.NamedExec(sqlPost, log)
+	_, errDB := txn.NamedExec(sqlPost, login)
 	if errDB != nil {
 		err = ae.DBError("Login Post: unable to insert record.", errDB)
 		return err
@@ -105,20 +105,20 @@ func (d *SQLLogin) Create(log *Login, res ResetRequest) (err error) {
 	return err
 }
 
-func (d *SQLLogin) Update(log Login) error {
+func (d *SQLLogin) Update(login Login) error {
 	sqlPatch := `
 		UPDATE login SET
 			email_addr = :email_addr,
 			active = :active,
 			updated_at = :updated_at
 		WHERE uid = :uid`
-	if _, errDB := d.DB.NamedExec(sqlPatch, log); errDB != nil {
+	if _, errDB := d.DB.NamedExec(sqlPatch, login); errDB != nil {
 		return ae.DBError("Login Patch: unable to update record.", errDB)
 	}
 	return nil
 }
 
-func (d *SQLLogin) UpdatePwd(log Login) (err error) {
+func (d *SQLLogin) UpdatePwd(login Login) (err error) {
 	txn := d.DB.MustBegin()
 	defer util.TxnFinish(txn, &err)
 
@@ -128,32 +128,32 @@ func (d *SQLLogin) UpdatePwd(log Login) (err error) {
 			updated_at = :updated_at,
 			set_pwd = false
 		WHERE uid = :uid`
-	if _, errDB := txn.NamedExec(sqlPatch, log); errDB != nil {
+	if _, errDB := txn.NamedExec(sqlPatch, login); errDB != nil {
 		err = ae.DBError("Login UpdatePwd: unable to update record.", errDB)
 		return
 	}
 	// update all reset records (tokens) if any
 	now := time.Now().UTC()
 	sqlReset := `UPDATE reset_login SET updated_at = $1 WHERE text(login_uid) = $2`
-	if _, errDB := txn.Exec(sqlReset, now, log.Uid); errDB != nil {
+	if _, errDB := txn.Exec(sqlReset, now, login.Uid); errDB != nil {
 		err = ae.DBError("Login UpdatePwd: unable to set finish reset.", errDB)
 		return
 	}
 	return nil
 }
 
-func (d *SQLLogin) Delete(log *Login) error {
+func (d *SQLLogin) Delete(login *Login) error {
 	sqlDelete := `
 		DELETE FROM login WHERE text(uid) = $1`
-	if _, errDB := d.DB.Exec(sqlDelete, log.Uid); errDB != nil {
+	if _, errDB := d.DB.Exec(sqlDelete, login.Uid); errDB != nil {
 		return ae.DBError("Login Delete: unable to delete record.", errDB)
 	}
 	return nil
 }
 
-func (d *SQLLogin) GetByEmailAddr(log *Login) error {
+func (d *SQLLogin) GetByEmailAddr(login *Login) error {
 	sqlGet := `SELECT uid, pwd, active, set_pwd FROM login WHERE email_addr = $1`
-	if errDB := d.DB.Get(log, sqlGet, log.EmailAddr); errDB != nil {
+	if errDB := d.DB.Get(login, sqlGet, login.EmailAddr); errDB != nil {
 		return ae.DBError("GetByEmailAddr: unable to get record.", errDB)
 	}
 	return nil

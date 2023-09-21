@@ -89,6 +89,10 @@ OuterLoop:
 		}
 	}
 	p.StartTemplating()
+	p.Entities = []e.Entity{}
+	fmt.Println("")
+	fmt.Println("Entities have been processed, press 'enter' to continue")
+	util.ParseInput()
 }
 
 func (p *Project) SqlMenu() {

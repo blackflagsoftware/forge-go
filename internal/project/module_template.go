@@ -11,13 +11,13 @@ import (
 	e "github.com/blackflagsoftware/forge-go/internal/entity"
 )
 
-func (p Project) AddLogin() {
+func (p *Project) AddLogin() {
 	p.Config()
 	p.Errors()
 	p.ProtoFile()
 	p.TemplateFiles()
 	e.PopulateConfig(&p.ProjectFile)
-	BuildStorage(p)
+	BuildStorage(*p)
 	UpdateModFiles(p.ProjectFile.AppName)
 }
 

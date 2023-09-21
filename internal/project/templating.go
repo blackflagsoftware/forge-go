@@ -40,6 +40,7 @@ func (project *Project) StartTemplating() {
 	UpdateModFiles(project.ProjectFile.AppName)
 	// in case you a entity is marked as 'blank'
 	project.UseBlank = false
+	project.ProjectFile.SaveProjectFile()
 }
 
 // send back SQLProvider

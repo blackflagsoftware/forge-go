@@ -51,6 +51,7 @@ func (h *RestLogin) LoadLoginRoutes(eg *echo.Group) {
 	eg.PATCH("/login", h.Patch)
 	eg.PATCH("/login/pwd", h.PatchPwd)
 	eg.DELETE("/login/:uid", h.Delete)
+	eg.POST("/login/verify", h.Verify)
 }
 
 func (h *RestLogin) LoadInsecureLoginRoutes(eg *echo.Group) {
@@ -109,8 +110,8 @@ func (h *RestLogin) Post(c echo.Context) error {
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
-	log := Login{}
-	logData := LoginData{Data: log}
+	login := Login{}
+	logData := LoginData{Data: login}
 	if err := c.Bind(&logData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
@@ -124,8 +125,8 @@ func (h *RestLogin) Post(c echo.Context) error {
 }
 
 func (h *RestLogin) Patch(c echo.Context) error {
-	log := Login{}
-	logData := LoginData{Data: log}
+	login := Login{}
+	logData := LoginData{Data: login}
 	if err := c.Bind(&logData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
@@ -139,8 +140,8 @@ func (h *RestLogin) Patch(c echo.Context) error {
 }
 
 func (h *RestLogin) PatchPwd(c echo.Context) error {
-	log := Login{}
-	logData := LoginData{Data: log}
+	login := Login{}
+	logData := LoginData{Data: login}
 	if err := c.Bind(&logData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
@@ -192,8 +193,8 @@ func (h *RestLogin) ResetRequest(c echo.Context) error {
 }
 
 func (h *RestLogin) SignIn(c echo.Context) error {
-	log := Login{}
-	logData := LoginData{Data: log}
+	login := Login{}
+	logData := LoginData{Data: login}
 	if err := c.Bind(&logData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
@@ -205,4 +206,9 @@ func (h *RestLogin) SignIn(c echo.Context) error {
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
 	return c.JSON(http.StatusOK, echo.Map{"token": token})
+}
+
+func (h *RestLogin) Verify(c echo.Context) error {
+	// if it made it this far, the jwt made it past the middleware auth layer
+	return c.JSON(http.StatusOK, echo.Map{"status": "successful"})
 }
