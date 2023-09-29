@@ -17,6 +17,13 @@ type (
 	Email struct{}
 )
 
+func EmailInit() Emailer {
+	if config.LoginEmailHost != "" {
+		return &Email{}
+	}
+	return &MockEmailer{}
+}
+
 func (e Email) SendReset(toEmail, resetToken string) error {
 	from := config.LoginEmailFrom
 	pwd := config.LoginEmailPwd

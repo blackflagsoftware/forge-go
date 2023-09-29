@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"{{.ProjectPath}}/config"
-	"{{.ProjectPath}}/internal/util/email"
 	l "{{.ProjectPath}}/internal/v1/login"
 	"gopkg.in/guregu/null.v3"
 )
@@ -14,9 +13,8 @@ import (
 
 func main() {
 	login := &l.Login{EmailAddr: null.StringFrom(config.LoginAdminEmail), SetPwd: null.BoolFrom(true)}
-	eh := email.Email{}
 	dh := l.InitStorage()
-	mh := l.NewManagerLogin(dh, eh)
+	mh := l.NewManagerLogin(dh)
 	if err := mh.Post(login); err != nil {
 		fmt.Println("Creating admin error:", err)
 		return

@@ -160,8 +160,8 @@ func (d *SQLLogin) GetByEmailAddr(login *Login) error {
 }
 
 func (d *SQLLogin) GetResetRequest(resetRequest *ResetRequest) error {
-	sqlGet := `SELECT login_uid, reset_token, created_at FROM reset_login WHERE text(login_uid) = $1 AND updated_at IS NULL LIMIT 1`
-	if errDB := d.DB.Get(resetRequest, sqlGet, resetRequest.LoginUid); errDB != nil {
+	sqlGet := `SELECT login_uid, reset_token, created_at FROM reset_login WHERE text(login_uid) = $1 AND text(reset_token) = $2 AND updated_at IS NULL LIMIT 1`
+	if errDB := d.DB.Get(resetRequest, sqlGet, resetRequest.LoginUid, resetRequest.ResetToken); errDB != nil {
 		return ae.DBError("GetByEmailAddr: unable to get record.", errDB)
 	}
 	return nil

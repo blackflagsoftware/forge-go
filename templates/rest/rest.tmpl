@@ -1,11 +1,9 @@
 package {{.AllLower}}
 
 import (
-	"net/http"
-	"strconv"
+	"net/http"{{.RestStrConv}}
 
 	"github.com/labstack/echo/v4"
-
 	ae "{{.ProjectPath}}/internal/api_error"
 	util "{{.ProjectPath}}/internal/util"
 )
@@ -56,25 +54,6 @@ func (h *Rest{{.Camel}}) Get(c echo.Context) error {
 
 func (h *Rest{{.Camel}}) Search(c echo.Context) error {
 	param := {{.Camel}}Param{}
-	numberStr := c.QueryParam("page[number]")
-	if numberStr != "" {
-		var errNumber error
-		param.Number, errNumber = strconv.Atoi(numberStr)
-		if errNumber != nil {
-			parse := ae.ParamError("page[number]", nil)
-			return c.JSON(parse.StatusCode, util.NewOutput(c, nil, &parse, nil))
-		}
-	}
-	sizeStr := c.QueryParam("page[size]")
-	if sizeStr != "" {
-		var errSize error
-		param.Size, errSize = strconv.Atoi(sizeStr)
-		if errSize != nil {
-			parse := ae.ParamError("page[size]", nil)
-			return c.JSON(parse.StatusCode, util.NewOutput(c, nil, &parse, nil))
-		}
-	}
-	param.Sort = c.QueryParam("sort")
 	if err := c.Bind(&param); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))

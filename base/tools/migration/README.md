@@ -9,9 +9,21 @@ This tool is used to help this particular api/microservice to migrate database u
 
 `FORGE_GO_BASE_MIGRATION_PATH`: [string] path to the migration scripts, by default it will use the `<project_folder>/scripts/migrations`. Leaving this to the default value may be useful during debugging or running on a local development maching. A different directory path may be provided as needed, this is particularly true when doing something like containerization and deploying to the cloud.
 
-`FORGE_GO_BASE_MIGRATION_SKIP_INIT`: [true/false] set to `true` if there is another outside process that will create the DB and migration table initialize process.
+`FORGE_GO_BASE_MIGRATION_SKIP_INIT`: [true/false] set to `true` if there is another outside process that will create the DB and migration table initialization process.
 
-`FORGE_GO_BASE_MIGRATION_DB_ENGINE`: [string] DB engine to support; valid values: `postgres` | `mysql` | `sqlite3`
+`FORGE_GO_BASE_ADMIN_DB_USER`: [string] (optional) the root admin user name in case the normal user (`FORGE_GO_BASE_DB_USER`) doesn't not have access to create a DB or tables
+
+`FORGE_GO_BASE_ADMIN_DB_PASS`: [string] (optional) the root admin password in case the normal user (`FORGE_GO_BASE_DB_PASS`) doesn't not have access to create a DB or tables
+
+The following env vars are copied from the project's main `config.go` file and should be set for the project's connection to the DB engine, mentioning this because this tool is dependent on these env vars:
+
+`FORGE_GO_BASE_DB_HOST`
+`FORGE_GO_BASE_DB_DB`
+`FORGE_GO_BASE_DB_USER`
+`FORGE_GO_BASE_DB_PASS`
+`FORGE_GO_BASE_MIGRATION_DB_ENGINE`
+
+Note: The prefix of the above env vars will change in the `config.go` file, the prefix will change to the new project name.
 
 ##### Integration
 If `FORGE_GO_BASE_MIGRATION_ENABLED` is set then you service will automatically run the code within this tool to process all the migration scripts to date.
@@ -30,7 +42,7 @@ The script shoule be composed of the SQL language statement.  Due to limitations
 The tool will also allow you to run a more complex set of instructions via a separate binary.  Warning, you will have to compile and make available that file in your process of deployment, files should end in *.bin and should be in normalized name format, see `NormalizeNames` for more details.
 
 #### NormalizeNames
-In order for this tool to run each script just once, the script/binary files will need to have a normalized name, in this case the file needs to start with a date format of YYYYMMDDhhmmss, i.e. 20230213010559-create-my-first-table.sql.  This will put the files in order they need to run.  The rest of the name is only for human readablity and is up to the user on what that is.
+In order for this tool to run each script just once, the script/binary files will need to have a normalized name, in this case the file needs to start with a date format of YYYYMMDDhhmmss, i.e. 20230213010559-create-my-first-table.sql.  This will put the files in order they need to run.  The rest of the name is only for human readablity and is up to the user on what that is.  Though the normalization process will replace any `"_" or " "` to `-`, just to keep the file names consistent.
 
 ### Usage
 

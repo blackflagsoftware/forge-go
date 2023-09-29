@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path"
 	"text/template"
+	"time"
 
 	e "github.com/blackflagsoftware/forge-go/internal/entity"
 )
@@ -16,9 +17,16 @@ func (p *Project) AddLogin() {
 	p.Errors()
 	p.ProtoFile()
 	p.TemplateFiles()
-	e.PopulateConfig(&p.ProjectFile)
-	BuildStorage(*p)
+	loginEntity := e.Entity{}
+	loginEntity.Name.BuildName("login", p.ProjectFile.KnownAliases)
+	loginEntity.ProjectFile = p.ProjectFile
+	loginEntity.SQLProvider, loginEntity.SQLProviderLower = BuildStorage(*p)
+	// e.PopulateConfig(&p.ProjectFile)
+	loginEntity.BuildAPIHooks()
 	UpdateModFiles(p.ProjectFile.AppName)
+	p.MigrationScripts()
+	p.ProjectFile.LoadProjectFile()
+	// TODO: this is a mess, it all comes down with passing ProjectFile around everywhere!
 }
 
 func (p Project) Config() {
@@ -273,7 +281,79 @@ func (p Project) TemplateFiles() {
 		}
 		err = t.Execute(file, p.ProjectFile)
 		if err != nil {
-			fmt.Println("Execution of template:", err)
+			fmt.Println("Error execution of template:", err)
 		}
+	}
+}
+
+func (p Project) MigrationScripts() {
+	// set postgres by default
+	uuid := "UUID"
+	ts := "TIMESTAMP"
+	b := "BOOL"
+	if p.ProjectFile.SqlStorage == "m" {
+		// mysql
+		uuid = "CHAR(36)"
+		ts = "DATETIME"
+		b = "BOOLEAN"
+	}
+	if p.ProjectFile.SqlStorage == "s" {
+		// sqlite
+		uuid = "TEXT"
+		ts = "INTEGER"
+		b = "INTEGER"
+	}
+	loginScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS login (
+	uid %s NOT NULL,
+	email_addr VARCHAR(100) NOT NULL,
+	pwd VARCHAR(250) NOT NULL,
+	active %s DEFAULT true NOT NULL,
+	set_pwd %s DEFAULT false NOT NULL,
+	created_at %s NOT NULL,
+	updated_at %s NULL,
+	PRIMARY KEY(uid)
+);`, uuid, b, b, ts, ts)
+
+	resetScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS reset_login (
+	login_uid %s NOT NULL,
+	reset_token %s NOT NULL,
+	created_at %s NOT NULL,
+	updated_at %s NULL,
+	PRIMARY KEY(login_uid, reset_token)
+);`, uuid, uuid, ts, ts)
+
+	scriptDir := fmt.Sprintf("%s/scripts/migrations", p.ProjectFile.FullPath)
+	if err := os.MkdirAll(scriptDir, os.ModePerm); err != nil {
+		fmt.Println("Creating scripts/migrations dir", err)
+		return
+	}
+	now := time.Now().Format("20060102150405")
+	loginName := fmt.Sprintf("%s/%s-create-table-login.sql", scriptDir, now)
+	f, err := os.Create(loginName)
+	if err != nil {
+		fmt.Println("Unable to creating scripts/migrations/login.sql file", err)
+		return
+	}
+	f.WriteString(loginScript)
+	f.Close()
+	time.Sleep(time.Second) // let's make sure a second has passed
+	now = time.Now().Format("20060102150405")
+	resetName := fmt.Sprintf("%s/%s-create-table-reset-login.sql", scriptDir, now)
+	f, err = os.Create(resetName)
+	if err != nil {
+		fmt.Println("Unable to create scripts/migrations/reset-login.sql file", err)
+		return
+	}
+	f.WriteString(resetScript)
+	f.Close()
+	time.Sleep(time.Second) // let's make sure a second has passed
+	// compile the admin tool, move binary to scripts/migrations
+	now = time.Now().Format("20060102150405")
+	execDest := fmt.Sprintf("-o=%s/%s-admin-tool.bin", scriptDir, now)
+	execAdmin := exec.Command("go", "build", execDest, "tools/admin/main.go")
+	output, errAdminCmd := execAdmin.CombinedOutput()
+	fmt.Printf("%s\n", output)
+	if errAdminCmd != nil {
+		fmt.Println("Unable to create admin tool file:", errAdminCmd)
 	}
 }

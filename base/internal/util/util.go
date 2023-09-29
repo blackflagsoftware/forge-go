@@ -11,17 +11,21 @@ import (
 
 type (
 	Param struct {
-		Limit  string
-		Number int
-		Size   int
-		Sort   string
-		Search []ParamSearch `json:"search"`
+		Limit       string        // holds the calculated limit string
+		Search      []ParamSearch `json:"search"`
+		ParamFilter `json:"filter"`
 	}
 
 	ParamSearch struct {
 		Column  string      `json:"column"`
 		Compare string      `json:"compare"`
 		Value   interface{} `json:"value"`
+	}
+
+	ParamFilter struct {
+		Sort       string `json:"sort"` // comma separated string, use a '-' before column name to sort DESC i.e.: id,-name => "SORT BY id ASC, name DESC"
+		PageLimit  int    `json:"page_limit"`
+		PageNumber int    `json:"page_number"`
 	}
 )
 
@@ -56,14 +60,14 @@ func ValidJson(jsonValue json.RawMessage) bool {
 
 func (p *Param) CalculateParam(primarySort string, availableSort map[string]string) (err error) {
 	// calculate the limit
-	if p.Size > 0 {
-		if p.Number == 0 {
+	if p.PageLimit > 0 {
+		if p.PageNumber == 0 {
 			// should not be empty, default to first page
-			p.Number = 1
+			p.PageNumber = 1
 		}
-		offset := p.Number - 1
-		offset *= p.Size
-		p.Limit = fmt.Sprintf("LIMIT %d, %d", offset, p.Size)
+		offset := p.PageNumber - 1
+		offset *= p.PageLimit
+		p.Limit = fmt.Sprintf("LIMIT %d, %d", offset, p.PageLimit)
 	}
 	// calculate the sort
 	if primarySort == "" {

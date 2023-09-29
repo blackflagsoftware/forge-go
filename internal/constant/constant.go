@@ -237,7 +237,7 @@ func Setup{{.Camel}}(eg *echo.Group) {
 		c := mig.Connection{%s
 			MigrationPath:  config.MigrationPath,
 			SkipInitialize: config.MigrationSkipInit,
-			Engine:         "%s",
+			Engine:         mig.EngineType(config.DBEngine),
 		}
 		if err := mig.StartMigration(c); err != nil {
 			m.Default.Panicf("Migration failed due to: %%s", err)

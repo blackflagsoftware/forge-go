@@ -34,8 +34,9 @@ type (
 	}
 )
 
-func NewManagerLogin(clog DataLoginAdapter, em email.Emailer) *ManagerLogin {
+func NewManagerLogin(clog DataLoginAdapter) *ManagerLogin {
 	aw := a.AuditInit()
+	em := email.EmailInit()
 	return &ManagerLogin{dataLogin: clog, auditWriter: aw, emailer: em}
 }
 
@@ -168,7 +169,7 @@ func (m *ManagerLogin) PwdReset(pwd PasswordReset) error {
 		return errLogin
 	}
 	// reset login is still valid
-	resetRequest := ResetRequest{LoginUid: login.Uid}
+	resetRequest := ResetRequest{LoginUid: login.Uid, ResetToken: pwd.ResetToken}
 	if errReset := m.dataLogin.GetResetRequest(&resetRequest); errReset != nil {
 		detail := errReset.(ae.ApiError).BodyError().Detail
 		if detail == "No Results Error" {
@@ -177,7 +178,7 @@ func (m *ManagerLogin) PwdReset(pwd PasswordReset) error {
 		return errReset
 	}
 	now := time.Now().UTC()
-	expired := resetRequest.CreatedAt.Add(time.Duration(config.GetExpiresAtDuration()*24) * time.Hour)
+	expired := resetRequest.CreatedAt.Add(time.Duration(config.GetResetDuration()*24) * time.Hour)
 	if now.After(expired) {
 		return ae.ResetTokenInvalidError()
 	}
@@ -251,6 +252,8 @@ func (m *ManagerLogin) SignIn(logIn Login) (string, error) {
 	if err := util.CheckPassword(logIn.Pwd.String, login.Pwd.String); err != nil {
 		return "", err
 	}
+	// TODO: the arguement for AuthBuilder is a list of roles for this person
+	// at the moment it will give everyone 'admin' priviledges, this will need to change
 	token, err := mid.AuthBuild([]string{"admin"})
 	if err != nil {
 		return "", err

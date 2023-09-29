@@ -57,7 +57,7 @@ func (ep *Entity) BuildAPIHooks() {
 			if ep.SQLProvider == "Sqlite" {
 				nonSqlite = "\n\t\t\tHost: config.SqlitePath,"
 			}
-			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite, ep.SQLProviderLower)
+			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite)
 			migRestMain := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration once text - do not remove ---/%s/g' %s`, migCall, apiFile)
 			execRestMain := exec.Command("bash", "-c", migRestMain)
 			errExecRestMain := execRestMain.Run()
@@ -138,7 +138,7 @@ func (ep *Entity) BuildAPIHooks() {
 			if ep.SQLProvider == "Sqlite" {
 				nonSqlite = "\n\t\t\tHost: config.SqlitePath,"
 			}
-			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite, ep.SQLProviderLower)
+			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite)
 			migGrpcMain := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration once text - do not remove ---/%s/g' %s`, migCall, grpcFile)
 			execGrpcMain := exec.Command("bash", "-c", migGrpcMain)
 			errExecGrpcMain := execGrpcMain.Run()
@@ -196,7 +196,9 @@ func PopulateConfig(projectFile *pf.ProjectFile) {
 		configLines := []string{}
 		switch projectFile.Storage {
 		case "s":
+			lowerSqlEngine := strings.ToLower(pf.SqlTypeToProper(projectFile.SqlStorage))
 			configLines = append(configLines, "StorageSQL = true")
+			configLines = append(configLines, fmt.Sprintf("DBEngine = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_ENGINE\", \"%s\")", lowerSqlEngine))
 			if projectFile.SqlStorage == "p" || projectFile.SqlStorage == "m" {
 				configLines = append(configLines, "DBHost = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_HOST\", \"\")")
 				configLines = append(configLines, "DBDB = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_DB\", \"\")")

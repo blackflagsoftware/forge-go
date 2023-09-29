@@ -261,16 +261,75 @@ func (p *Project) AdminMenu() {
 		}
 		switch sel {
 		case "1":
-			fmt.Println("Change Storage")
+			p.StorageMenu()
 		case "2":
-			fmt.Println("Change TagFormat")
+			p.TagFormatMenu()
 		case "3":
 			p.ModuleMenu()
 		case "4":
-			fmt.Println("ORM")
+			p.OrmMenu()
 		}
-		fmt.Println("temp 'enter' here")
-		util.ParseInput()
+		// fmt.Println("temp 'enter' here")
+		// util.ParseInput()
+	}
+}
+
+func (p *Project) StorageMenu() {
+	util.ClearScreen()
+	mainMesssge := []string{"Storage Type", fmt.Sprintf("Current Value: %s", pf.StorageTypeToProper(p.ProjectFile.Storage)), "Do you wish to change the Storage Type?"}
+	prompts := []string{"(s) SQL", "(f) File", "(m) MongoDB"}
+	acceptablePrompts := []string{"s", "f", "m"}
+	response := util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "e", util.ClearScreen)
+	if response == "e" {
+		return
+	}
+	p.ProjectFile.Storage = response
+	if p.ProjectFile.Storage == "s" {
+		mainMesssge = []string{"SQL Option", "Choice which SQL implementation"}
+		prompts = []string{"(p) Postgres", "(m) Mysql", "(s) Sqlite"}
+		acceptablePrompts = []string{"p", "m", "s"} // haha... get it?!??!!  pms... haha
+		p.ProjectFile.SqlStorage = util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "", util.ClearScreen)
+		// p.UseORM = util.AskYesOrNo("Would you like to use an ORM") only have this as an option in an "admin" screen
+	}
+}
+
+func (p *Project) TagFormatMenu() {
+	util.ClearScreen()
+	mainMesssge := []string{"Tag Format", fmt.Sprintf("Current Value: %s", pf.TagFormatToProper(p.ProjectFile.TagFormat)), "Do you wish to change the Tag Format?"}
+	prompts := []string{"(s) Snake Case (tag_format)", "(c) Camel Case (tagFormat)", "(p) Pascal Case (TagFormat)", "(k) Kebab Case (tag-format)", "(l) Lower Case (tag format)", "(u) Upper (TAG FORMAT)"}
+	acceptablePrompts := []string{"s", "c", "p", "k", "l", "u"}
+	tagFormat := util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "e", util.ClearScreen)
+	if tagFormat == "e" {
+		return
+	}
+	switch tagFormat {
+	case "s":
+		p.ProjectFile.TagFormat = "snakeCase"
+	case "k":
+		p.ProjectFile.TagFormat = "kebabCase"
+	case "c":
+		p.ProjectFile.TagFormat = "camelCase"
+	case "p":
+		p.ProjectFile.TagFormat = "pascalCase"
+	case "u":
+		p.ProjectFile.TagFormat = "upperCase"
+	case "l":
+		p.ProjectFile.TagFormat = "lowerCase"
+	}
+}
+
+func (p *Project) OrmMenu() {
+	util.ClearScreen()
+	mainMesssge := []string{"Storage Type", fmt.Sprintf("Current Value: %t", p.ProjectFile.UseORM), "Do you wish to change this value?"}
+	prompts := []string{"(t) True", "(f) False"}
+	acceptablePrompts := []string{"t", "f"}
+	response := util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "e", util.ClearScreen)
+	if response == "e" {
+		return
+	}
+	p.ProjectFile.UseORM = true
+	if response == "f" {
+		p.ProjectFile.UseORM = false
 	}
 }
 
