@@ -1,4 +1,4 @@
-package {{.AllLower}}
+package {{.ProjectNameAllLower}}
 
 import (
 	"github.com/jmoiron/sqlx"
@@ -7,32 +7,32 @@ import (
 )
 
 type (
-	SQL{{.Camel}} struct {
+	SQL{{.ProjectNameCamel}} struct {
 		DB *sqlx.DB
 	}
 )
 
-func InitSQL() *SQL{{.Camel}} {
+func InitSQL() *SQL{{.ProjectNameCamel}} {
 	db := stor.{{.SQLProvider}}Init()
-	return &SQL{{.Camel}}{DB: db}
+	return &SQL{{.ProjectNameCamel}}{DB: db}
 }
 
-func (d *SQL{{.Camel}}) Read({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) Read({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) ReadAll({{.Abbr}} *[]{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) ReadAll({{.ProjectNameAbbr}} *[]{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Create({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) Create({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Update({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) Update({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) Delete({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }

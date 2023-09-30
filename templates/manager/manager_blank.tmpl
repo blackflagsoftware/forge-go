@@ -1,16 +1,16 @@
-package {{.AllLower}}
+package {{.ProjectNameAllLower}}
 
 import (
 )
 
 type (
-	Data{{.Camel}}Adapter interface {}
+	Data{{.ProjectNameCamel}}Adapter interface {}
 
-	Manager{{.Camel}} struct {
-		data{{.Camel}} Data{{.Camel}}Adapter
+	Manager{{.ProjectNameCamel}} struct {
+		data{{.ProjectNameCamel}} Data{{.ProjectNameCamel}}Adapter
 	}
 )
 
-func NewManager{{.Camel}}(c{{.Abbr}} Data{{.Camel}}Adapter) *Manager{{.Camel}} {
-	return &Manager{{.Camel}}{data{{.Camel}}: c{{.Abbr}}}
+func NewManager{{.ProjectNameCamel}}(c{{.ProjectNameAbbr}} Data{{.ProjectNameCamel}}Adapter) *Manager{{.ProjectNameCamel}} {
+	return &Manager{{.ProjectNameCamel}}{data{{.ProjectNameCamel}}: c{{.ProjectNameAbbr}}}
 }

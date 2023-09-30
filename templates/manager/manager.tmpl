@@ -1,70 +1,70 @@
-package {{.AllLower}}
+package {{.ProjectNameAllLower}}
 
 import (
 	{{.ManagerImport}}
 )
 
-//go:generate mockgen -source=manager.go -destination=mock.go -package={{.AllLower}}
+//go:generate mockgen -source=manager.go -destination=mock.go -package={{.ProjectNameAllLower}}
 type (
-	Data{{.Camel}}Adapter interface {
-		Read(*{{.Camel}}) error
-		ReadAll(*[]{{.Camel}}, {{.Camel}}Param) (int, error)
-		Create(*{{.Camel}}) error
-		Update({{.Camel}}) error
-		Delete(*{{.Camel}}) error
+	Data{{.ProjectNameCamel}}Adapter interface {
+		Read(*{{.ProjectNameCamel}}) error
+		ReadAll(*[]{{.ProjectNameCamel}}, {{.ProjectNameCamel}}Param) (int, error)
+		Create(*{{.ProjectNameCamel}}) error
+		Update({{.ProjectNameCamel}}) error
+		Delete(*{{.ProjectNameCamel}}) error
 	}
 
-	Manager{{.Camel}} struct {
-		data{{.Camel}} Data{{.Camel}}Adapter
+	Manager{{.ProjectNameCamel}} struct {
+		data{{.ProjectNameCamel}} Data{{.ProjectNameCamel}}Adapter
 		auditWriter a.AuditAdapter
 	}
 )
 
-func NewManager{{.Camel}}(c{{.Abbr}} Data{{.Camel}}Adapter) *Manager{{.Camel}} {
+func NewManager{{.ProjectNameCamel}}(c{{.ProjectNameAbbr}} Data{{.ProjectNameCamel}}Adapter) *Manager{{.ProjectNameCamel}} {
 	aw := a.AuditInit()
-	return &Manager{{.Camel}}{data{{.Camel}}: c{{.Abbr}}, auditWriter: aw}
+	return &Manager{{.ProjectNameCamel}}{data{{.ProjectNameCamel}}: c{{.ProjectNameAbbr}}, auditWriter: aw}
 }
 
-func (m *Manager{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
+func (m *Manager{{.ProjectNameCamel}}) Get({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	{{.ManagerGetRows}}
-	return m.data{{.Camel}}.Read({{.Abbr}})
+	return m.data{{.ProjectNameCamel}}.Read({{.ProjectNameAbbr}})
 }
 
-func (m *Manager{{.Camel}}) Search({{.Abbr}} *[]{{.Camel}}, param {{.Camel}}Param) (int, error) {
-	param.Param.CalculateParam("{{.DefaultColumn}}", map[string]string{ {{.SortColumns}} })
+func (m *Manager{{.ProjectNameCamel}}) Search({{.ProjectNameAbbr}} *[]{{.ProjectNameCamel}}, param {{.ProjectNameCamel}}Param) (int, error) {
+	param.Param.CalculateParam("{{.CurrentEntity.DefaultColumn}}", map[string]string{ {{.CurrentEntity.SortColumns}} })
 
-	return m.data{{.Camel}}.ReadAll({{.Abbr}}, param)
+	return m.data{{.ProjectNameCamel}}.ReadAll({{.ProjectNameAbbr}}, param)
 }
 
-func (m *Manager{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
+func (m *Manager{{.ProjectNameCamel}}) Post({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	{{.ManagerPostRows}}
-	if err := m.data{{.Camel}}.Create({{.Abbr}}); err != nil {
+	if err := m.data{{.ProjectNameCamel}}.Create({{.ProjectNameAbbr}}); err != nil {
 		return nil
 	}
-	go a.AuditCreate(m.auditWriter, *{{.Abbr}}, {{.Camel}}Const, a.KeysToString({{.ManagerAuditKey}}))
+	go a.AuditCreate(m.auditWriter, *{{.ProjectNameAbbr}}, {{.ProjectNameCamel}}Const, a.KeysToString({{.ManagerAuditKey}}))
 	return nil
 }
 
-func (m *Manager{{.Camel}}) Patch({{.Abbr}}In {{.Camel}}) error {
-	{{.Abbr}} := &{{.Camel}}{ {{.ManagerPatchInitArgs}} }
-	errGet := m.data{{.Camel}}.Read({{.Abbr}})
+func (m *Manager{{.ProjectNameCamel}}) Patch({{.ProjectNameAbbr}}In {{.ProjectNameCamel}}) error {
+	{{.ProjectNameAbbr}} := &{{.ProjectNameCamel}}{ {{.ManagerPatchInitArgs}} }
+	errGet := m.data{{.ProjectNameCamel}}.Read({{.ProjectNameAbbr}})
 	if errGet != nil {
 		return errGet
 	}
 	existingValues := make(map[string]interface{})
 	{{.ManagerPatchRows}}
-	if err := m.data{{.Camel}}.Update(*{{.Abbr}}); err != nil {
+	if err := m.data{{.ProjectNameCamel}}.Update(*{{.ProjectNameAbbr}}); err != nil {
 		return err
 	}
-	go a.AuditPatch(m.auditWriter, *{{.Abbr}}, {{.Camel}}Const, a.KeysToString({{.ManagerAuditKey}}), existingValues)
+	go a.AuditPatch(m.auditWriter, *{{.ProjectNameAbbr}}, {{.ProjectNameCamel}}Const, a.KeysToString({{.ManagerAuditKey}}), existingValues)
 	return nil
 }
 
-func (m *Manager{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+func (m *Manager{{.ProjectNameCamel}}) Delete({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	{{.ManagerGetRows}}
-	if err := m.data{{.Camel}}.Delete({{.Abbr}}); err != nil {
+	if err := m.data{{.ProjectNameCamel}}.Delete({{.ProjectNameAbbr}}); err != nil {
 		return err
 	}
-	go a.AuditDelete(m.auditWriter, *{{.Abbr}}, {{.Camel}}Const, a.KeysToString({{.ManagerAuditKey}}))
+	go a.AuditDelete(m.auditWriter, *{{.ProjectNameAbbr}}, {{.ProjectNameCamel}}Const, a.KeysToString({{.ManagerAuditKey}}))
 	return nil
 }

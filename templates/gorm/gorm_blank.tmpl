@@ -1,4 +1,4 @@
-package {{.AllLower}}
+package {{.ProjectNameAllLower}}
 
 import (
 	"gorm.io/gorm"
@@ -6,32 +6,32 @@ import (
 )
 
 type (
-	SQL{{.Camel}} struct {
+	SQL{{.ProjectNameCamel}} struct {
 		DB *gorm.DB
 	}
 )
 
-func InitSQL() *SQL{{.Camel}} {
+func InitSQL() *SQL{{.ProjectNameCamel}} {
 	db := stor.GormInit()
-	return &SQL{{.Camel}}{DB: db}
+	return &SQL{{.ProjectNameCamel}}{DB: db}
 }
 
-func (d *SQL{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) Get({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Search({{.Abbr}} *[]{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) Search({{.ProjectNameAbbr}} *[]{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) Post({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Patch({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) Patch({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+func (d *SQL{{.ProjectNameCamel}}) Delete({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }

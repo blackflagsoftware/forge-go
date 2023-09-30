@@ -2,13 +2,11 @@ package sql
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 
-	c "github.com/blackflagsoftware/forge-go/internal/column"
+	m "github.com/blackflagsoftware/forge-go/internal/model"
 	"github.com/blackflagsoftware/forge-go/internal/util"
 )
 
@@ -44,7 +42,7 @@ func tableNameParse(line string) (tableName, columnPart string, err error) {
 	return
 }
 
-func columnsParse(columnPart string) (columns []c.Column, err error) {
+func columnsParse(columnPart string) (columns []m.Column, err error) {
 	// parse primary key () line
 	columnPart, keys := parsePrimaryKey(columnPart)
 	columnPart = replaceNumericPart(columnPart)
@@ -64,7 +62,7 @@ func columnsParse(columnPart string) (columns []c.Column, err error) {
 		fieldNameIdx := reg.SubexpIndex("field_name")
 		fieldTypeIdx := reg.SubexpIndex("field_type")
 		theRestIdx := reg.SubexpIndex("the_rest")
-		col := c.Column{}
+		col := m.Column{}
 		rawName := matches[fieldNameIdx]
 		col.ColumnName.BuildName(rawName, []string{})
 		col.DBType = matches[fieldTypeIdx]
@@ -104,7 +102,7 @@ func parsePrimaryKey(columnPart string) (newColumnPart string, keyNames []string
 	return
 }
 
-func markPrimary(columns *[]c.Column, keys []string) {
+func markPrimary(columns *[]m.Column, keys []string) {
 	for _, key := range keys {
 		for i := range *columns {
 			if key == (*columns)[i].ColumnName.RawName {
@@ -114,7 +112,7 @@ func markPrimary(columns *[]c.Column, keys []string) {
 	}
 }
 
-func theRestParse(col *c.Column, theRest string) {
+func theRestParse(col *m.Column, theRest string) {
 	// parsing for primary, auto_increment, etc
 	if strings.Contains(theRest, "auto_increment") || strings.Contains(theRest, "autoincrement") {
 		col.DBType = "autoincrement"
@@ -139,7 +137,7 @@ func theRestParse(col *c.Column, theRest string) {
 	}
 }
 
-func setGoType(col *c.Column) {
+func setGoType(col *m.Column) {
 	varcharMatch := regexp.MustCompile(`^varchar[\(]\d+[\)]`)
 	varyingMatch := regexp.MustCompile(`^varying[\(]\d+[\)]`)
 	charMatch := regexp.MustCompile(`^char[\(]\d+[\)]`)
@@ -269,7 +267,7 @@ func splitChar(strChar string) (length int64, err error) {
 	return
 }
 
-func determineColExists(columns []c.Column) (colExist c.ColumnExistence) {
+func determineColExists(columns []m.Column) (colExist m.ColumnExistence) {
 	for _, col := range columns {
 		if col.GoType == "null.Time" {
 			colExist.TimeColumn = true
@@ -279,16 +277,4 @@ func determineColExists(columns []c.Column) (colExist c.ColumnExistence) {
 		}
 	}
 	return
-}
-
-func PrintSqlColumns(cols []c.Column) {
-	fmt.Println("--- Saved Columns ---")
-	tab := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
-	fmt.Fprintln(tab, "|Name\t|Type\t|Default Value\t|Null\t|Primary Key")
-	fmt.Fprintln(tab, "+----\t+----\t+-------------\t+----\t+-----------")
-	for _, col := range cols {
-		fmt.Fprintf(tab, " %s\t %s\t %s\t %t\t %t\n", col.ColumnName.Camel, col.DBType, col.DefaultValue, col.Null, col.PrimaryKey)
-	}
-	tab.Flush()
-	fmt.Println("")
 }

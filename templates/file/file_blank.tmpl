@@ -1,28 +1,28 @@
-package {{.AllLower}}
+package {{.ProjectNameAllLower}}
 
 import (
 )
 
 type (
-	File{{.Camel}} struct {}
+	File{{.ProjectNameCamel}} struct {}
 )
 
-func (d *File{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
+func (d *File{{.ProjectNameCamel}}) Get({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *File{{.Camel}}) Search({{.Abbr}} *[]{{.Camel}}) error {
+func (d *File{{.ProjectNameCamel}}) Search({{.ProjectNameAbbr}} *[]{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *File{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
+func (d *File{{.ProjectNameCamel}}) Post({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *File{{.Camel}}) Patch({{.Abbr}} *{{.Camel}}) error {
+func (d *File{{.ProjectNameCamel}}) Patch({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }
 
-func (d *File{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
+func (d *File{{.ProjectNameCamel}}) Delete({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
 	return nil
 }

@@ -77,7 +77,7 @@ const (
 		assert.Equal(t, "zero value", be.Detail)
 	}`  // camel, get_delete_url, col_lower, camel, camel
 
-	MAIN_COMMON_PATH = `"{{.ProjectFile.ProjectPathEncoded}}\/internal\/{{.ProjectFile.SubPackage}}\/{{.Name.AllLower}}"
+	MAIN_COMMON_PATH = `"{{.ProjectFile.ProjectPathEncoded}}\/internal\/{{.ProjectFile.SubPackage}}\/{{.CurrentEntity.AllLower}}"
 	\/\/ --- replace main header text - do not remove ---
 `
 
@@ -90,7 +90,7 @@ import (
 	
 	\/\/ --- replace header text - do not remove ---
 )`
-	COMMON_HEADER = `{{.Name.Abbr}} "{{.ProjectFile.ProjectPathEncoded}}\/{{.ProjectFile.SubDirEncoded}}\/{{.Name.AllLower}}"
+	COMMON_HEADER = `{{.Name.Abbr}} "{{.ProjectFile.ProjectPathEncoded}}\/{{.ProjectFile.SubDirEncoded}}\/{{.CurrentEntity.AllLower}}"
 	\/\/ --- replace header text - do not remove ---`
 
 	COMMON_SECTION = `\/\/ {{.Camel}}
@@ -105,7 +105,7 @@ func Setup{{.Camel}}(eg *echo.Group) {
 
 	GRPC_IMPORT_ONCE = `pb "{{.ProjectFile.ProjectPathEncoded}}\/pkg\/proto"`
 
-	GRPC_IMPORT = `{{.Name.Abbr}} "{{.ProjectFile.ProjectPathEncoded}}\/{{.ProjectFile.SubDirEncoded}}\/{{.Name.AllLower}}"
+	GRPC_IMPORT = `{{.Name.Abbr}} "{{.ProjectFile.ProjectPathEncoded}}\/{{.ProjectFile.SubDirEncoded}}\/{{.CurrentEntity.AllLower}}"
 	\/\/ --- replace grpc import - do not remove ---`
 
 	GRPC_TEXT = `\/\/ {{.Name.Camel}}

@@ -1,4 +1,4 @@
-package {{.AllLower}}
+package {{.ProjectNameAllLower}}
 
 import (
 	"gorm.io/gorm"
@@ -7,52 +7,52 @@ import (
 )
 
 type (
-	SQL{{.Camel}} struct {
+	SQL{{.ProjectNameCamel}} struct {
 		DB *gorm.DB
 	}
 )
 
-func InitSQL() *SQL{{.Camel}} {
+func InitSQL() *SQL{{.ProjectNameCamel}} {
 	db := stor.GormInit()
-	return &SQL{{.Camel}}{DB: db}
+	return &SQL{{.ProjectNameCamel}}{DB: db}
 }
 
-func (d *SQL{{.Camel}}) Get({{.Abbr}} *{{.Camel}}) error {
-	result := d.DB.Where({{.Abbr}}).First({{.Abbr}})
+func (d *SQL{{.ProjectNameCamel}}) Get({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+	result := d.DB.Where({{.ProjectNameAbbr}}).First({{.ProjectNameAbbr}})
 	if result.Error != nil {
-		return ae.DBError("{{.Camel}} Get: unable to select record.", result.Error)
+		return ae.DBError("{{.ProjectNameCamel}} Get: unable to select record.", result.Error)
 	}
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Search({{.Abbr}} *[]{{.Camel}}) error {
-	result := d.DB.Find({{.Abbr}})
+func (d *SQL{{.ProjectNameCamel}}) Search({{.ProjectNameAbbr}} *[]{{.ProjectNameCamel}}) error {
+	result := d.DB.Find({{.ProjectNameAbbr}})
 	if result.Error != nil {
-		return ae.DBError("{{.Camel}} Search: unable to select records.", result.Error)
+		return ae.DBError("{{.ProjectNameCamel}} Search: unable to select records.", result.Error)
 	}
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Post({{.Abbr}} *{{.Camel}}) error {
-	result := d.DB.Create({{.Abbr}})
+func (d *SQL{{.ProjectNameCamel}}) Post({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+	result := d.DB.Create({{.ProjectNameAbbr}})
 	if result.Error != nil {
-		return ae.DBError("{{.Camel}} Post: unable to insert record.", result.Error)
+		return ae.DBError("{{.ProjectNameCamel}} Post: unable to insert record.", result.Error)
 	}
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Patch({{.Abbr}} {{.Camel}}) error {
-	result := d.DB.Save({{.Abbr}})
+func (d *SQL{{.ProjectNameCamel}}) Patch({{.ProjectNameAbbr}} {{.ProjectNameCamel}}) error {
+	result := d.DB.Save({{.ProjectNameAbbr}})
 	if result.Error != nil {
-		return ae.DBError("{{.Camel}} Patch: unable to update record.", result.Error)
+		return ae.DBError("{{.ProjectNameCamel}} Patch: unable to update record.", result.Error)
 	}
 	return nil
 }
 
-func (d *SQL{{.Camel}}) Delete({{.Abbr}} *{{.Camel}}) error {
-	result := d.DB.Delete({{.Abbr}})
+func (d *SQL{{.ProjectNameCamel}}) Delete({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+	result := d.DB.Delete({{.ProjectNameAbbr}})
 	if result.Error != nil {
-		return ae.DBError("{{.Camel}} Delete: unable to delete record.", result.Error)
+		return ae.DBError("{{.ProjectNameCamel}} Delete: unable to delete record.", result.Error)
 	}
 	return nil
 }

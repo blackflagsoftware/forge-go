@@ -1,4 +1,4 @@
-package project
+package menu
 
 import (
 	"bytes"
@@ -9,24 +9,46 @@ import (
 	"strconv"
 	"strings"
 
-	c "github.com/blackflagsoftware/forge-go/internal/column"
 	con "github.com/blackflagsoftware/forge-go/internal/constant"
-	e "github.com/blackflagsoftware/forge-go/internal/entity"
-	n "github.com/blackflagsoftware/forge-go/internal/name"
-	pf "github.com/blackflagsoftware/forge-go/internal/projectfile"
+	m "github.com/blackflagsoftware/forge-go/internal/model"
 	s "github.com/blackflagsoftware/forge-go/internal/sql"
+	temp "github.com/blackflagsoftware/forge-go/internal/task/templating"
 	"github.com/blackflagsoftware/forge-go/internal/util"
 )
 
-func (p *Project) ProjectMenu() {
-	if p.ProjectFile.Storage == "s" {
-		p.SqlMenu()
-	} else {
-		p.NonSqlMenu()
+func ProjectMenu(p *m.Project) {
+	messages := []string{"** Project Menu **"}
+	prompts := []string{"(1) Input Entity", "(2) Admin"}
+	acceptablePrompts := []string{"1", "2"}
+	for {
+		util.ClearScreen()
+		selection := util.BasicPrompt(messages, prompts, acceptablePrompts, "e", util.ClearScreen)
+		if selection == "e" {
+			break
+		}
+		if selection == "1" {
+			InputMenu(p)
+		}
+		if selection == "2" {
+			AdminMenu(p)
+		}
 	}
 }
 
-func (p *Project) NonSqlMenu() {
+func InputMenu(p *m.Project) {
+	if p.ProjectFile.Storage == "s" {
+		SqlMenu(p)
+	} else {
+		NonSqlMenu(p)
+	}
+	temp.StartTemplating(p)
+	p.Entities = []m.Entity{}
+	fmt.Println("")
+	fmt.Println("Entities have been processed, press 'enter' to continue")
+	util.ParseInput()
+}
+
+func NonSqlMenu(p *m.Project) {
 	messages := []string{"Field Type:"}
 	prompts := []string{"(1) String", "(2) Integer", "(3) Decimal", "(4) Timestamp", "(5) Boolean", "(6) UUID"}
 	acceptablePrompts := []string{"1", "2", "3", "4", "5", "6"}
@@ -37,17 +59,18 @@ OuterLoop:
 		fmt.Println("** File/MongoDB Storage Menu **")
 		fmt.Println("")
 		fmt.Print("Enter name of your entity (e) to exit: ")
-		name := n.Name{}
+		name := m.Name{}
 		rawName := util.ParseInput()
 		if strings.ToLower(rawName) == "e" {
 			break
 		}
 		entityName := name.BuildName(rawName, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, entityName)
-		entity := e.Entity{Name: name}
+		p.SaveProjectFile()
+		entity := m.Entity{Name: name}
 		for {
-			s.PrintSqlColumns(entity.Columns)
-			column := c.Column{}
+			PrintSqlColumns(entity.Columns)
+			column := m.Column{}
 			fmt.Print("Field Name (e) to exit: ")
 			name := util.ParseInput()
 			if strings.ToLower(name) == "e" {
@@ -88,53 +111,36 @@ OuterLoop:
 			break
 		}
 	}
-	p.StartTemplating()
-	p.Entities = []e.Entity{}
-	fmt.Println("")
-	fmt.Println("Entities have been processed, press 'enter' to continue")
-	util.ParseInput()
 }
 
-func (p *Project) SqlMenu() {
-	for {
-		util.ClearScreen()
-		mainMesssge := []string{"** SQL Storage Menu **", "How would you like create your entity?", "", "Project settings:"}
-		mainMesssge = append(mainMesssge, fmt.Sprintf("Storage: %s", pf.StorageTypeToProper(p.ProjectFile.Storage)))
-		if p.ProjectFile.Storage == "s" {
-			mainMesssge = append(mainMesssge, fmt.Sprintf("  SQL Engine: %s", pf.SqlTypeToProper(p.ProjectFile.SqlStorage)))
-			mainMesssge = append(mainMesssge, fmt.Sprintf("  Use ORM: %t", p.ProjectFile.UseORM))
-		}
-		mainMesssge = append(mainMesssge, fmt.Sprintf("TagForamt: %s", pf.TagFormatToProper(p.ProjectFile.TagFormat)))
-		prompts := []string{"(1) File as input", "(2) Paste as input", "(3) Prompt as input", "(4) Blank Struct", "(5) Admin Screen"}
-		acceptablePrompts := []string{"1", "2", "3", "4", "5"}
-		selection := util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "e", util.ClearScreen)
-		if selection == "e" {
-			break
-		}
-		switch selection {
-		case "1":
-			p.FileMenu()
-		case "2":
-			p.PasteMenu()
-		case "3":
-			p.PromptMenu()
-		case "4":
-			p.BlankMenu()
-		case "5":
-			p.AdminMenu()
-		}
-		if len(p.Entities) > 0 {
-			p.StartTemplating()
-			// remove entities already processed
-			p.Entities = []e.Entity{}
-			fmt.Println("")
-			fmt.Println("Entities have been processed, press 'enter' to continue")
-			util.ParseInput()
-		}
+func SqlMenu(p *m.Project) {
+	util.ClearScreen()
+	mainMesssge := []string{"** SQL Storage Menu **", "How would you like create your entity?", "", "Project settings:"}
+	mainMesssge = append(mainMesssge, fmt.Sprintf("Storage: %s", m.StorageTypeToProper(p.ProjectFile.Storage)))
+	if p.ProjectFile.Storage == "s" {
+		mainMesssge = append(mainMesssge, fmt.Sprintf("  SQL Engine: %s", m.SqlTypeToProper(p.ProjectFile.SqlStorage)))
+		mainMesssge = append(mainMesssge, fmt.Sprintf("  Use ORM: %t", p.ProjectFile.UseORM))
+	}
+	mainMesssge = append(mainMesssge, fmt.Sprintf("TagForamt: %s", m.TagFormatToProper(p.ProjectFile.TagFormat)))
+	prompts := []string{"(1) File as input", "(2) Paste as input", "(3) Prompt as input", "(4) Blank Struct"}
+	acceptablePrompts := []string{"1", "2", "3", "4"}
+	selection := util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "e", util.ClearScreen)
+	if selection == "e" {
+		return
+	}
+	switch selection {
+	case "1":
+		FileMenu(p)
+	case "2":
+		PasteMenu(p)
+	case "3":
+		PromptMenu(p)
+	case "4":
+		BlankMenu(p)
 	}
 }
 
-func (p *Project) FileMenu() {
+func FileMenu(p *m.Project) {
 	for {
 		util.ClearScreen()
 		fmt.Println("** File **")
@@ -157,7 +163,7 @@ func (p *Project) FileMenu() {
 	}
 }
 
-func (p *Project) PasteMenu() {
+func PasteMenu(p *m.Project) {
 PasteLoop:
 	for {
 		sql := []string{}
@@ -180,13 +186,14 @@ PasteLoop:
 		if err != nil {
 			return
 		}
-		entity := e.Entity{}
+		entity := m.Entity{}
 		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
+		p.SaveProjectFile()
 		entity.Columns = sqlEntity.Columns
 		entity.ColumnExistence = sqlEntity.ColExistence
 		if sqlEntity.ColExistence.TimeColumn {
-			entity.GrpcImport = "\"time\""
+			p.GrpcImport = "\"time\""
 		}
 		p.Entities = append(p.Entities, entity)
 		cont := util.AskYesOrNo("Paste another table sql schema")
@@ -196,7 +203,7 @@ PasteLoop:
 	}
 }
 
-func (p *Project) PromptMenu() {
+func PromptMenu(p *m.Project) {
 	for {
 		sql := []string{}
 		util.ClearScreen()
@@ -214,8 +221,10 @@ func (p *Project) PromptMenu() {
 		if err != nil {
 			return
 		}
-		entity := e.Entity{}
-		entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
+		entity := m.Entity{}
+		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
+		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
+		p.SaveProjectFile()
 		entity.Columns = sqlEntity.Columns
 		entity.ColumnExistence = sqlEntity.ColExistence
 		p.Entities = append(p.Entities, entity)
@@ -224,10 +233,10 @@ func (p *Project) PromptMenu() {
 			break
 		}
 	}
-	p.saveOutSql()
+	saveOutSql(p)
 }
 
-func (p *Project) BlankMenu() {
+func BlankMenu(p *m.Project) {
 	for {
 		util.ClearScreen()
 		fmt.Println("** Blank **")
@@ -237,9 +246,10 @@ func (p *Project) BlankMenu() {
 		if entityName == "e" {
 			break
 		}
-		entity := e.Entity{}
+		entity := m.Entity{}
 		name := entity.Name.BuildName(entityName, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
+		p.SaveProjectFile()
 		p.Entities = append(p.Entities, entity)
 		p.UseBlank = true
 		cont := util.AskYesOrNo("Another blank entity")
@@ -249,7 +259,7 @@ func (p *Project) BlankMenu() {
 	}
 }
 
-func (p *Project) AdminMenu() {
+func AdminMenu(p *m.Project) {
 	mainMessage := []string{"** Admin Menu **", "", "Please make a selection:"}
 	prompts := []string{"(1) Change Storage Type", "(2) Change TagFormat", "(3) Add a module", "(4) SQL only - use an ORM"}
 	acceptablePrompts := []string{"1", "2", "3", "4"}
@@ -261,22 +271,20 @@ func (p *Project) AdminMenu() {
 		}
 		switch sel {
 		case "1":
-			p.StorageMenu()
+			StorageMenu(p)
 		case "2":
-			p.TagFormatMenu()
+			TagFormatMenu(p)
 		case "3":
-			p.ModuleMenu()
+			ModuleMenu(p)
 		case "4":
-			p.OrmMenu()
+			OrmMenu(p)
 		}
-		// fmt.Println("temp 'enter' here")
-		// util.ParseInput()
 	}
 }
 
-func (p *Project) StorageMenu() {
+func StorageMenu(p *m.Project) {
 	util.ClearScreen()
-	mainMesssge := []string{"Storage Type", fmt.Sprintf("Current Value: %s", pf.StorageTypeToProper(p.ProjectFile.Storage)), "Do you wish to change the Storage Type?"}
+	mainMesssge := []string{"Storage Type", fmt.Sprintf("Current Value: %s", m.StorageTypeToProper(p.ProjectFile.Storage)), "Do you wish to change the Storage Type?"}
 	prompts := []string{"(s) SQL", "(f) File", "(m) MongoDB"}
 	acceptablePrompts := []string{"s", "f", "m"}
 	response := util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "e", util.ClearScreen)
@@ -289,13 +297,12 @@ func (p *Project) StorageMenu() {
 		prompts = []string{"(p) Postgres", "(m) Mysql", "(s) Sqlite"}
 		acceptablePrompts = []string{"p", "m", "s"} // haha... get it?!??!!  pms... haha
 		p.ProjectFile.SqlStorage = util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "", util.ClearScreen)
-		// p.UseORM = util.AskYesOrNo("Would you like to use an ORM") only have this as an option in an "admin" screen
 	}
 }
 
-func (p *Project) TagFormatMenu() {
+func TagFormatMenu(p *m.Project) {
 	util.ClearScreen()
-	mainMesssge := []string{"Tag Format", fmt.Sprintf("Current Value: %s", pf.TagFormatToProper(p.ProjectFile.TagFormat)), "Do you wish to change the Tag Format?"}
+	mainMesssge := []string{"Tag Format", fmt.Sprintf("Current Value: %s", m.TagFormatToProper(p.ProjectFile.TagFormat)), "Do you wish to change the Tag Format?"}
 	prompts := []string{"(s) Snake Case (tag_format)", "(c) Camel Case (tagFormat)", "(p) Pascal Case (TagFormat)", "(k) Kebab Case (tag-format)", "(l) Lower Case (tag format)", "(u) Upper (TAG FORMAT)"}
 	acceptablePrompts := []string{"s", "c", "p", "k", "l", "u"}
 	tagFormat := util.BasicPrompt(mainMesssge, prompts, acceptablePrompts, "e", util.ClearScreen)
@@ -318,7 +325,7 @@ func (p *Project) TagFormatMenu() {
 	}
 }
 
-func (p *Project) OrmMenu() {
+func OrmMenu(p *m.Project) {
 	util.ClearScreen()
 	mainMesssge := []string{"Storage Type", fmt.Sprintf("Current Value: %t", p.ProjectFile.UseORM), "Do you wish to change this value?"}
 	prompts := []string{"(t) True", "(f) False"}
@@ -333,7 +340,7 @@ func (p *Project) OrmMenu() {
 	}
 }
 
-func (p *Project) ModuleMenu() {
+func ModuleMenu(p *m.Project) {
 	mainMessage := []string{"** Add Module **", "", "Which module do you wish to add?"}
 	prompts := []string{"(1) Login"}
 	acceptablePrompt := []string{"1"}
@@ -345,10 +352,8 @@ func (p *Project) ModuleMenu() {
 		}
 		switch sel {
 		case "1":
-			p.ModuleAddLogin()
+			ModuleAddLogin(p)
 		}
-		fmt.Println("temp 'enter' here")
-		util.ParseInput()
 	}
 }
 
@@ -357,12 +362,12 @@ func processColumns() []string {
 	prompts := []string{"(1) Varchar", "(2) Decimal", "(3) Integer", "(4) Timestamp", "(5) Boolean", "(6) Json", "(7) UUID", "(8) Auto Increment", "(9) Text", "(10) Char", "(11) Date"}
 	acceptablePrompt := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "12"}
 	sql := []string{}
-	columns := []c.Column{}
+	columns := []m.Column{}
 	primaryKeys := []string{}
 	for {
 		util.ClearScreen()
-		s.PrintSqlColumns(columns)
-		col := c.Column{}
+		PrintSqlColumns(columns)
+		col := m.Column{}
 		fmt.Println("")
 		fmt.Print("Enter Column Name or (e) to exit: ")
 		name := util.ParseInput()
@@ -462,7 +467,7 @@ func askNullDefaultPrompt(askNull, askDefault bool) (nullAble bool, defaultValue
 	return
 }
 
-func buildSqlColumn(col c.Column) string {
+func buildSqlColumn(col m.Column) string {
 	defaultStmt := " default null"
 	if !col.Null {
 		defaultStmt = " not null"
@@ -473,7 +478,7 @@ func buildSqlColumn(col c.Column) string {
 	return fmt.Sprintf("%s %s%s", col.ColumnName.RawName, col.DBType, defaultStmt)
 }
 
-func processFile(p *Project, filePath string) (entities []e.Entity) {
+func processFile(p *m.Project, filePath string) (entities []m.Entity) {
 	bContent, errRead := ioutil.ReadFile(filePath)
 	if errRead != nil {
 		fmt.Println("processFile - error:", errRead)
@@ -514,11 +519,11 @@ func processFile(p *Project, filePath string) (entities []e.Entity) {
 		if err != nil {
 			return
 		}
-		entity := e.Entity{}
+		entity := m.Entity{}
 		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
 		if sqlEntity.ColExistence.TimeColumn {
-			entity.GrpcImport = "\"time\""
+			p.GrpcImport = "\"time\""
 		}
 		entity.Columns = sqlEntity.Columns
 		entity.ColumnExistence = sqlEntity.ColExistence
@@ -527,7 +532,7 @@ func processFile(p *Project, filePath string) (entities []e.Entity) {
 	return
 }
 
-func (p *Project) saveOutSql() {
+func saveOutSql(p *m.Project) {
 	sqlProvider := ""
 	switch p.ProjectFile.Storage {
 	case "m":
@@ -562,7 +567,7 @@ func (p *Project) saveOutSql() {
 					dbType = "serial"
 				}
 			}
-			if c.PrimaryKey && !(dbType == "autoincrement" && ep.SQLProvider == con.SQLITE3) {
+			if c.PrimaryKey && !(dbType == "autoincrement" && p.SQLProvider == con.SQLITE3) {
 				primaryKeys = append(primaryKeys, c.ColumnName.Lower)
 			}
 			if c.DefaultValue != "" {
@@ -603,7 +608,7 @@ func (p *Project) saveOutSql() {
 	}
 }
 
-func (p *Project) ModuleAddLogin() {
+func ModuleAddLogin(p *m.Project) {
 	for _, m := range p.ProjectFile.Modules {
 		if m == "login" {
 			fmt.Println("The 'Login' module has already been added to this project, press 'enter' to continue")
@@ -612,7 +617,8 @@ func (p *Project) ModuleAddLogin() {
 		}
 	}
 	// add all the modules
-	p.AddLogin()
+	// TODO: this needs to go down the road of all other entities, just need to template it differently - AddLogin(p)
 	// mark it as complete
 	p.ProjectFile.Modules = append(p.ProjectFile.Modules, "login")
+	p.ProjectFile.SaveProjectFile()
 }

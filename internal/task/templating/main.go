@@ -1,4 +1,4 @@
-package project
+package task
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"text/template"
 
 	c "github.com/blackflagsoftware/forge-go/internal/constant"
-	e "github.com/blackflagsoftware/forge-go/internal/entity"
+	m "github.com/blackflagsoftware/forge-go/internal/model"
 )
 
 var (
@@ -15,9 +15,8 @@ var (
 	tmplFiles    = []string{"model", "rest", "manager", "grpc"} // TODO: sql is optional depending on which data storages they want to template, dynamically build this
 )
 
-func (project *Project) StartTemplating() {
-	sqlProvider, sqlProviderLower := BuildStorage(*project)
-	// buildMigration(*project)
+func StartTemplating(project *m.Project) {
+	buildStorage(project)
 
 	for i := range project.Entities {
 		savePath := fmt.Sprintf("%s/%s/%s", project.ProjectFile.FullPath, project.ProjectFile.SubDir, project.Entities[i].AllLower)
@@ -29,13 +28,18 @@ func (project *Project) StartTemplating() {
 			fmt.Printf("Object: %s path was not able to be made: %s\n", project.Entities[i].AllLower, errMakeAll)
 			continue
 		}
-		project.Entities[i].SQLProvider = sqlProvider
-		project.Entities[i].SQLProviderLower = sqlProviderLower
-		project.Entities[i].ProjectFile = project.ProjectFile // TODO: can we get away from this
+		project.CurrentEntity = project.Entities[i]
 
 		// build the templates
-		buildTemplateParts(&project.Entities[i])
-		processTemplateFiles(*project, &project.Entities[i], savePath)
+		buildModelTemplate(project)
+		buildRestTemplate(project)
+		buildManagerTemplate(project)
+		buildStorageTemplate(project)
+		buildGrpc(project)
+		buildAPIHooks(project)
+		processTemplateFiles(*project, savePath)
+
+		project.CurrentEntity = m.Entity{} // blank it out
 	}
 	UpdateModFiles(project.ProjectFile.AppName)
 	// in case you a entity is marked as 'blank'
@@ -43,14 +47,13 @@ func (project *Project) StartTemplating() {
 	project.ProjectFile.SaveProjectFile()
 }
 
-// send back SQLProvider
-func BuildStorage(project Project) (sqlProvider, sqlProviderLower string) {
+func buildStorage(project *m.Project) {
 	storagePath := fmt.Sprintf("%s/internal/storage", project.ProjectFile.FullPath)
 	if errMakeAll := os.MkdirAll(storagePath, os.ModeDir|os.ModePerm); errMakeAll != nil {
 		fmt.Println("New storage folder was not able to be made", errMakeAll)
 		return
 	}
-	storageVars := StorageVars{ProjectPath: project.ProjectFile.ProjectPath}
+	storageVars := m.StorageVars{}
 	storageFiles := []string{}
 	if project.ProjectFile.UseORM {
 		storageFiles = append(storageFiles, "gorm")
@@ -84,8 +87,7 @@ func BuildStorage(project Project) (sqlProvider, sqlProviderLower string) {
 		storageFiles = append(storageFiles, "mongo")
 		tmplFiles = append(tmplFiles, "mongo")
 	}
-	sqlProvider = storageVars.SQLProvider
-	sqlProviderLower = storageVars.SQLProviderLower
+	project.StorageVars = storageVars
 
 	// save and template storage files
 	for _, tmpl := range storageFiles {
@@ -106,7 +108,7 @@ func BuildStorage(project Project) (sqlProvider, sqlProviderLower string) {
 			fmt.Printf("Template storage could not parse file: %s; %s", tmplPath, errParse)
 			continue
 		}
-		err = t.Execute(file, storageVars)
+		err = t.Execute(file, project)
 		if err != nil {
 			fmt.Println("Execution of template:", err)
 		}
@@ -114,91 +116,8 @@ func BuildStorage(project Project) (sqlProvider, sqlProviderLower string) {
 	return
 }
 
-// TODO: remove
-func buildMigration(project Project) {
-	if project.ProjectFile.Storage == "s" {
-		migrationVars := MigrationVars{ProjectPath: project.ProjectFile.ProjectPath, ProjectFile: project.ProjectFile}
-		if project.ProjectFile.UseORM {
-			tmplFiles = append(tmplFiles, "gorm")
-		} else {
-			tmplFiles = append(tmplFiles, "sql")
-		}
-		switch project.ProjectFile.SqlStorage {
-		case "m":
-			migrationVars.MigrationVerify = c.MIGRATION_VERIFY_MYSQL
-			migrationVars.MigrationConnection = c.MIGRATION_CONNECTION_MYSQL
-			migrationVars.MigrationHeader = c.MIGRATION_VERIFY_HEADER_MYSQL
-		case "p":
-			migrationVars.MigrationVerify = c.MIGRATION_VERIFY_POSTGRES
-			migrationVars.MigrationConnection = c.MIGRATION_CONNECTION_POSTGRES
-			migrationVars.MigrationHeader = c.MIGRATION_VERIFY_HEADER_POSTGRES
-		case "s":
-			migrationVars.MigrationVerify = c.MIGRATION_VERIFY_SQLITE
-			migrationVars.MigrationHeader = c.MIGRATION_VERIFY_HEADER_SQLITE
-		}
-		// TODO: if they change the sql engine, should we re-do this code
-		// save migration
-		migPath := fmt.Sprintf("%s/tools/migration", project.ProjectFile.FullPath)
-		if _, err := os.Stat(migPath); os.IsNotExist(err) {
-			errMk := os.MkdirAll(migPath, 0755)
-			if errMk != nil {
-				fmt.Printf("Unable to make tools/migration path: %s", errMk)
-				return
-			}
-			// migration/main.go
-			tmplPath := fmt.Sprintf("%s/tools/migration_main.tmpl", templatePath)
-			t, errParse := template.ParseFiles(tmplPath)
-			if errParse != nil {
-				fmt.Printf("Template migration/main could not parse file: %s; %s", tmplPath, errParse)
-				return
-			}
-			newFileName := fmt.Sprintf("%s/main.go", migPath)
-			file, err := os.Create(newFileName)
-			if err != nil {
-				fmt.Println("File: migration main was not able to be created", err)
-				return
-			}
-			err = t.Execute(file, migrationVars)
-			if err != nil {
-				fmt.Println("Execution of template:", err)
-			}
-			// migration/src/main.go
-			tmplPath = fmt.Sprintf("%s/tools/migration.tmpl", templatePath)
-			t, errParse = template.ParseFiles(tmplPath)
-			if errParse != nil {
-				fmt.Printf("Template src/migration could not parse file: %s; %s", tmplPath, errParse)
-				return
-			}
-			migPath = migPath + "/src"
-			errMk = os.MkdirAll(migPath, 0755)
-			if errMk != nil {
-				fmt.Printf("Unable to make tools/migration/src path: %s", errMk)
-				return
-			}
-			newFileName = fmt.Sprintf("%s/migration.go", migPath)
-			file, err = os.Create(newFileName)
-			if err != nil {
-				fmt.Println("File: migration src was not able to be created", err)
-				return
-			}
-			err = t.Execute(file, migrationVars)
-			if err != nil {
-				fmt.Println("Execution of template:", err)
-			}
-		}
-	}
-}
-
-func buildTemplateParts(ep *e.Entity) {
-	ep.BuildModelTemplate()
-	ep.BuildRestTemplate()
-	ep.BuildManagerTemplate()
-	ep.BuildDataTemplate()
-	ep.BuildGrpc()
-	ep.BuildAPIHooks()
-}
-
-func processTemplateFiles(project Project, ep *e.Entity, savePath string) {
+// TODO: pull the template file from the template or from the module
+func processTemplateFiles(project m.Project, savePath string) {
 	blankInsert := ""
 	if project.UseBlank {
 		blankInsert = "_blank"
@@ -219,7 +138,7 @@ func processTemplateFiles(project Project, ep *e.Entity, savePath string) {
 			fmt.Println("Exiting...")
 			return
 		}
-		err = t.Execute(file, ep)
+		err = t.Execute(file, project)
 		if err != nil {
 			fmt.Println("Execution of template:", err)
 		}
@@ -240,7 +159,7 @@ func processTemplateFiles(project Project, ep *e.Entity, savePath string) {
 					fmt.Println("Exiting...")
 					return
 				}
-				err = t.Execute(file, ep)
+				err = t.Execute(file, project)
 				if err != nil {
 					fmt.Println("Execution of template:", err)
 				}

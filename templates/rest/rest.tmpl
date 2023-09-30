@@ -1,4 +1,4 @@
-package {{.AllLower}}
+package {{.ProjectNameAllLower}}
 
 import (
 	"net/http"{{.RestStrConv}}
@@ -9,88 +9,88 @@ import (
 )
 
 type (
-	Manager{{.Camel}}Adapter interface {
-		Get(*{{.Camel}}) error
-		Search(*[]{{.Camel}}, {{.Camel}}Param) (int, error)
-		Post(*{{.Camel}}) error
-		Patch({{.Camel}}) error
-		Delete(*{{.Camel}}) error
+	Manager{{.ProjectNameCamel}}Adapter interface {
+		Get(*{{.ProjectNameCamel}}) error
+		Search(*[]{{.ProjectNameCamel}}, {{.ProjectNameCamel}}Param) (int, error)
+		Post(*{{.ProjectNameCamel}}) error
+		Patch({{.ProjectNameCamel}}) error
+		Delete(*{{.ProjectNameCamel}}) error
 	}
 
-	Rest{{.Camel}} struct {
-		manager{{.Camel}} Manager{{.Camel}}Adapter
+	Rest{{.ProjectNameCamel}} struct {
+		manager{{.ProjectNameCamel}} Manager{{.ProjectNameCamel}}Adapter
 	}
 )
 
 func InitializeRest(eg *echo.Group) {
 	sl := InitStorage()
-	ml := NewManager{{.Camel}}(sl)
-	hl := NewRest{{.Camel}}(ml)
-	hl.Load{{.Camel}}Routes(eg)
+	ml := NewManager{{.ProjectNameCamel}}(sl)
+	hl := NewRest{{.ProjectNameCamel}}(ml)
+	hl.Load{{.ProjectNameCamel}}Routes(eg)
 }
 
-func NewRest{{.Camel}}(m{{.Abbr}} Manager{{.Camel}}Adapter) *Rest{{.Camel}} {
-	return &Rest{{.Camel}}{manager{{.Camel}}: m{{.Abbr}}}
+func NewRest{{.ProjectNameCamel}}(m{{.ProjectNameAbbr}} Manager{{.ProjectNameCamel}}Adapter) *Rest{{.ProjectNameCamel}} {
+	return &Rest{{.ProjectNameCamel}}{manager{{.ProjectNameCamel}}: m{{.ProjectNameAbbr}}}
 }
 
-func (h *Rest{{.Camel}}) Load{{.Camel}}Routes(eg *echo.Group) {
-	eg.GET("/{{.AllLower}}/{{.RestGetDeleteUrl}}", h.Get)
-	eg.POST("/{{.AllLower}}/search", h.Search)
-	eg.POST("/{{.AllLower}}", h.Post)
-	eg.PATCH("/{{.AllLower}}", h.Patch)
-	eg.DELETE("/{{.AllLower}}/{{.RestGetDeleteUrl}}", h.Delete)
+func (h *Rest{{.ProjectNameCamel}}) Load{{.ProjectNameCamel}}Routes(eg *echo.Group) {
+	eg.GET("/{{.ProjectNameAllLower}}/{{.RestGetDeleteUrl}}", h.Get)
+	eg.POST("/{{.ProjectNameAllLower}}/search", h.Search)
+	eg.POST("/{{.ProjectNameAllLower}}", h.Post)
+	eg.PATCH("/{{.ProjectNameAllLower}}", h.Patch)
+	eg.DELETE("/{{.ProjectNameAllLower}}/{{.RestGetDeleteUrl}}", h.Delete)
 }
 
-func (h *Rest{{.Camel}}) Get(c echo.Context) error {
+func (h *Rest{{.ProjectNameCamel}}) Get(c echo.Context) error {
 {{.RestGetDeleteAssign}}
-	{{.LowerCamel}} := &{{.Camel}}{ {{.RestArgSet}} }
-	if err := h.manager{{.Camel}}.Get({{.LowerCamel}}); err != nil {
+	{{.ProjectNameLowerCamel}} := &{{.ProjectNameCamel}}{ {{.RestArgSet}} }
+	if err := h.manager{{.ProjectNameCamel}}.Get({{.ProjectNameLowerCamel}}); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
-	return c.JSON(http.StatusOK, util.NewOutput(c, *{{.LowerCamel}}, nil, nil))
+	return c.JSON(http.StatusOK, util.NewOutput(c, *{{.ProjectNameLowerCamel}}, nil, nil))
 }
 
-func (h *Rest{{.Camel}}) Search(c echo.Context) error {
-	param := {{.Camel}}Param{}
+func (h *Rest{{.ProjectNameCamel}}) Search(c echo.Context) error {
+	param := {{.ProjectNameCamel}}Param{}
 	if err := c.Bind(&param); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
 	}
-	{{.LowerCamel}}s := &[]{{.Camel}}{}
-	totalCount, err := h.manager{{.Camel}}.Search({{.LowerCamel}}s, param)
+	{{.ProjectNameLowerCamel}}s := &[]{{.ProjectNameCamel}}{}
+	totalCount, err := h.manager{{.ProjectNameCamel}}.Search({{.ProjectNameLowerCamel}}s, param)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
-	return c.JSON(http.StatusOK, util.NewOutput(c, *{{.LowerCamel}}s, nil, &totalCount))
+	return c.JSON(http.StatusOK, util.NewOutput(c, *{{.ProjectNameLowerCamel}}s, nil, &totalCount))
 }
 
-func (h *Rest{{.Camel}}) Post(c echo.Context) error {
-	{{.Abbr}} := {{.Camel}}{}
-	{{.Abbr}}Data := {{.Camel}}Data{Data: {{.Abbr}} }
-	if err := c.Bind(&{{.Abbr}}Data); err != nil {
+func (h *Rest{{.ProjectNameCamel}}) Post(c echo.Context) error {
+	{{.ProjectNameAbbr}} := {{.ProjectNameCamel}}{}
+	{{.ProjectNameAbbr}}Data := {{.ProjectNameCamel}}Data{Data: {{.ProjectNameAbbr}} }
+	if err := c.Bind(&{{.ProjectNameAbbr}}Data); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.manager{{.Camel}}.Post(&{{.Abbr}}Data.Data); err != nil {
+	if err := h.manager{{.ProjectNameCamel}}.Post(&{{.ProjectNameAbbr}}Data.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
-	return c.JSON(http.StatusOK, util.NewOutput(c, {{.Abbr}}Data.Data, nil, nil))
+	return c.JSON(http.StatusOK, util.NewOutput(c, {{.ProjectNameAbbr}}Data.Data, nil, nil))
 }
 
-func (h *Rest{{.Camel}}) Patch(c echo.Context) error {
-	{{.Abbr}} := {{.Camel}}{}
-	{{.Abbr}}Data := {{.Camel}}Data{Data: {{.Abbr}} }
-	if err := c.Bind(&{{.Abbr}}Data); err != nil {
+func (h *Rest{{.ProjectNameCamel}}) Patch(c echo.Context) error {
+	{{.ProjectNameAbbr}} := {{.ProjectNameCamel}}{}
+	{{.ProjectNameAbbr}}Data := {{.ProjectNameCamel}}Data{Data: {{.ProjectNameAbbr}} }
+	if err := c.Bind(&{{.ProjectNameAbbr}}Data); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.manager{{.Camel}}.Patch({{.Abbr}}Data.Data); err != nil {
+	if err := h.manager{{.ProjectNameCamel}}.Patch({{.ProjectNameAbbr}}Data.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -98,10 +98,10 @@ func (h *Rest{{.Camel}}) Patch(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func (h *Rest{{.Camel}}) Delete(c echo.Context) error {
+func (h *Rest{{.ProjectNameCamel}}) Delete(c echo.Context) error {
 {{.RestGetDeleteAssign}}
-	{{.LowerCamel}} := &{{.Camel}}{ {{.RestArgSet}} }
-	if err := h.manager{{.Camel}}.Delete({{.LowerCamel}}); err != nil {
+	{{.ProjectNameLowerCamel}} := &{{.ProjectNameCamel}}{ {{.RestArgSet}} }
+	if err := h.manager{{.ProjectNameCamel}}.Delete({{.ProjectNameLowerCamel}}); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))

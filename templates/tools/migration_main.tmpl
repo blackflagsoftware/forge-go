@@ -31,7 +31,7 @@ If migration (m) or file (f) is not set the application will go into interactive
 
 Connection to the db is provided by the application config file (see config/config.go) or you can manually send in the credentials (see flags below)
 
-The directory structure can get located anywhere, you can either set its location through the command line (see flags below) or provide a value for env var: {{.ProjectFile.Name.Upper}}_MIGRATION_PATH, command line arg will override
+The directory structure can get located anywhere, you can either set its location through the command line (see flags below) or provide a value for env var: {{.ProjectFileUpper}}_MIGRATION_PATH, command line arg will override
 
 Functionality (1) is performed every time cmd/rest/rest or cmd/grpc/grpc is started
 Functionality (2 and 3) is performed by compiling tool/migration/main.go and running that
@@ -56,7 +56,7 @@ func main() {
 	flag.Parse()
 
 	if path == "" {
-		envPath := os.Getenv("{{.ProjectFile.Name.Upper}}_MIGRATION_PATH")
+		envPath := os.Getenv("{{.ProjectFileUpper}}_MIGRATION_PATH")
 		if envPath == "" {
 			fmt.Println("Path is not set for scripts/migrations")
 			os.Exit(1)

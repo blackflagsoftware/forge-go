@@ -1,4 +1,4 @@
-package entity
+package task
 
 import (
 	"bytes"
@@ -9,18 +9,18 @@ import (
 	"strings"
 
 	con "github.com/blackflagsoftware/forge-go/internal/constant"
-	pf "github.com/blackflagsoftware/forge-go/internal/projectfile"
+	m "github.com/blackflagsoftware/forge-go/internal/model"
 )
 
-func (ep *Entity) BuildAPIHooks() {
+func buildAPIHooks(p *m.Project) {
 	// hook into rest main
-	apiFile := fmt.Sprintf("%s/cmd/rest/main.go", ep.ProjectFile.FullPath)
+	apiFile := fmt.Sprintf("%s/cmd/rest/main.go", p.ProjectFile.FullPath)
 	if _, err := os.Stat(apiFile); os.IsNotExist(err) {
 		fmt.Printf("%s is missing unable to write in hooks\n", apiFile)
 	} else {
 		var serverReplace bytes.Buffer
 		tServer := template.Must(template.New("server").Parse(con.SERVER_ROUTE))
-		errServer := tServer.Execute(&serverReplace, ep)
+		errServer := tServer.Execute(&serverReplace, p)
 		if errServer != nil {
 			fmt.Printf("%s: template error [%s]\n", apiFile, errServer)
 		} else {
@@ -40,7 +40,7 @@ func (ep *Entity) BuildAPIHooks() {
 		}
 		var mainReplace bytes.Buffer
 		tMain := template.Must(template.New("server").Parse(con.MAIN_COMMON_PATH))
-		errServer = tMain.Execute(&mainReplace, ep)
+		errServer = tMain.Execute(&mainReplace, p)
 		if errServer != nil {
 			fmt.Printf("%s: template error [%s]\n", apiFile, errServer)
 		} else {
@@ -51,10 +51,10 @@ func (ep *Entity) BuildAPIHooks() {
 				fmt.Printf("%s: error in replace for main [%s]\n", apiFile, errServerCmd)
 			}
 		}
-		if ep.SQLProvider != "" {
+		if p.SQLProvider != "" {
 			// handling sql add migration
 			nonSqlite := con.MIGRATION_NON_SQLITE
-			if ep.SQLProvider == "Sqlite" {
+			if p.SQLProvider == "Sqlite" {
 				nonSqlite = "\n\t\t\tHost: config.SqlitePath,"
 			}
 			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite)
@@ -64,7 +64,7 @@ func (ep *Entity) BuildAPIHooks() {
 			if errExecRestMain != nil {
 				fmt.Printf("%s: error in replace migration main [%s]\n", apiFile, errExecRestMain)
 			}
-			migRestHeader := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration header once text - do not remove ---/%s/g' %s`, fmt.Sprintf(`mig "%s\/tools\/migration\/src"`, ep.ProjectPathEncoded), apiFile)
+			migRestHeader := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration header once text - do not remove ---/%s/g' %s`, fmt.Sprintf(`mig "%s\/tools\/migration\/src"`, p.ProjectPathEncoded), apiFile)
 			execRestHeader := exec.Command("bash", "-c", migRestHeader)
 			errExecRestHeader := execRestHeader.Run()
 			if errExecRestHeader != nil {
@@ -75,7 +75,7 @@ func (ep *Entity) BuildAPIHooks() {
 	// header
 	var headerReplace bytes.Buffer
 	tHeader := template.Must(template.New("header").Parse(con.COMMON_HEADER))
-	errHeader := tHeader.Execute(&headerReplace, ep)
+	errHeader := tHeader.Execute(&headerReplace, p)
 	if errHeader != nil {
 		fmt.Println("Header template error:", errHeader)
 		return
@@ -83,19 +83,19 @@ func (ep *Entity) BuildAPIHooks() {
 	// section
 	var sectionReplace bytes.Buffer
 	tSection := template.Must(template.New("section").Parse(con.COMMON_SECTION))
-	errSection := tSection.Execute(&sectionReplace, ep)
+	errSection := tSection.Execute(&sectionReplace, p)
 	if errSection != nil {
 		fmt.Println("Section template error:", errSection)
 		return
 	}
 	// hook into grpc file
-	grpcFile := fmt.Sprintf("%s/cmd/grpc/main.go", ep.ProjectFile.FullPath)
+	grpcFile := fmt.Sprintf("%s/cmd/grpc/main.go", p.ProjectFile.FullPath)
 	if _, err := os.Stat(grpcFile); os.IsNotExist(err) {
 		fmt.Printf("%s is missing unable to write in hooks\n", grpcFile)
 	} else {
 		var grpcReplace bytes.Buffer
 		tGrpc := template.Must(template.New("grpc").Parse(con.GRPC_TEXT))
-		errGrpc := tGrpc.Execute(&grpcReplace, ep)
+		errGrpc := tGrpc.Execute(&grpcReplace, p)
 		if errGrpc != nil {
 			fmt.Printf("%s: template error [%s]\n", grpcFile, errGrpc)
 		} else {
@@ -108,7 +108,7 @@ func (ep *Entity) BuildAPIHooks() {
 		}
 		var importReplace bytes.Buffer
 		tImport := template.Must(template.New("grpc").Parse(con.GRPC_IMPORT))
-		errGrpc = tImport.Execute(&importReplace, ep)
+		errGrpc = tImport.Execute(&importReplace, p)
 		if errGrpc != nil {
 			fmt.Printf("%s: template error [%s]\n", grpcFile, errGrpc)
 		} else {
@@ -121,7 +121,7 @@ func (ep *Entity) BuildAPIHooks() {
 		}
 		var importOnceReplace bytes.Buffer
 		tOnce := template.Must(template.New("grpc").Parse(con.GRPC_IMPORT_ONCE))
-		errGrpc = tOnce.Execute(&importOnceReplace, ep)
+		errGrpc = tOnce.Execute(&importOnceReplace, p)
 		if errGrpc != nil {
 			fmt.Printf("%s: template error [%s]\n", grpcFile, errGrpc)
 		} else {
@@ -132,10 +132,10 @@ func (ep *Entity) BuildAPIHooks() {
 				fmt.Printf("%s: error in replace for grpc [%s]\n", grpcFile, errGrpcCmd)
 			}
 		}
-		if ep.SQLProvider != "" {
+		if p.SQLProvider != "" {
 			// handling sql add migration
 			nonSqlite := con.MIGRATION_NON_SQLITE
-			if ep.SQLProvider == "Sqlite" {
+			if p.SQLProvider == "Sqlite" {
 				nonSqlite = "\n\t\t\tHost: config.SqlitePath,"
 			}
 			migCall := fmt.Sprintf(con.MIGRATION_CALL, nonSqlite)
@@ -145,7 +145,7 @@ func (ep *Entity) BuildAPIHooks() {
 			if errExecGrpcMain != nil {
 				fmt.Printf("%s: error in replace migration main [%s]\n", grpcFile, errExecGrpcMain)
 			}
-			migGrpcHeader := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration header once text - do not remove ---/%s/g' %s`, fmt.Sprintf(`mig "%s\/tools\/migration\/src"`, ep.ProjectPathEncoded), grpcFile)
+			migGrpcHeader := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace migration header once text - do not remove ---/%s/g' %s`, fmt.Sprintf(`mig "%s\/tools\/migration\/src"`, p.ProjectPathEncoded), grpcFile)
 			execGrpcHeader := exec.Command("bash", "-c", migGrpcHeader)
 			errExecGrpcHeader := execGrpcHeader.Run()
 			if errExecGrpcHeader != nil {
@@ -160,20 +160,20 @@ func (ep *Entity) BuildAPIHooks() {
 		}
 	}
 	// hook into config.go
-	PopulateConfig(&ep.ProjectFile)
+	PopulateConfig(&p.ProjectFile)
 	// audit
-	auditFile := fmt.Sprintf("%s/internal/audit/audit.go", ep.ProjectFile.FullPath)
+	auditFile := fmt.Sprintf("%s/internal/audit/audit.go", p.ProjectFile.FullPath)
 	if _, err := os.Stat(auditFile); os.IsNotExist(err) {
 		fmt.Printf("%s is missing unable to write in hooks\n", auditFile)
 	} else {
-		onceReplace := fmt.Sprintf(`stor "%s\/internal\/storage"`, ep.ProjectPathEncoded)
+		onceReplace := fmt.Sprintf(`stor "%s\/internal\/storage"`, p.ProjectPathEncoded)
 		auditOnce := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace storage once text - do not remove ---/%s/g' %s`, onceReplace, auditFile)
 		execServerOnce := exec.Command("bash", "-c", auditOnce)
 		errServerOnceCmd := execServerOnce.Run()
 		if errServerOnceCmd != nil {
 			fmt.Printf("%s: error in replace for audit once [%s]\n", auditFile, errServerOnceCmd)
 		}
-		onceReference := fmt.Sprintf("DB: stor.%sInit(),", ep.SQLProvider)
+		onceReference := fmt.Sprintf("DB: stor.%sInit(),", p.SQLProvider)
 		auditOnceReference := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace storage reference once text - do not remove ---/%s/g' %s`, onceReference, auditFile)
 		execServerOnce = exec.Command("bash", "-c", auditOnceReference)
 		errServerOnceCmd = execServerOnce.Run()
@@ -183,7 +183,7 @@ func (ep *Entity) BuildAPIHooks() {
 	}
 }
 
-func PopulateConfig(projectFile *pf.ProjectFile) {
+func PopulateConfig(projectFile *m.ProjectFile) {
 	// only run this once, sets this to true at the end of this function
 	if projectFile.LoadedConfig {
 		return
@@ -196,7 +196,7 @@ func PopulateConfig(projectFile *pf.ProjectFile) {
 		configLines := []string{}
 		switch projectFile.Storage {
 		case "s":
-			lowerSqlEngine := strings.ToLower(pf.SqlTypeToProper(projectFile.SqlStorage))
+			lowerSqlEngine := strings.ToLower(m.SqlTypeToProper(projectFile.SqlStorage))
 			configLines = append(configLines, "StorageSQL = true")
 			configLines = append(configLines, fmt.Sprintf("DBEngine = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_ENGINE\", \"%s\")", lowerSqlEngine))
 			if projectFile.SqlStorage == "p" || projectFile.SqlStorage == "m" {

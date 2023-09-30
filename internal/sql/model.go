@@ -1,13 +1,13 @@
 package sql
 
 import (
-	c "github.com/blackflagsoftware/forge-go/internal/column"
+	m "github.com/blackflagsoftware/forge-go/internal/model"
 )
 
 type (
 	SqlEntity struct {
 		Name         string
-		Columns      []c.Column
-		ColExistence c.ColumnExistence
+		Columns      []m.Column
+		ColExistence m.ColumnExistence
 	}
 )
