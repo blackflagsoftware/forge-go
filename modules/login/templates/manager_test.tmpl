@@ -68,6 +68,7 @@ func TestManagerLogin_Post(t *testing.T) {
 			[]*gomock.Call{
 				mockDataLogin.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil).AnyTimes(),
 				mockEmail.EXPECT().SendReset(gomock.Any(), gomock.Any()).Return(nil),
+				mockDataLogin.EXPECT().GetByEmailAddr(gomock.Any()).Return(nil),
 			},
 		},
 		{

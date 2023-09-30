@@ -81,7 +81,7 @@ const (
 	\/\/ --- replace main header text - do not remove ---
 `
 
-	SERVER_ROUTE = `{{.Name.AllLower}}.InitializeRest(routeGroup)
+	SERVER_ROUTE = `{{.CurrentEntity.AllLower}}.InitializeRest(routeGroup)
 	\/\/ --- replace server text - do not remove ---
 `
 	COMMON_IMPORT = `
@@ -90,7 +90,7 @@ import (
 	
 	\/\/ --- replace header text - do not remove ---
 )`
-	COMMON_HEADER = `{{.Name.Abbr}} "{{.ProjectFile.ProjectPathEncoded}}\/{{.ProjectFile.SubDirEncoded}}\/{{.CurrentEntity.AllLower}}"
+	COMMON_HEADER = `{{.CurrentEntity.Abbr}} "{{.ProjectFile.ProjectPathEncoded}}\/{{.ProjectFile.SubDirEncoded}}\/{{.CurrentEntity.AllLower}}"
 	\/\/ --- replace header text - do not remove ---`
 
 	COMMON_SECTION = `\/\/ {{.Camel}}
@@ -105,14 +105,14 @@ func Setup{{.Camel}}(eg *echo.Group) {
 
 	GRPC_IMPORT_ONCE = `pb "{{.ProjectFile.ProjectPathEncoded}}\/pkg\/proto"`
 
-	GRPC_IMPORT = `{{.Name.Abbr}} "{{.ProjectFile.ProjectPathEncoded}}\/{{.ProjectFile.SubDirEncoded}}\/{{.CurrentEntity.AllLower}}"
+	GRPC_IMPORT = `{{.CurrentEntity.Abbr}} "{{.ProjectFile.ProjectPathEncoded}}\/{{.ProjectFile.SubDirEncoded}}\/{{.CurrentEntity.AllLower}}"
 	\/\/ --- replace grpc import - do not remove ---`
 
-	GRPC_TEXT = `\/\/ {{.Name.Camel}}
-	s{{.Name.Abbr}} := {{.Name.Abbr}}.InitStorage()
-	m{{.Name.Abbr}} := {{.Name.Abbr}}.NewManager{{.Name.Camel}}(s{{.Name.Abbr}})
-	h{{.Name.Abbr}} := {{.Name.Abbr}}.New{{.Name.Camel}}Grpc(m{{.Name.Abbr}})
-	pb.Register{{.Name.Camel}}ServiceServer(s, h{{.Name.Abbr}})
+	GRPC_TEXT = `\/\/ {{.CurrentEntity.Camel}}
+	s{{.CurrentEntity.Abbr}} := {{.CurrentEntity.Abbr}}.InitStorage()
+	m{{.CurrentEntity.Abbr}} := {{.CurrentEntity.Abbr}}.NewManager{{.CurrentEntity.Camel}}(s{{.CurrentEntity.Abbr}})
+	h{{.CurrentEntity.Abbr}} := {{.CurrentEntity.Abbr}}.New{{.CurrentEntity.Camel}}Grpc(m{{.CurrentEntity.Abbr}})
+	pb.Register{{.CurrentEntity.Camel}}ServiceServer(s, h{{.CurrentEntity.Abbr}})
 	\/\/ --- replace grpc text - do not remove ---`
 
 	MIGRATION_VERIFY_HEADER_MYSQL = `_ "github.com/go-sql-driver/mysql"`

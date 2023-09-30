@@ -16,7 +16,7 @@ var (
 )
 
 func StartTemplating(project *m.Project) {
-	buildStorage(project)
+	BuildStorage(project)
 
 	for i := range project.Entities {
 		savePath := fmt.Sprintf("%s/%s/%s", project.ProjectFile.FullPath, project.ProjectFile.SubDir, project.Entities[i].AllLower)
@@ -47,7 +47,7 @@ func StartTemplating(project *m.Project) {
 	project.ProjectFile.SaveProjectFile()
 }
 
-func buildStorage(project *m.Project) {
+func BuildStorage(project *m.Project) {
 	storagePath := fmt.Sprintf("%s/internal/storage", project.ProjectFile.FullPath)
 	if errMakeAll := os.MkdirAll(storagePath, os.ModeDir|os.ModePerm); errMakeAll != nil {
 		fmt.Println("New storage folder was not able to be made", errMakeAll)
@@ -124,6 +124,9 @@ func processTemplateFiles(project m.Project, savePath string) {
 	}
 	for _, tmpl := range tmplFiles {
 		tmplPath := fmt.Sprintf("%s/%s/%s%s.tmpl", templatePath, tmpl, tmpl, blankInsert)
+		if project.CurrentEntity.ModuleName != "" {
+			tmplPath = fmt.Sprintf("%s/modules/%s/templates/%s.tmpl", os.Getenv("FORGE_PATH"), project.CurrentEntity.ModuleName, tmpl)
+		}
 		t, errParse := template.ParseFiles(tmplPath)
 		if errParse != nil {
 			fmt.Printf("Template could not parse file: %s; %s", tmplPath, errParse)
@@ -145,6 +148,9 @@ func processTemplateFiles(project m.Project, savePath string) {
 		// process _test file
 		if !project.UseBlank {
 			tmplPath = fmt.Sprintf("%s/%s/%s_test.tmpl", templatePath, tmpl, tmpl)
+			if project.CurrentEntity.ModuleName != "" {
+				tmplPath = fmt.Sprintf("%s/modules/%s/templates/%s_test.tmpl", os.Getenv("FORGE_PATH"), project.CurrentEntity.ModuleName, tmpl)
+			}
 			if _, err := os.Stat(tmplPath); !os.IsNotExist(err) {
 				t, errParse := template.ParseFiles(tmplPath)
 				if errParse != nil {

@@ -1,4 +1,4 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
 import (
 	"github.com/jmoiron/sqlx"
@@ -7,32 +7,32 @@ import (
 )
 
 type (
-	SQL{{.ProjectNameCamel}} struct {
+	SQL{{.CurrentEntity.Camel}} struct {
 		DB *sqlx.DB
 	}
 )
 
-func InitSQL() *SQL{{.ProjectNameCamel}} {
+func InitSQL() *SQL{{.CurrentEntity.Camel}} {
 	db := stor.{{.SQLProvider}}Init()
-	return &SQL{{.ProjectNameCamel}}{DB: db}
+	return &SQL{{.CurrentEntity.Camel}}{DB: db}
 }
 
-func (d *SQL{{.ProjectNameCamel}}) Read({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	return nil
 }
 
-func (d *SQL{{.ProjectNameCamel}}) ReadAll({{.ProjectNameAbbr}} *[]{{.ProjectNameCamel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}) error {
 	return nil
 }
 
-func (d *SQL{{.ProjectNameCamel}}) Create({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	return nil
 }
 
-func (d *SQL{{.ProjectNameCamel}}) Update({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Update({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	return nil
 }
 
-func (d *SQL{{.ProjectNameCamel}}) Delete({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	return nil
 }

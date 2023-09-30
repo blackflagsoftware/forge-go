@@ -1,28 +1,28 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
 import (
 	"github.com/labstack/echo/v4"
 )
 
 type (
-	Manager{{.ProjectNameCamel}}Adapter interface {
+	Manager{{.CurrentEntity.Camel}}Adapter interface {
 	}
 
-	Rest{{.ProjectNameCamel}} struct {
-		manager{{.ProjectNameCamel}} Manager{{.ProjectNameCamel}}Adapter
+	Rest{{.CurrentEntity.Camel}} struct {
+		manager{{.CurrentEntity.Camel}} Manager{{.CurrentEntity.Camel}}Adapter
 	}
 )
 
 func InitializeRest(eg *echo.Group) {
 	sl := InitStorage()
-	ml := NewManager{{.ProjectNameCamel}}(sl)
-	hl := NewRest{{.ProjectNameCamel}}(ml)
-	hl.Load{{.ProjectNameCamel}}Routes(eg)
+	ml := NewManager{{.CurrentEntity.Camel}}(sl)
+	hl := NewRest{{.CurrentEntity.Camel}}(ml)
+	hl.Load{{.CurrentEntity.Camel}}Routes(eg)
 }
 
-func NewRest{{.ProjectNameCamel}}(m{{.ProjectNameAbbr}} Manager{{.ProjectNameCamel}}Adapter) *Rest{{.ProjectNameCamel}} {
-	return &Rest{{.ProjectNameCamel}}{manager{{.ProjectNameCamel}}: m{{.ProjectNameAbbr}}}
+func NewRest{{.CurrentEntity.Camel}}(m{{.CurrentEntity.Abbr}} Manager{{.CurrentEntity.Camel}}Adapter) *Rest{{.CurrentEntity.Camel}} {
+	return &Rest{{.CurrentEntity.Camel}}{manager{{.CurrentEntity.Camel}}: m{{.CurrentEntity.Abbr}}}
 }
 
-func (h *Rest{{.ProjectNameCamel}}) Load{{.ProjectNameCamel}}Routes(eg *echo.Group) {
+func (h *Rest{{.CurrentEntity.Camel}}) Load{{.CurrentEntity.Camel}}Routes(eg *echo.Group) {
 }

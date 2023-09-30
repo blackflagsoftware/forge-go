@@ -1,16 +1,16 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
 import (
 	{{.ManagerTestImport}}
 )
 
-func TestManager{{.ProjectNameCamel}}_Get(t *testing.T) {
+func TestManager{{.CurrentEntity.Camel}}_Get(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockData{{.ProjectNameCamel}} := NewMockData{{.ProjectNameCamel}}Adapter(ctrl)
+	mockData{{.CurrentEntity.Camel}} := NewMockData{{.CurrentEntity.Camel}}Adapter(ctrl)
 
 	tests := []struct {
 		name    string
-		{{.ProjectNameAbbr}} *{{.ProjectNameCamel}}
+		{{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}
 		wantErr bool
 		calls   []*gomock.Call
 	}{
@@ -18,25 +18,25 @@ func TestManager{{.ProjectNameCamel}}_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Manager{{.ProjectNameCamel}}{data{{.ProjectNameCamel}}: mockData{{.ProjectNameCamel}}}
-			err := m.Get(tt.{{.ProjectNameAbbr}})
+			m := &Manager{{.CurrentEntity.Camel}}{data{{.CurrentEntity.Camel}}: mockData{{.CurrentEntity.Camel}}}
+			err := m.Get(tt.{{.CurrentEntity.Abbr}})
 			if !tt.wantErr {
-				assert.Nil(t, err, "Manager{{.ProjectNameCamel}}.Get().%s => expected not error; got: %s", tt.name, err)
+				assert.Nil(t, err, "Manager{{.CurrentEntity.Camel}}.Get().%s => expected not error; got: %s", tt.name, err)
 			}
 			if tt.wantErr {
-				assert.NotNil(t, err, "Manager{{.ProjectNameCamel}}.Get().%s => expected error: got nil", tt.name)
+				assert.NotNil(t, err, "Manager{{.CurrentEntity.Camel}}.Get().%s => expected error: got nil", tt.name)
 			}
 		})
 	}
 }
 
-func TestManager{{.ProjectNameCamel}}_Post(t *testing.T) {
+func TestManager{{.CurrentEntity.Camel}}_Post(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockData{{.ProjectNameCamel}} := NewMockData{{.ProjectNameCamel}}Adapter(ctrl)
+	mockData{{.CurrentEntity.Camel}} := NewMockData{{.CurrentEntity.Camel}}Adapter(ctrl)
 
 	tests := []struct {
 		name    string
-		{{.ProjectNameAbbr}}     *{{.ProjectNameCamel}}
+		{{.CurrentEntity.Abbr}}     *{{.CurrentEntity.Camel}}
 		wantErr bool
 		calls   []*gomock.Call
 	}{
@@ -44,67 +44,67 @@ func TestManager{{.ProjectNameCamel}}_Post(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Manager{{.ProjectNameCamel}}{data{{.ProjectNameCamel}}: mockData{{.ProjectNameCamel}}}
-			err := m.Post(tt.{{.ProjectNameAbbr}})
+			m := &Manager{{.CurrentEntity.Camel}}{data{{.CurrentEntity.Camel}}: mockData{{.CurrentEntity.Camel}}}
+			err := m.Post(tt.{{.CurrentEntity.Abbr}})
 			if !tt.wantErr {
-				assert.Nil(t, err, "Manager{{.ProjectNameCamel}}.Create().%s => expected not error; got: %s", tt.name, err)
+				assert.Nil(t, err, "Manager{{.CurrentEntity.Camel}}.Create().%s => expected not error; got: %s", tt.name, err)
 			}
 			if tt.wantErr {
-				assert.NotNil(t, err, "Manager{{.ProjectNameCamel}}.Create().%s => expected error: got nil", tt.name)
+				assert.NotNil(t, err, "Manager{{.CurrentEntity.Camel}}.Create().%s => expected error: got nil", tt.name)
 			}
 		})
 	}
 }
 
-func TestManager{{.ProjectNameCamel}}_Patch(t *testing.T) {
+func TestManager{{.CurrentEntity.Camel}}_Patch(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockData{{.ProjectNameCamel}} := NewMockData{{.ProjectNameCamel}}Adapter(ctrl)
+	mockData{{.CurrentEntity.Camel}} := NewMockData{{.CurrentEntity.Camel}}Adapter(ctrl)
 
 	tests := []struct {
 		name    string
-		body   	{{.ProjectNameCamel}}
+		body   	{{.CurrentEntity.Camel}}
 		wantErr bool
 		calls   []*gomock.Call
 	}{
 		{
 			"successful",
-			{{.ProjectNameCamel}}{ {{.ManagerTestPatchInit}} },
+			{{.CurrentEntity.Camel}}{ {{.ManagerTestPatchInit}} },
 			false,
 			[]*gomock.Call{
-				mockData{{.ProjectNameCamel}}.EXPECT().Read(gomock.Any()).Return(nil),
-				mockData{{.ProjectNameCamel}}.EXPECT().Update(gomock.Any()).Return(nil),
+				mockData{{.CurrentEntity.Camel}}.EXPECT().Read(gomock.Any()).Return(nil),
+				mockData{{.CurrentEntity.Camel}}.EXPECT().Update(gomock.Any()).Return(nil),
 			},
 		},
 		{
 			"invalid id",
-			{{.ProjectNameCamel}}{ {{.ManagerTestPatchInit}} },
+			{{.CurrentEntity.Camel}}{ {{.ManagerTestPatchInit}} },
 			true,
 			[]*gomock.Call{
-				mockData{{.ProjectNameCamel}}.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+				mockData{{.CurrentEntity.Camel}}.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Manager{{.ProjectNameCamel}}{data{{.ProjectNameCamel}}: mockData{{.ProjectNameCamel}}}
+			m := &Manager{{.CurrentEntity.Camel}}{data{{.CurrentEntity.Camel}}: mockData{{.CurrentEntity.Camel}}}
 			err := m.Patch(tt.body)
 			if !tt.wantErr {
-				assert.Nil(t, err, "Manager{{.ProjectNameCamel}}.Update().%s => expected not error; got: %s", tt.name, err)
+				assert.Nil(t, err, "Manager{{.CurrentEntity.Camel}}.Update().%s => expected not error; got: %s", tt.name, err)
 			}
 			if tt.wantErr {
-				assert.NotNil(t, err, "Manager{{.ProjectNameCamel}}.Update().%s => expected error: got nil", tt.name)
+				assert.NotNil(t, err, "Manager{{.CurrentEntity.Camel}}.Update().%s => expected error: got nil", tt.name)
 			}
 		})
 	}
 }
 
-func TestManager{{.ProjectNameCamel}}_Delete(t *testing.T) {
+func TestManager{{.CurrentEntity.Camel}}_Delete(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockData{{.ProjectNameCamel}} := NewMockData{{.ProjectNameCamel}}Adapter(ctrl)
+	mockData{{.CurrentEntity.Camel}} := NewMockData{{.CurrentEntity.Camel}}Adapter(ctrl)
 
 	tests := []struct {
 		name    string
-		{{.ProjectNameAbbr}}     *{{.ProjectNameCamel}}
+		{{.CurrentEntity.Abbr}}     *{{.CurrentEntity.Camel}}
 		wantErr bool
 		calls   []*gomock.Call
 	}{
@@ -112,13 +112,13 @@ func TestManager{{.ProjectNameCamel}}_Delete(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Manager{{.ProjectNameCamel}}{data{{.ProjectNameCamel}}: mockData{{.ProjectNameCamel}}}
-			err := m.Delete(tt.{{.ProjectNameAbbr}})
+			m := &Manager{{.CurrentEntity.Camel}}{data{{.CurrentEntity.Camel}}: mockData{{.CurrentEntity.Camel}}}
+			err := m.Delete(tt.{{.CurrentEntity.Abbr}})
 			if !tt.wantErr {
-				assert.Nil(t, err, "Manager{{.ProjectNameCamel}}.Delete().%s => expected not error; got: %s", tt.name, err)
+				assert.Nil(t, err, "Manager{{.CurrentEntity.Camel}}.Delete().%s => expected not error; got: %s", tt.name, err)
 			}
 			if tt.wantErr {
-				assert.NotNil(t, err, "Manager{{.ProjectNameCamel}}.Delete().%s => expected error: got nil", tt.name)
+				assert.NotNil(t, err, "Manager{{.CurrentEntity.Camel}}.Delete().%s => expected error: got nil", tt.name)
 			}
 		})
 	}

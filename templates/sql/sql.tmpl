@@ -1,4 +1,4 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
 import (
 	"fmt"
@@ -10,28 +10,28 @@ import (
 )
 
 type (
-	SQL{{.ProjectNameCamel}} struct {
+	SQL{{.CurrentEntity.Camel}} struct {
 		DB *sqlx.DB
 	}
 )
 
-func InitSQL() *SQL{{.ProjectNameCamel}} {
+func InitSQL() *SQL{{.CurrentEntity.Camel}} {
 	db := stor.{{.SQLProvider}}Init()
-	return &SQL{{.ProjectNameCamel}}{DB: db}
+	return &SQL{{.CurrentEntity.Camel}}{DB: db}
 }
 
-func (d *SQL{{.ProjectNameCamel}}) Read({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	sqlGet := {{.StorageTablePrefix}}`
 		SELECT
 			{{.StorageGetColumns}}
 		FROM {{.StorageTable}} WHERE {{.StorageTableKeyKeys}}`{{.StorageTablePostfix}}
-	if errDB := d.DB.Get({{.ProjectNameAbbr}}, sqlGet, {{.StorageTableKeyValues}}); errDB != nil {
-		return ae.DBError("{{.ProjectNameCamel}} Get: unable to get record.", errDB)
+	if errDB := d.DB.Get({{.CurrentEntity.Abbr}}, sqlGet, {{.StorageTableKeyValues}}); errDB != nil {
+		return ae.DBError("{{.CurrentEntity.Camel}} Get: unable to get record.", errDB)
 	}
 	return nil
 }
 
-func (d *SQL{{.ProjectNameCamel}}) ReadAll({{.ProjectNameAbbr}} *[]{{.ProjectNameCamel}}, param {{.ProjectNameCamel}}Param) (int, error) {
+func (d *SQL{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Search)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
@@ -40,8 +40,8 @@ func (d *SQL{{.ProjectNameCamel}}) ReadAll({{.ProjectNameAbbr}} *[]{{.ProjectNam
 		%s
 		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
 	sqlSearch = d.DB.Rebind(sqlSearch)
-	if errDB := d.DB.Select({{.ProjectNameAbbr}}, sqlSearch, args...); errDB != nil {
-		return 0, ae.DBError("{{.ProjectNameCamel}} Search: unable to select records.", errDB)
+	if errDB := d.DB.Select({{.CurrentEntity.Abbr}}, sqlSearch, args...); errDB != nil {
+		return 0, ae.DBError("{{.CurrentEntity.Camel}} Search: unable to select records.", errDB)
 	}
 	sqlCount := fmt.Sprintf(`
 		SELECT
@@ -56,7 +56,7 @@ func (d *SQL{{.ProjectNameCamel}}) ReadAll({{.ProjectNameAbbr}} *[]{{.ProjectNam
 	return count, nil
 }
 
-func (d *SQL{{.ProjectNameCamel}}) Create({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	sqlPost := {{.StorageTablePrefix}}`
 		INSERT INTO {{.StorageTable}} (
 			{{.StoragePostColumns}}
@@ -65,28 +65,28 @@ func (d *SQL{{.ProjectNameCamel}}) Create({{.ProjectNameAbbr}} *{{.ProjectNameCa
 		){{.StoragePostReturning}}`{{.StorageTablePostfix}}
 	{{.StoragePostQuery}}
 	if errDB != nil {
-		return ae.DBError("{{.ProjectNameCamel}} Post: unable to insert record.", errDB)
+		return ae.DBError("{{.CurrentEntity.Camel}} Post: unable to insert record.", errDB)
 	}
 	{{.StoragePostLastId}}
 	return nil
 }
 
-func (d *SQL{{.ProjectNameCamel}}) Update({{.ProjectNameAbbr}} {{.ProjectNameCamel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Update({{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
 	sqlPatch := {{.StorageTablePrefix}}`
 		UPDATE {{.StorageTable}} SET
 			{{.StoragePatchColumns}}
 		WHERE {{.StoragePatchWhere}}`{{.StorageTablePostfix}}
-	if _, errDB := d.DB.NamedExec(sqlPatch, {{.ProjectNameAbbr}}); errDB != nil {
-		return ae.DBError("{{.ProjectNameCamel}} Patch: unable to update record.", errDB)
+	if _, errDB := d.DB.NamedExec(sqlPatch, {{.CurrentEntity.Abbr}}); errDB != nil {
+		return ae.DBError("{{.CurrentEntity.Camel}} Patch: unable to update record.", errDB)
 	}
 	return nil
 }
 
-func (d *SQL{{.ProjectNameCamel}}) Delete({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	sqlDelete := {{.StorageTablePrefix}}`
 		DELETE FROM {{.StorageTable}} WHERE {{.StorageTableKeyKeys}}`{{.StorageTablePostfix}}
 	if _, errDB := d.DB.Exec(sqlDelete, {{.StorageTableKeyValues}}); errDB != nil {
-		return ae.DBError("{{.ProjectNameCamel}} Delete: unable to delete record.", errDB)
+		return ae.DBError("{{.CurrentEntity.Camel}} Delete: unable to delete record.", errDB)
 	}
 	return nil
 }

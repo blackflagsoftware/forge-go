@@ -1,4 +1,4 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
 import (
 	"encoding/json"
@@ -8,49 +8,49 @@ import (
 )
 
 type (
-	{{.ProjectNameCamel}}Grpc struct {
-		p.Unimplemented{{.ProjectNameCamel}}ServiceServer
-		manager{{.ProjectNameCamel}} Manager{{.ProjectNameCamel}}Adapter
+	{{.CurrentEntity.Camel}}Grpc struct {
+		p.Unimplemented{{.CurrentEntity.Camel}}ServiceServer
+		manager{{.CurrentEntity.Camel}} Manager{{.CurrentEntity.Camel}}Adapter
 	}
 )
 
-func New{{.ProjectNameCamel}}Grpc(m{{.ProjectNameAbbr}} Manager{{.ProjectNameCamel}}Adapter) *{{.ProjectNameCamel}}Grpc {
-	return &{{.ProjectNameCamel}}Grpc{manager{{.ProjectNameCamel}}: m{{.ProjectNameAbbr}}}
+func New{{.CurrentEntity.Camel}}Grpc(m{{.CurrentEntity.Abbr}} Manager{{.CurrentEntity.Camel}}Adapter) *{{.CurrentEntity.Camel}}Grpc {
+	return &{{.CurrentEntity.Camel}}Grpc{manager{{.CurrentEntity.Camel}}: m{{.CurrentEntity.Abbr}}}
 }
 
-func translateOut({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) (*p.{{.ProjectNameCamel}}, error) {
-	proto{{.ProjectNameCamel}} := p.{{.ProjectNameCamel}}{}
-	return &proto{{.ProjectNameCamel}}, nil
+func translateOut({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) (*p.{{.CurrentEntity.Camel}}, error) {
+	proto{{.CurrentEntity.Camel}} := p.{{.CurrentEntity.Camel}}{}
+	return &proto{{.CurrentEntity.Camel}}, nil
 }
 
-func translateIn(in *p.{{.ProjectNameCamel}}) (*{{.ProjectNameCamel}}, error) {
-	{{.ProjectNameAbbr}} := {{.ProjectNameCamel}}{}
-	return &{{.ProjectNameAbbr}}, nil
+func translateIn(in *p.{{.CurrentEntity.Camel}}) (*{{.CurrentEntity.Camel}}, error) {
+	{{.CurrentEntity.Abbr}} := {{.CurrentEntity.Camel}}{}
+	return &{{.CurrentEntity.Abbr}}, nil
 }
 
 // found these are slower; deprecated; keep them, just in case
-func translateJsonOut({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) (*p.{{.ProjectNameCamel}}, error) {
-	proto{{.ProjectNameCamel}} := p.{{.ProjectNameCamel}}{}
-	outBytes, err := json.Marshal({{.ProjectNameAbbr}})
+func translateJsonOut({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) (*p.{{.CurrentEntity.Camel}}, error) {
+	proto{{.CurrentEntity.Camel}} := p.{{.CurrentEntity.Camel}}{}
+	outBytes, err := json.Marshal({{.CurrentEntity.Abbr}})
 	if err != nil {
-		return &proto{{.ProjectNameCamel}}, ae.GeneralError("Unable to encode from {{.ProjectNameCamel}}", err)
+		return &proto{{.CurrentEntity.Camel}}, ae.GeneralError("Unable to encode from {{.CurrentEntity.Camel}}", err)
 	}
-	err = json.Unmarshal(outBytes, &proto{{.ProjectNameCamel}})
+	err = json.Unmarshal(outBytes, &proto{{.CurrentEntity.Camel}})
 	if err != nil {
-		return &proto{{.ProjectNameCamel}}, ae.GeneralError("Unable to decode to proto.{{.ProjectNameCamel}}", err)
+		return &proto{{.CurrentEntity.Camel}}, ae.GeneralError("Unable to decode to proto.{{.CurrentEntity.Camel}}", err)
 	}
-	return &proto{{.ProjectNameCamel}}, nil
+	return &proto{{.CurrentEntity.Camel}}, nil
 }
 
-func translateJsonIn(in *p.{{.ProjectNameCamel}}) (*{{.ProjectNameCamel}}, error) {
-	{{.ProjectNameAbbr}} := {{.ProjectNameCamel}}{}
+func translateJsonIn(in *p.{{.CurrentEntity.Camel}}) (*{{.CurrentEntity.Camel}}, error) {
+	{{.CurrentEntity.Abbr}} := {{.CurrentEntity.Camel}}{}
 	outBytes, err := json.Marshal(in)
 	if err != nil {
-		return &{{.ProjectNameAbbr}}, ae.GeneralError("Unable to encode from proto.{{.ProjectNameCamel}}", err)
+		return &{{.CurrentEntity.Abbr}}, ae.GeneralError("Unable to encode from proto.{{.CurrentEntity.Camel}}", err)
 	}
-	err = json.Unmarshal(outBytes, &{{.ProjectNameAbbr}})
+	err = json.Unmarshal(outBytes, &{{.CurrentEntity.Abbr}})
 	if err != nil {
-		return &{{.ProjectNameAbbr}}, ae.GeneralError("Unable to decode to {{.ProjectNameCamel}}", err)
+		return &{{.CurrentEntity.Abbr}}, ae.GeneralError("Unable to decode to {{.CurrentEntity.Camel}}", err)
 	}
-	return &{{.ProjectNameAbbr}}, nil
+	return &{{.CurrentEntity.Abbr}}, nil
 }

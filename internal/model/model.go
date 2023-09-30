@@ -68,6 +68,7 @@ type (
 		SqlLines      []string
 		DefaultColumn string
 		SortColumns   string
+		ModuleName    string
 		Name
 		ColumnExistence
 	}

@@ -13,6 +13,7 @@ import (
 	m "github.com/blackflagsoftware/forge-go/internal/model"
 	s "github.com/blackflagsoftware/forge-go/internal/sql"
 	temp "github.com/blackflagsoftware/forge-go/internal/task/templating"
+	mod "github.com/blackflagsoftware/forge-go/internal/task/templating/modules"
 	"github.com/blackflagsoftware/forge-go/internal/util"
 )
 
@@ -616,9 +617,7 @@ func ModuleAddLogin(p *m.Project) {
 			return
 		}
 	}
-	// add all the modules
-	// TODO: this needs to go down the road of all other entities, just need to template it differently - AddLogin(p)
-	// mark it as complete
+	mod.AddLogin(p)
 	p.ProjectFile.Modules = append(p.ProjectFile.Modules, "login")
 	p.ProjectFile.SaveProjectFile()
 }

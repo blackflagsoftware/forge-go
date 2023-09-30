@@ -1,27 +1,27 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
 import (
     {{.ModelImport}}
 )
 
 type (
-    {{.ProjectNameCamel}} struct {
+    {{.CurrentEntity.Camel}} struct {
 {{.ModelRows}}
     }
 
-    {{.ProjectNameCamel}}Data struct {
-        Data {{.ProjectNameCamel}} `json:"data"`
+    {{.CurrentEntity.Camel}}Data struct {
+        Data {{.CurrentEntity.Camel}} `json:"data"`
     }
 
-    {{.ProjectNameCamel}}Param struct {
+    {{.CurrentEntity.Camel}}Param struct {
         // TODO: add any other custom params here
         util.Param
     }
 )
 
-const {{.ProjectNameCamel}}Const = "{{.ProjectNameLower}}"
+const {{.CurrentEntity.Camel}}Const = "{{.CurrentEntity.Lower}}"
 
-func InitStorage() Data{{.ProjectNameCamel}}Adapter {
+func InitStorage() Data{{.CurrentEntity.Camel}}Adapter {
 {{.ModelInitStorage}}
     return nil
 }

@@ -1,4 +1,4 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
 import (
 	"context"
@@ -10,32 +10,32 @@ import (
 )
 
 type (
-	Mongo{{.ProjectNameCamel}} struct {
+	Mongo{{.CurrentEntity.Camel}} struct {
 		DB *mongo.Client
 	}
 )
 
-func InitMongo() *Mongo{{.ProjectNameCamel}} {
+func InitMongo() *Mongo{{.CurrentEntity.Camel}} {
 	db := stor.MongoInit()
-	return &Mongo{{.ProjectNameCamel}}{DB: db}
+	return &Mongo{{.CurrentEntity.Camel}}{DB: db}
 }
 
-func (d *Mongo{{.ProjectNameCamel}}) Read({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *Mongo{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	return nil
 }
 
-func (d *Mongo{{.ProjectNameCamel}}) ReadAll({{.ProjectNameAbbr}} *[]{{.ProjectNameCamel}}) error {
+func (d *Mongo{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}) error {
 	return nil
 }
 
-func (d *Mongo{{.ProjectNameCamel}}) Create({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *Mongo{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	return nil
 }
 
-func (d *Mongo{{.ProjectNameCamel}}) Update({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *Mongo{{.CurrentEntity.Camel}}) Update({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	return nil
 }
 
-func (d *Mongo{{.ProjectNameCamel}}) Delete({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
+func (d *Mongo{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	return nil
 }

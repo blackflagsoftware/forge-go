@@ -76,7 +76,8 @@ func NewApiError(statusCode int, title string, detail string, severe bool, err e
 	}
 	if detail == "" {
 		detail = err.Error() // use the err message
-	} else {
+	}
+	if err.Error() != "" {
 		detail = fmt.Sprintf("%s - %s", detail, err.Error())
 	}
 	pg := SetCaller(err, 4) // by default, the level is 4 of which stack trace level we want to show

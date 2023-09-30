@@ -1,7 +1,7 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
-type {{.ProjectNameCamel}} struct {}
+type {{.CurrentEntity.Camel}} struct {}
 
-func InitStorage() Data{{.ProjectNameCamel}}Adapter {
+func InitStorage() Data{{.CurrentEntity.Camel}}Adapter {
     return nil
 }

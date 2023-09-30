@@ -11,10 +11,10 @@ import (
 func buildStorageTemplate(p *m.Project) {
 	if p.ProjectFile.DynamicSchema {
 		p.StorageTablePrefix = "fmt.Sprintf("
-		p.StorageTable = fmt.Sprintf("%s.%s", p.Schema, p.Lower)
+		p.StorageTable = fmt.Sprintf("%s.%s", p.Schema, p.CurrentEntity.Lower)
 		p.StorageTablePostfix = fmt.Sprintf(", %s)", p.DynamicSchemaPostfix)
 	} else {
-		p.StorageTable = p.Lower
+		p.StorageTable = p.CurrentEntity.Lower
 	}
 	SqlGetColumns := ""
 	foundOneKey := false
@@ -37,7 +37,7 @@ func buildStorageTemplate(p *m.Project) {
 	filePostIncrCheck := []string{}
 	filePostIncr := []string{}
 	for i, c := range p.CurrentEntity.Columns {
-		fileGetColumn = append(fileGetColumn, fmt.Sprintf("%s.%s = %sObj.%s", p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel))
+		fileGetColumn = append(fileGetColumn, fmt.Sprintf("%s.%s = %sObj.%s", p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 		if c.DBType == "autoincrement" {
 			foundSerialDB = c.ColumnName.Lower
 			foundSerial = c.ColumnName.Camel
@@ -75,14 +75,14 @@ func buildStorageTemplate(p *m.Project) {
 			}
 			patchKeys += fmt.Sprintf("%s = :%s", c.ColumnName.Lower, c.ColumnName.Lower)
 			keyCount++
-			values += fmt.Sprintf("%s.%s", p.Name.Abbr, c.ColumnName.Camel)
+			values += fmt.Sprintf("%s.%s", p.CurrentEntity.Abbr, c.ColumnName.Camel)
 			// listOrder += fmt.Sprintf("%s", c.ColumnName.Lower)
 			keysCount++
-			fileKey = append(fileKey, fmt.Sprintf("%sObj.%s == %s.%s", p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel))
+			fileKey = append(fileKey, fmt.Sprintf("%sObj.%s == %s.%s", p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 			if c.DBType == "autoincrement" || c.DBType == "int" {
 				filePostIncrInit = append(filePostIncrInit, fmt.Sprintf("max%s := 0", c.ColumnName.Camel))
-				filePostIncrCheck = append(filePostIncrCheck, fmt.Sprintf("\t\tif %sObj.%s > max%s {\n\t\t\tmax%s = %sObj.%s\n\t\t}", p.Abbr, c.ColumnName.Camel, c.ColumnName.Camel, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel))
-				filePostIncr = append(filePostIncr, fmt.Sprintf("\t%s.%s = max%s + 1", p.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+				filePostIncrCheck = append(filePostIncrCheck, fmt.Sprintf("\t\tif %sObj.%s > max%s {\n\t\t\tmax%s = %sObj.%s\n\t\t}", p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
+				filePostIncr = append(filePostIncr, fmt.Sprintf("\t%s.%s = max%s + 1", p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
 			}
 		} else {
 			if foundOnePatch {
@@ -100,17 +100,17 @@ func buildStorageTemplate(p *m.Project) {
 	p.StoragePostColumnsNamed = strings.TrimRight(postColumnNames, "\n")
 	p.StoragePatchColumns = strings.TrimRight(patchColumn, "\n")
 	p.StoragePatchWhere = patchKeys
-	p.StoragePostQuery = fmt.Sprintf(con.SQL_POST_QUERY, p.Abbr)
+	p.StoragePostQuery = fmt.Sprintf(con.SQL_POST_QUERY, p.CurrentEntity.Abbr)
 	if foundSerial != "" {
-		p.StoragePostQuery = fmt.Sprintf(con.SQL_POST_QUERY_MYSQL, p.Abbr)
-		p.StoragePostLastId = fmt.Sprintf(con.SQL_LAST_ID_MYSQL, p.Camel, p.Abbr, foundSerial)
+		p.StoragePostQuery = fmt.Sprintf(con.SQL_POST_QUERY_MYSQL, p.CurrentEntity.Abbr)
+		p.StoragePostLastId = fmt.Sprintf(con.SQL_LAST_ID_MYSQL, p.Camel, p.CurrentEntity.Abbr, foundSerial)
 		if p.SQLProvider == con.POSTGRESQL {
 			p.StoragePostReturning = fmt.Sprintf(" returning %s", foundSerialDB)
-			p.StoragePostQuery = fmt.Sprintf(con.SQL_POST_QUERY_POSTGRES, p.Abbr)
-			p.StoragePostLastId = fmt.Sprintf(con.SQL_LAST_ID_POSTGRES, p.Abbr, foundSerial)
+			p.StoragePostQuery = fmt.Sprintf(con.SQL_POST_QUERY_POSTGRES, p.CurrentEntity.Abbr)
+			p.StoragePostLastId = fmt.Sprintf(con.SQL_LAST_ID_POSTGRES, p.CurrentEntity.Abbr, foundSerial)
 		}
 	}
 	p.FileKeys = strings.Join(fileKey, " && ")
 	p.FileGetColumns = strings.Join(fileGetColumn, "\n\t\t\t")
-	p.FilePostIncr = fmt.Sprintf("%s\n\tfor _, %sObj := range %ss {\n%s\n\t}\n%s", strings.Join(filePostIncrInit, "\n"), p.Abbr, p.Abbr, strings.Join(filePostIncrCheck, "\n"), strings.Join(filePostIncr, "\n"))
+	p.FilePostIncr = fmt.Sprintf("%s\n\tfor _, %sObj := range %ss {\n%s\n\t}\n%s", strings.Join(filePostIncrInit, "\n"), p.CurrentEntity.Abbr, p.CurrentEntity.Abbr, strings.Join(filePostIncrCheck, "\n"), strings.Join(filePostIncr, "\n"))
 }

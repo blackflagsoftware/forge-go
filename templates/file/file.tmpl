@@ -1,4 +1,4 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
 import (
 	"{{.ProjectPath}}/config"
@@ -6,15 +6,15 @@ import (
 )
 
 type (
-	File{{.ProjectNameCamel}} struct {}
+	File{{.CurrentEntity.Camel}} struct {}
 )
 
-func (d *File{{.ProjectNameCamel}}) Get({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
-	{{.ProjectNameAbbr}}s := []{{.ProjectNameCamel}}{}
-	if err := storage.OpenFile(config.StorageFileDir, &{{.ProjectNameAbbr}}s); err != nil {
+func (d *File{{.CurrentEntity.Camel}}) Get({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+	{{.CurrentEntity.Abbr}}s := []{{.CurrentEntity.Camel}}{}
+	if err := storage.OpenFile(config.StorageFileDir, &{{.CurrentEntity.Abbr}}s); err != nil {
 		return err
 	}
-	for _, {{.ProjectNameAbbr}}Obj := range {{.ProjectNameAbbr}}s {
+	for _, {{.CurrentEntity.Abbr}}Obj := range {{.CurrentEntity.Abbr}}s {
 		if {{.FileKeys}} {
 			{{.FileGetColumns}}
 			break
@@ -23,44 +23,44 @@ func (d *File{{.ProjectNameCamel}}) Get({{.ProjectNameAbbr}} *{{.ProjectNameCame
 	return nil
 }
 
-func (d *File{{.ProjectNameCamel}}) Select({{.ProjectNameAbbr}} *[]{{.ProjectNameCamel}}) error {
-	return storage.OpenFile(config.StorageFileDir, {{.ProjectNameAbbr}})
+func (d *File{{.CurrentEntity.Camel}}) Select({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}) error {
+	return storage.OpenFile(config.StorageFileDir, {{.CurrentEntity.Abbr}})
 }
 
-func (d *File{{.ProjectNameCamel}}) Post({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
-	{{.ProjectNameAbbr}}s := []{{.ProjectNameCamel}}{}
-	if err := storage.OpenFile(config.StorageFileDir, &{{.ProjectNameAbbr}}s); err != nil {
+func (d *File{{.CurrentEntity.Camel}}) Post({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+	{{.CurrentEntity.Abbr}}s := []{{.CurrentEntity.Camel}}{}
+	if err := storage.OpenFile(config.StorageFileDir, &{{.CurrentEntity.Abbr}}s); err != nil {
 		return err
 	}
 	{{.FilePostIncr}}
-	{{.ProjectNameAbbr}}s = append({{.ProjectNameAbbr}}s, *{{.ProjectNameAbbr}})
-	return storage.SaveFile(config.StorageFileDir, {{.ProjectNameAbbr}}s)
+	{{.CurrentEntity.Abbr}}s = append({{.CurrentEntity.Abbr}}s, *{{.CurrentEntity.Abbr}})
+	return storage.SaveFile(config.StorageFileDir, {{.CurrentEntity.Abbr}}s)
 }
 
-func (d *File{{.ProjectNameCamel}}) Patch({{.ProjectNameAbbr}} {{.ProjectNameCamel}}) error {
-	{{.ProjectNameAbbr}}s := []{{.ProjectNameCamel}}{}
-	if err := storage.OpenFile(config.StorageFileDir, &{{.ProjectNameAbbr}}s); err != nil {
+func (d *File{{.CurrentEntity.Camel}}) Patch({{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
+	{{.CurrentEntity.Abbr}}s := []{{.CurrentEntity.Camel}}{}
+	if err := storage.OpenFile(config.StorageFileDir, &{{.CurrentEntity.Abbr}}s); err != nil {
 		return err
 	}
-	for i, {{.ProjectNameAbbr}}Obj := range {{.ProjectNameAbbr}}s {
+	for i, {{.CurrentEntity.Abbr}}Obj := range {{.CurrentEntity.Abbr}}s {
 		if {{.FileKeys}} {
-			{{.ProjectNameAbbr}}s[i] = *{{.ProjectNameAbbr}}
+			{{.CurrentEntity.Abbr}}s[i] = *{{.CurrentEntity.Abbr}}
 			break
 		}
 	}
-	return storage.SaveFile(config.StorageFileDir, {{.ProjectNameAbbr}}s)
+	return storage.SaveFile(config.StorageFileDir, {{.CurrentEntity.Abbr}}s)
 }
 
-func (d *File{{.ProjectNameCamel}}) Delete({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) error {
-	{{.ProjectNameAbbr}}s := []{{.ProjectNameCamel}}{}
-	if err := storage.OpenFile(config.StorageFileDir, &{{.ProjectNameAbbr}}s); err != nil {
+func (d *File{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+	{{.CurrentEntity.Abbr}}s := []{{.CurrentEntity.Camel}}{}
+	if err := storage.OpenFile(config.StorageFileDir, &{{.CurrentEntity.Abbr}}s); err != nil {
 		return err
 	}
-	for i, {{.ProjectNameAbbr}}Obj := range {{.ProjectNameAbbr}}s {
+	for i, {{.CurrentEntity.Abbr}}Obj := range {{.CurrentEntity.Abbr}}s {
 		if {{.FileKeys}} {
-			{{.ProjectNameAbbr}}s = append({{.ProjectNameAbbr}}s[:i], {{.ProjectNameAbbr}}s[i+1:]...)
+			{{.CurrentEntity.Abbr}}s = append({{.CurrentEntity.Abbr}}s[:i], {{.CurrentEntity.Abbr}}s[i+1:]...)
 			break
 		}
 	}
-	return storage.SaveFile(config.StorageFileDir, {{.ProjectNameAbbr}}s) 
+	return storage.SaveFile(config.StorageFileDir, {{.CurrentEntity.Abbr}}s) 
 }

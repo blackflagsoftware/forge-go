@@ -1,4 +1,4 @@
-package {{.ProjectNameAllLower}}
+package {{.CurrentEntity.AllLower}}
 
 import (
 	"context"
@@ -10,26 +10,26 @@ import (
 )
 
 type (
-	{{.ProjectNameCamel}}Grpc struct {
-		p.Unimplemented{{.ProjectNameCamel}}ServiceServer
-		manager{{.ProjectNameCamel}} Manager{{.ProjectNameCamel}}Adapter
+	{{.CurrentEntity.Camel}}Grpc struct {
+		p.Unimplemented{{.CurrentEntity.Camel}}ServiceServer
+		manager{{.CurrentEntity.Camel}} Manager{{.CurrentEntity.Camel}}Adapter
 	}
 )
 
-func New{{.ProjectNameCamel}}Grpc(m{{.ProjectNameAbbr}} Manager{{.ProjectNameCamel}}Adapter) *{{.ProjectNameCamel}}Grpc {
-	return &{{.ProjectNameCamel}}Grpc{manager{{.ProjectNameCamel}}: m{{.ProjectNameAbbr}}}
+func New{{.CurrentEntity.Camel}}Grpc(m{{.CurrentEntity.Abbr}} Manager{{.CurrentEntity.Camel}}Adapter) *{{.CurrentEntity.Camel}}Grpc {
+	return &{{.CurrentEntity.Camel}}Grpc{manager{{.CurrentEntity.Camel}}: m{{.CurrentEntity.Abbr}}}
 }
 
-func (a *{{.ProjectNameCamel}}Grpc) Get{{.ProjectNameCamel}}(ctx context.Context, in *p.{{.ProjectNameCamel}}IDIn) (*p.{{.ProjectNameCamel}}Response, error) {
+func (a *{{.CurrentEntity.Camel}}Grpc) Get{{.CurrentEntity.Camel}}(ctx context.Context, in *p.{{.CurrentEntity.Camel}}IDIn) (*p.{{.CurrentEntity.Camel}}Response, error) {
 	result := &p.Result{Success: false}
-	response := &p.{{.ProjectNameCamel}}Response{Result: result}
-	{{.ProjectNameAbbr}} := &{{.ProjectNameCamel}}{ {{.GrpcArgsInit}} }
-	if err := a.manager{{.ProjectNameCamel}}.Get({{.ProjectNameAbbr}}); err != nil {
+	response := &p.{{.CurrentEntity.Camel}}Response{Result: result}
+	{{.CurrentEntity.Abbr}} := &{{.CurrentEntity.Camel}}{ {{.GrpcArgsInit}} }
+	if err := a.manager{{.CurrentEntity.Camel}}.Get({{.CurrentEntity.Abbr}}); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
 	var err error
-	response.{{.ProjectNameCamel}}, err = translateOut({{.ProjectNameAbbr}})
+	response.{{.CurrentEntity.Camel}}, err = translateOut({{.CurrentEntity.Abbr}})
 	if err != nil {
 		return response, err
 	}
@@ -37,39 +37,39 @@ func (a *{{.ProjectNameCamel}}Grpc) Get{{.ProjectNameCamel}}(ctx context.Context
 	return response, nil
 }
 
-func (a *{{.ProjectNameCamel}}Grpc) Search{{.ProjectNameCamel}}(ctx context.Context, in *p.{{.ProjectNameCamel}}) (*p.{{.ProjectNameCamel}}RepeatResponse, error) {
-	{{.ProjectNameLowerCamel}}Param := {{.ProjectNameCamel}}Param{}
+func (a *{{.CurrentEntity.Camel}}Grpc) Search{{.CurrentEntity.Camel}}(ctx context.Context, in *p.{{.CurrentEntity.Camel}}) (*p.{{.CurrentEntity.Camel}}RepeatResponse, error) {
+	{{.CurrentEntity.LowerCamel}}Param := {{.CurrentEntity.Camel}}Param{}
 	result := &p.Result{Success: false}
-	response := &p.{{.ProjectNameCamel}}RepeatResponse{Result: result}
-	{{.ProjectNameAbbr}}s := &[]{{.ProjectNameCamel}}{}
-	if _, err := a.manager{{.ProjectNameCamel}}.Search({{.ProjectNameAbbr}}s, {{.ProjectNameLowerCamel}}Param); err != nil {
+	response := &p.{{.CurrentEntity.Camel}}RepeatResponse{Result: result}
+	{{.CurrentEntity.Abbr}}s := &[]{{.CurrentEntity.Camel}}{}
+	if _, err := a.manager{{.CurrentEntity.Camel}}.Search({{.CurrentEntity.Abbr}}s, {{.CurrentEntity.LowerCamel}}Param); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
-	for _, a := range *{{.ProjectNameAbbr}}s {
-		proto{{.ProjectNameCamel}}, err := translateOut(&a)
+	for _, a := range *{{.CurrentEntity.Abbr}}s {
+		proto{{.CurrentEntity.Camel}}, err := translateOut(&a)
 		if err != nil {
 			return response, err
 		}
-		response.{{.ProjectNameCamel}} = append(response.{{.ProjectNameCamel}}, proto{{.ProjectNameCamel}})
+		response.{{.CurrentEntity.Camel}} = append(response.{{.CurrentEntity.Camel}}, proto{{.CurrentEntity.Camel}})
 	}
 	response.Result.Success = true
 	return response, nil
 }
 
-func (a *{{.ProjectNameCamel}}Grpc) Create{{.ProjectNameCamel}}(ctx context.Context, in *p.{{.ProjectNameCamel}}) (*p.{{.ProjectNameCamel}}Response, error) {
+func (a *{{.CurrentEntity.Camel}}Grpc) Create{{.CurrentEntity.Camel}}(ctx context.Context, in *p.{{.CurrentEntity.Camel}}) (*p.{{.CurrentEntity.Camel}}Response, error) {
 	result := &p.Result{Success: false}
-	response := &p.{{.ProjectNameCamel}}Response{Result: result}
-	{{.ProjectNameAbbr}}, err := translateIn(in)
+	response := &p.{{.CurrentEntity.Camel}}Response{Result: result}
+	{{.CurrentEntity.Abbr}}, err := translateIn(in)
 	if err != nil {
 		return response, err
 	}
-	if err := a.manager{{.ProjectNameCamel}}.Post({{.ProjectNameAbbr}}); err != nil {
+	if err := a.manager{{.CurrentEntity.Camel}}.Post({{.CurrentEntity.Abbr}}); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
 	var errTranslate error
-	response.{{.ProjectNameCamel}}, errTranslate = translateOut({{.ProjectNameAbbr}})
+	response.{{.CurrentEntity.Camel}}, errTranslate = translateOut({{.CurrentEntity.Abbr}})
 	if err != nil {
 		return response, errTranslate
 	}
@@ -77,13 +77,13 @@ func (a *{{.ProjectNameCamel}}Grpc) Create{{.ProjectNameCamel}}(ctx context.Cont
 	return response, nil
 }
 
-func (a *{{.ProjectNameCamel}}Grpc) Update{{.ProjectNameCamel}}(ctx context.Context, in *p.{{.ProjectNameCamel}}) (*p.Result, error) {
+func (a *{{.CurrentEntity.Camel}}Grpc) Update{{.CurrentEntity.Camel}}(ctx context.Context, in *p.{{.CurrentEntity.Camel}}) (*p.Result, error) {
 	response := &p.Result{Success: false}
-	{{.ProjectNameAbbr}}, err := translateIn(in)
+	{{.CurrentEntity.Abbr}}, err := translateIn(in)
 	if err != nil {
 		return response, err
 	}
-	if err := a.manager{{.ProjectNameCamel}}.Patch(*{{.ProjectNameAbbr}}); err != nil {
+	if err := a.manager{{.CurrentEntity.Camel}}.Patch(*{{.CurrentEntity.Abbr}}); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}
@@ -91,10 +91,10 @@ func (a *{{.ProjectNameCamel}}Grpc) Update{{.ProjectNameCamel}}(ctx context.Cont
 	return response, nil
 }
 
-func (a *{{.ProjectNameCamel}}Grpc) Delete{{.ProjectNameCamel}}(ctx context.Context, in *p.{{.ProjectNameCamel}}IDIn) (*p.Result, error) {
+func (a *{{.CurrentEntity.Camel}}Grpc) Delete{{.CurrentEntity.Camel}}(ctx context.Context, in *p.{{.CurrentEntity.Camel}}IDIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
-	{{.ProjectNameAbbr}} := &{{.ProjectNameCamel}}{ {{.GrpcArgsInit}} }
-	if err := a.manager{{.ProjectNameCamel}}.Delete({{.ProjectNameAbbr}}); err != nil {
+	{{.CurrentEntity.Abbr}} := &{{.CurrentEntity.Camel}}{ {{.GrpcArgsInit}} }
+	if err := a.manager{{.CurrentEntity.Camel}}.Delete({{.CurrentEntity.Abbr}}); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}
@@ -102,41 +102,41 @@ func (a *{{.ProjectNameCamel}}Grpc) Delete{{.ProjectNameCamel}}(ctx context.Cont
 	return response, nil
 }
 
-func translateOut({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) (*p.{{.ProjectNameCamel}}, error) {
-	proto{{.ProjectNameCamel}} := p.{{.ProjectNameCamel}}{}
+func translateOut({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) (*p.{{.CurrentEntity.Camel}}, error) {
+	proto{{.CurrentEntity.Camel}} := p.{{.CurrentEntity.Camel}}{}
 	{{.GrpcTranslateOut}}
-	return &proto{{.ProjectNameCamel}}, nil
+	return &proto{{.CurrentEntity.Camel}}, nil
 }
 
-func translateIn(in *p.{{.ProjectNameCamel}}) (*{{.ProjectNameCamel}}, error) {
-	{{.ProjectNameAbbr}} := {{.ProjectNameCamel}}{}
+func translateIn(in *p.{{.CurrentEntity.Camel}}) (*{{.CurrentEntity.Camel}}, error) {
+	{{.CurrentEntity.Abbr}} := {{.CurrentEntity.Camel}}{}
 	{{.GrpcTranslateIn}}
-	return &{{.ProjectNameAbbr}}, nil
+	return &{{.CurrentEntity.Abbr}}, nil
 }
 
 // found these are slower; deprecated; keep them, just in case
-func translateJsonOut({{.ProjectNameAbbr}} *{{.ProjectNameCamel}}) (*p.{{.ProjectNameCamel}}, error) {
-	proto{{.ProjectNameCamel}} := p.{{.ProjectNameCamel}}{}
-	outBytes, err := json.Marshal({{.ProjectNameAbbr}})
+func translateJsonOut({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) (*p.{{.CurrentEntity.Camel}}, error) {
+	proto{{.CurrentEntity.Camel}} := p.{{.CurrentEntity.Camel}}{}
+	outBytes, err := json.Marshal({{.CurrentEntity.Abbr}})
 	if err != nil {
-		return &proto{{.ProjectNameCamel}}, ae.GeneralError("Unable to encode from {{.ProjectNameCamel}}", err)
+		return &proto{{.CurrentEntity.Camel}}, ae.GeneralError("Unable to encode from {{.CurrentEntity.Camel}}", err)
 	}
-	err = json.Unmarshal(outBytes, &proto{{.ProjectNameCamel}})
+	err = json.Unmarshal(outBytes, &proto{{.CurrentEntity.Camel}})
 	if err != nil {
-		return &proto{{.ProjectNameCamel}}, ae.GeneralError("Unable to decode to proto.{{.ProjectNameCamel}}", err)
+		return &proto{{.CurrentEntity.Camel}}, ae.GeneralError("Unable to decode to proto.{{.CurrentEntity.Camel}}", err)
 	}
-	return &proto{{.ProjectNameCamel}}, nil
+	return &proto{{.CurrentEntity.Camel}}, nil
 }
 
-func translateJsonIn(in *p.{{.ProjectNameCamel}}) (*{{.ProjectNameCamel}}, error) {
-	{{.ProjectNameAbbr}} := {{.ProjectNameCamel}}{}
+func translateJsonIn(in *p.{{.CurrentEntity.Camel}}) (*{{.CurrentEntity.Camel}}, error) {
+	{{.CurrentEntity.Abbr}} := {{.CurrentEntity.Camel}}{}
 	outBytes, err := json.Marshal(in)
 	if err != nil {
-		return &{{.ProjectNameAbbr}}, ae.GeneralError("Unable to encode from proto.{{.ProjectNameCamel}}", err)
+		return &{{.CurrentEntity.Abbr}}, ae.GeneralError("Unable to encode from proto.{{.CurrentEntity.Camel}}", err)
 	}
-	err = json.Unmarshal(outBytes, &{{.ProjectNameAbbr}})
+	err = json.Unmarshal(outBytes, &{{.CurrentEntity.Abbr}})
 	if err != nil {
-		return &{{.ProjectNameAbbr}}, ae.GeneralError("Unable to decode to {{.ProjectNameCamel}}", err)
+		return &{{.CurrentEntity.Abbr}}, ae.GeneralError("Unable to decode to {{.CurrentEntity.Camel}}", err)
 	}
-	return &{{.ProjectNameAbbr}}, nil
+	return &{{.CurrentEntity.Abbr}}, nil
 }

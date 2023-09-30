@@ -62,9 +62,9 @@ func buildGetDelete(p *m.Project) {
 		if c.PrimaryKey {
 			switch c.GoType {
 			case "string":
-				rows = append(rows, fmt.Sprintf(GET_DELETE_STRING, p.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+				rows = append(rows, fmt.Sprintf(GET_DELETE_STRING, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
 			case "int":
-				rows = append(rows, fmt.Sprintf(GET_DELETE_INT, p.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+				rows = append(rows, fmt.Sprintf(GET_DELETE_INT, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
 			}
 		}
 	}
@@ -83,20 +83,20 @@ func buildPost(p *m.Project) {
 			continue
 		}
 		if c.GoType == "string" {
-			rows = append(rows, fmt.Sprintf(POST_STRING, p.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+			rows = append(rows, fmt.Sprintf(POST_STRING, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
 			if c.Length > 0 {
-				rows = append(rows, fmt.Sprintf(POST_STRING_LEN, p.Abbr, c.ColumnName.Camel, c.Length, c.ColumnName.Camel, c.Length))
+				rows = append(rows, fmt.Sprintf(POST_STRING_LEN, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.Length, c.ColumnName.Camel, c.Length))
 			}
 		} else if c.GoType == "null.String" {
 			if !c.Null {
-				rows = append(rows, fmt.Sprintf(POST_NULL, p.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+				rows = append(rows, fmt.Sprintf(POST_NULL, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
 			}
 			if c.Length > 0 {
-				rows = append(rows, fmt.Sprintf(POST_NULL_LEN, p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, c.Length, c.ColumnName.Camel, c.Length))
+				rows = append(rows, fmt.Sprintf(POST_NULL_LEN, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.Length, c.ColumnName.Camel, c.Length))
 			}
 		} else {
 			if !c.Null {
-				rows = append(rows, fmt.Sprintf(POST_NULL, p.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+				rows = append(rows, fmt.Sprintf(POST_NULL, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
 			}
 		}
 		if c.ColumnName.Lower == "created_at" {
@@ -104,10 +104,10 @@ func buildPost(p *m.Project) {
 		}
 	}
 	if setCreatedAt {
-		rows = append(rows, fmt.Sprintf("%s.CreatedAt.Scan(time.Now().UTC())", p.Abbr))
+		rows = append(rows, fmt.Sprintf("%s.CreatedAt.Scan(time.Now().UTC())", p.CurrentEntity.Abbr))
 	}
 	if uuidColumn != "" {
-		rows = append(rows, fmt.Sprintf("%s.%s = util.GenerateUUID()", p.Abbr, uuidColumn))
+		rows = append(rows, fmt.Sprintf("%s.%s = util.GenerateUUID()", p.CurrentEntity.Abbr, uuidColumn))
 	}
 	p.ManagerPostRows = strings.Join(rows, "\n\t")
 }
@@ -119,35 +119,35 @@ func buildPatch(p *m.Project) {
 	setUpdatedAt := false
 	for _, c := range p.CurrentEntity.Columns {
 		if c.PrimaryKey {
-			patchInit = append(patchInit, fmt.Sprintf("%s: %sIn.%s", c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel))
-			auditKey = append(auditKey, fmt.Sprintf("\"%s\", %s.%s", c.ColumnName.Lower, p.Abbr, c.ColumnName.Camel))
+			patchInit = append(patchInit, fmt.Sprintf("%s: %sIn.%s", c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
+			auditKey = append(auditKey, fmt.Sprintf("\"%s\", %s.%s", c.ColumnName.Lower, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 			continue
 		}
 		switch c.GoType {
 		case "string":
 			// mostly used for uuid
-			rows = append(rows, fmt.Sprintf(PATCH_STRING_ASSIGN, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel))
+			rows = append(rows, fmt.Sprintf(PATCH_STRING_ASSIGN, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 		case "null.String":
 			patchLenCheck := ""
 			if c.Length > 0 {
-				patchLenCheck = fmt.Sprintf(PATCH_VARCHAR_LEN, p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, c.Length, c.ColumnName.Camel, c.Length)
+				patchLenCheck = fmt.Sprintf(PATCH_VARCHAR_LEN, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.Length, c.ColumnName.Camel, c.Length)
 			}
-			rows = append(rows, fmt.Sprintf(PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, patchLenCheck, c.ColumnName.Lower, p.Abbr, c.ColumnName.Camel, typeConversion(c.GoType), p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel))
+			rows = append(rows, fmt.Sprintf(PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, patchLenCheck, c.ColumnName.Lower, p.CurrentEntity.Abbr, c.ColumnName.Camel, typeConversion(c.GoType), p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 		case "null.Time":
 			if !(c.ColumnName.Lower == "created_at" || c.ColumnName.Lower == "updated_at") {
-				rows = append(rows, fmt.Sprintf(PATCH_TIME_NULL_ASSIGN, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel))
+				rows = append(rows, fmt.Sprintf(PATCH_TIME_NULL_ASSIGN, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 			}
 		case "*json.RawMessage":
-			rows = append(rows, fmt.Sprintf(PATCH_JSON_NULL_ASSIGN, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, c.ColumnName.LowerCamel, c.ColumnName.Lower, p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel))
+			rows = append(rows, fmt.Sprintf(PATCH_JSON_NULL_ASSIGN, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.LowerCamel, c.ColumnName.Lower, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 		default:
-			rows = append(rows, fmt.Sprintf(PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel, "", c.ColumnName.Lower, p.Abbr, c.ColumnName.Camel, typeConversion(c.GoType), p.Abbr, c.ColumnName.Camel, p.Abbr, c.ColumnName.Camel))
+			rows = append(rows, fmt.Sprintf(PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, "", c.ColumnName.Lower, p.CurrentEntity.Abbr, c.ColumnName.Camel, typeConversion(c.GoType), p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 		}
 		if c.ColumnName.Lower == "updated_at" {
 			setUpdatedAt = true
 		}
 	}
 	if setUpdatedAt {
-		rows = append(rows, fmt.Sprintf("\n\t%s.UpdatedAt.Scan(time.Now().UTC())", p.Abbr))
+		rows = append(rows, fmt.Sprintf("\n\t%s.UpdatedAt.Scan(time.Now().UTC())", p.CurrentEntity.Abbr))
 	}
 	p.ManagerPatchRows = strings.Join(rows, "\n\t")
 	p.ManagerPatchInitArgs = strings.Join(patchInit, ", ")
@@ -226,12 +226,12 @@ func buildTest(p *m.Project) {
 	managerDeleteSuccessfulRow := ""
 	managerDeleteFailureRow := ""
 	if len(getDeleteKeyTestSuccessful) > 0 {
-		managerGetSuccessfulRow = fmt.Sprintf("{\n\t\t\t\"successful\",\n\t\t\t&%s{%s},\n\t\t\tfalse,\n\t\t\t[]*gomock.Call{\n\t\t\t\tmockData%s.EXPECT().Read(gomock.Any()).Return(nil),\n\t\t\t},\n\t\t},", p.Camel, strings.Join(getDeleteKeyTestSuccessful, ", "), p.Camel)
-		managerDeleteSuccessfulRow = fmt.Sprintf("{\n\t\t\t\"successful\",\n\t\t\t&%s{%s},\n\t\t\tfalse,\n\t\t\t[]*gomock.Call{\n\t\t\t\tmockData%s.EXPECT().Delete(gomock.Any()).Return(nil),\n\t\t\t},\n\t\t},", p.Camel, strings.Join(getDeleteKeyTestSuccessful, ", "), p.Camel)
+		managerGetSuccessfulRow = fmt.Sprintf("{\n\t\t\t\"successful\",\n\t\t\t&%s{%s},\n\t\t\tfalse,\n\t\t\t[]*gomock.Call{\n\t\t\t\tmockData%s.EXPECT().Read(gomock.Any()).Return(nil),\n\t\t\t},\n\t\t},", p.CurrentEntity.Camel, strings.Join(getDeleteKeyTestSuccessful, ", "), p.CurrentEntity.Camel)
+		managerDeleteSuccessfulRow = fmt.Sprintf("{\n\t\t\t\"successful\",\n\t\t\t&%s{%s},\n\t\t\tfalse,\n\t\t\t[]*gomock.Call{\n\t\t\t\tmockData%s.EXPECT().Delete(gomock.Any()).Return(nil),\n\t\t\t},\n\t\t},", p.CurrentEntity.Camel, strings.Join(getDeleteKeyTestSuccessful, ", "), p.CurrentEntity.Camel)
 	}
 	if len(getDeleteKeyTestFailure) > 0 {
-		managerGetFailureRow = fmt.Sprintf("{\n\t\t\t\"invalid id\",\n\t\t\t&%s{%s},\n\t\t\ttrue,\n\t\t\t[]*gomock.Call{},\n\t\t},", p.Camel, strings.Join(getDeleteKeyTestFailure, ", "))
-		managerDeleteFailureRow = fmt.Sprintf("{\n\t\t\t\"invalid id\",\n\t\t\t&%s{%s},\n\t\t\ttrue,\n\t\t\t[]*gomock.Call{},\n\t\t},", p.Camel, strings.Join(getDeleteKeyTestFailure, ", "))
+		managerGetFailureRow = fmt.Sprintf("{\n\t\t\t\"invalid id\",\n\t\t\t&%s{%s},\n\t\t\ttrue,\n\t\t\t[]*gomock.Call{},\n\t\t},", p.CurrentEntity.Camel, strings.Join(getDeleteKeyTestFailure, ", "))
+		managerDeleteFailureRow = fmt.Sprintf("{\n\t\t\t\"invalid id\",\n\t\t\t&%s{%s},\n\t\t\ttrue,\n\t\t\t[]*gomock.Call{},\n\t\t},", p.CurrentEntity.Camel, strings.Join(getDeleteKeyTestFailure, ", "))
 	}
 	p.ManagerTestGetRow = fmt.Sprintf("%s\n\t\t%s", managerGetSuccessfulRow, managerGetFailureRow)
 	p.ManagerTestDeleteRow = fmt.Sprintf("%s\n\t\t%s", managerDeleteSuccessfulRow, managerDeleteFailureRow)
@@ -240,7 +240,7 @@ func buildTest(p *m.Project) {
 	for _, postTest := range postTests {
 		call := ""
 		if !postTest.Failure {
-			call = fmt.Sprintf("mockData%s.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes(),\n\t\t\t", p.Camel)
+			call = fmt.Sprintf("mockData%s.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes(),\n\t\t\t", p.CurrentEntity.Camel)
 		}
 		columnStr := []string{}
 		for name, column := range PostTests {
@@ -254,7 +254,7 @@ func buildTest(p *m.Project) {
 			}
 			columnStr = append(columnStr, TranslateType(name, column.GoType, column.DBType, columnLength, columnValid))
 		}
-		managerPostTestRow = append(managerPostTestRow, fmt.Sprintf("{\n\t\t\t\"%s\",\n\t\t\t&%s{%s},\n\t\t\t%t,\n\t\t\t[]*gomock.Call{%s},\n\t\t},", postTest.Name, p.Camel, strings.Join(columnStr, ", "), postTest.Failure, call))
+		managerPostTestRow = append(managerPostTestRow, fmt.Sprintf("{\n\t\t\t\"%s\",\n\t\t\t&%s{%s},\n\t\t\t%t,\n\t\t\t[]*gomock.Call{%s},\n\t\t},", postTest.Name, p.CurrentEntity.Camel, strings.Join(columnStr, ", "), postTest.Failure, call))
 	}
 	p.ManagerTestPostRow = strings.Join(managerPostTestRow, "\n\t\t")
 }
