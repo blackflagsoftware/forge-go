@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	m "github.com/blackflagsoftware/forge-go/internal/model"
-	n "github.com/blackflagsoftware/forge-go/internal/name"
 )
 
 const (
@@ -16,7 +15,7 @@ const (
 func buildModelTemplate(p *m.Project) {
 	cArray := []string{}
 	for _, c := range p.CurrentEntity.Columns {
-		tagFormat := n.BuildAltName(c.ColumnName.RawName, p.TagFormat)
+		tagFormat := m.BuildAltName(c.ColumnName.RawName, p.TagFormat)
 		colType := c.GoType
 		if c.PrimaryKey {
 			colType = c.GoTypeNonSql

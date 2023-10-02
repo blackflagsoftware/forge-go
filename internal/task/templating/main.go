@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"text/template"
+	"time"
 
 	c "github.com/blackflagsoftware/forge-go/internal/constant"
 	m "github.com/blackflagsoftware/forge-go/internal/model"
@@ -38,6 +40,7 @@ func StartTemplating(project *m.Project) {
 		buildGrpc(project)
 		buildAPIHooks(project)
 		processTemplateFiles(*project, savePath)
+		buildScriptFiles(*project, project.Entities[i])
 
 		project.CurrentEntity = m.Entity{} // blank it out
 	}
@@ -116,7 +119,6 @@ func BuildStorage(project *m.Project) {
 	return
 }
 
-// TODO: pull the template file from the template or from the module
 func processTemplateFiles(project m.Project, savePath string) {
 	blankInsert := ""
 	if project.UseBlank {
@@ -202,4 +204,45 @@ cd ../.. && protoc --go_out=./pkg/proto --go-grpc_out=./pkg/proto ./pkg/proto/%s
 			fmt.Println("Error creating reset_proto.sh")
 		}
 	}
+}
+
+func buildScriptFiles(p m.Project, entity m.Entity) {
+	scriptDir := fmt.Sprintf("%s/scripts/migrations", p.ProjectFile.FullPath)
+	if err := os.MkdirAll(scriptDir, os.ModePerm); err != nil {
+		fmt.Println("Creating scripts/migrations dir", err)
+		return
+	}
+	if entity.ModuleName != "" {
+		return
+	}
+	if len(entity.SqlLines) == 0 {
+		return
+	}
+	now := time.Now().Format("20060102150405")
+	fileName := fmt.Sprintf("%s/%s-create-table-%s.sql", scriptDir, now, normalizeName(entity.RawName))
+	f, err := os.Create(fileName)
+	if err != nil {
+		fmt.Printf("Unable to create %s.sql file: %s\n", fileName, err)
+		return
+	}
+	fileScript := []string{}
+	for i := range entity.SqlLines {
+		if !(i == 0 || i == len(entity.SqlLines)-1) {
+			// put a tab at the front expect the first and last row
+			fileScript = append(fileScript, fmt.Sprintf("\t%s", entity.SqlLines[i]))
+			continue
+		}
+		fileScript = append(fileScript, entity.SqlLines[i])
+	}
+	f.WriteString(strings.Join(fileScript, "\n"))
+	f.Close()
+}
+
+func normalizeName(fileName string) (normalizedName string) {
+	normalizedName = strings.ReplaceAll(fileName, " ", "-")
+	normalizedName = strings.ReplaceAll(normalizedName, "_", "-")
+	if len(normalizedName) > 85 {
+		normalizedName = normalizedName[:85]
+	}
+	return
 }

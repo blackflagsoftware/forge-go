@@ -18,18 +18,16 @@ func AddLogin(p *m.Project) {
 	Errors(*p)
 	ProtoFile(*p)
 	TemplateFiles(*p)
+	// login entry
 	loginEntity := m.Entity{ModuleName: "login"}
-	loginEntity.Name.BuildName("login", p.ProjectFile.KnownAliases)
+	loginName := loginEntity.Name.BuildName("login", p.ProjectFile.KnownAliases)
+	p.KnownAliases = append(p.KnownAliases, loginName)
 	p.Entities = append(p.Entities, loginEntity)
+	// add role and login_role, this will add the entities
+	buildRoleEntities(p)
 	temp.StartTemplating(p)
-	// BuildStorage(*p)
-	// loginEntity.BuildAPIHooks()
-	// UpdateModFiles(p.ProjectFile.AppName)
 	MigrationScripts(*p)
-	p.ProjectFile.Modules = append(p.ProjectFile.Modules, "login")
-	p.ProjectFile.SaveProjectFile()
-	// p.ProjectFile.LoadProjectFile()
-	// TODO: this is a mess, it all comes down with passing ProjectFile around everywhere!
+	p.Entities = []m.Entity{}
 }
 
 func Config(p m.Project) {
@@ -318,6 +316,19 @@ func MigrationScripts(p m.Project) {
 	PRIMARY KEY(login_uid, reset_token)
 );`, uuid, uuid, ts, ts)
 
+	roleScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS role (
+	uid %s NOT NULL,
+	name VARCHAR(50) NOT NULL,
+	description VARCHAR(500) NULL,
+	PRIMARY KEY(id)
+);`, uuid)
+
+	loginRoleScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS login_role (
+	login_uid %s NOT NULL,
+	role_uid %s NOT NULL,
+	PRIMARY KEY(login_uid, role_uid)
+);`, uuid, uuid)
+
 	scriptDir := fmt.Sprintf("%s/scripts/migrations", p.ProjectFile.FullPath)
 	if err := os.MkdirAll(scriptDir, os.ModePerm); err != nil {
 		fmt.Println("Creating scripts/migrations dir", err)
@@ -352,4 +363,110 @@ func MigrationScripts(p m.Project) {
 	if errAdminCmd != nil {
 		fmt.Println("Unable to create admin tool file:", errAdminCmd)
 	}
+	time.Sleep(time.Second) // let's make sure a second has passed
+	now = time.Now().Format("20060102150405")
+	roleName := fmt.Sprintf("%s/%s-create-table-role.sql", scriptDir, now)
+	f, err = os.Create(roleName)
+	if err != nil {
+		fmt.Println("Unable to create scripts/migrations/role.sql file", err)
+		return
+	}
+	f.WriteString(roleScript)
+	f.Close()
+	time.Sleep(time.Second) // let's make sure a second has passed
+	now = time.Now().Format("20060102150405")
+	loginRoleName := fmt.Sprintf("%s/%s-create-table-login-role.sql", scriptDir, now)
+	f, err = os.Create(loginRoleName)
+	if err != nil {
+		fmt.Println("Unable to create scripts/migrations/login-role.sql file", err)
+		return
+	}
+	f.WriteString(loginRoleScript)
+	f.Close()
+}
+
+func buildRoleEntities(project *m.Project) {
+	uuid := "UUID"
+	if project.ProjectFile.SqlStorage == "m" {
+		// mysql
+		uuid = "CHAR(36)"
+	}
+	if project.ProjectFile.SqlStorage == "s" {
+		// sqlite
+		uuid = "TEXT"
+	}
+	// role
+	uidName := m.Name{}
+	uidName.BuildName("uid", []string{})
+	nameName := m.Name{}
+	nameName.BuildName("name", []string{})
+	descName := m.Name{}
+	descName.BuildName("description", []string{})
+	roleName := m.Name{}
+	rName := roleName.BuildName("role", project.KnownAliases)
+	project.KnownAliases = append(project.KnownAliases, rName)
+	role := m.Entity{
+		Columns: []m.Column{
+			{
+				ColumnName:   uidName,
+				DBType:       uuid,
+				GoType:       "string",
+				GoTypeNonSql: "string",
+				Null:         false,
+				PrimaryKey:   true,
+			},
+			{
+				ColumnName:   nameName,
+				DBType:       "varchar",
+				GoType:       "null.String",
+				GoTypeNonSql: "string",
+				Length:       50,
+				Null:         false,
+				PrimaryKey:   false,
+			},
+			{
+				ColumnName:   descName,
+				DBType:       "varchar",
+				GoType:       "null.String",
+				GoTypeNonSql: "string",
+				Length:       500,
+				Null:         true,
+				PrimaryKey:   false,
+			},
+		},
+		Name:            roleName,
+		ColumnExistence: m.ColumnExistence{HaveNullColumns: true},
+	}
+	project.Entities = append(project.Entities, role)
+	// login_role
+	loginUidName := m.Name{}
+	loginUidName.BuildName("login_uid", []string{})
+	roleUidName := m.Name{}
+	roleUidName.BuildName("role_uid", []string{})
+	loginRoleName := m.Name{}
+	lrName := loginRoleName.BuildName("login_role", project.KnownAliases)
+	project.KnownAliases = append(project.KnownAliases, lrName)
+	loginRole := m.Entity{
+		Columns: []m.Column{
+			{
+				ColumnName:   loginUidName,
+				DBType:       uuid,
+				GoType:       "string",
+				GoTypeNonSql: "string",
+				Null:         false,
+				PrimaryKey:   true,
+			},
+			{
+				ColumnName:   roleUidName,
+				DBType:       uuid,
+				GoType:       "string",
+				GoTypeNonSql: "string",
+				Null:         false,
+				PrimaryKey:   true,
+			},
+		},
+		Name:            loginRoleName,
+		ColumnExistence: m.ColumnExistence{HaveNullColumns: false},
+	}
+	project.Entities = append(project.Entities, loginRole)
 }

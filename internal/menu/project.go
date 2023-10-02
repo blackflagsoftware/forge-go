@@ -187,7 +187,7 @@ PasteLoop:
 		if err != nil {
 			return
 		}
-		entity := m.Entity{}
+		entity := m.Entity{SqlLines: sql}
 		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
 		p.SaveProjectFile()
@@ -520,7 +520,7 @@ func processFile(p *m.Project, filePath string) (entities []m.Entity) {
 		if err != nil {
 			return
 		}
-		entity := m.Entity{}
+		entity := m.Entity{SqlLines: arraySqlStmt[i]}
 		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
 		if sqlEntity.ColExistence.TimeColumn {
