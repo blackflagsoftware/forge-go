@@ -1,6 +1,12 @@
 package middleware
 
 import (
+	"crypto/ed25519"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -40,11 +46,7 @@ func AuthContext(compareRole []string, c echo.Context) bool {
 }
 
 func AuthBuild(roles []string) (string, error) {
-	secret := config.LoginAuthSecret
-	if secret == "" {
-		return "", ae.GeneralError("auth: secret is empty", nil)
-	}
-	secretByte := []byte(secret)
+	// build claims
 	now := time.Now().UTC()
 	hours := config.GetExpiresAtDuration()
 	expiresAt := now.Add(time.Duration(hours) * time.Hour).UTC()
@@ -55,7 +57,66 @@ func AuthBuild(roles []string) (string, error) {
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// determine which alg to use and then create the jwt
+	keyContent, err := base64.StdEncoding.DecodeString(config.LoginAuthSecret)
+	if err != nil {
+		Default.Println("Unable to DecodeString for auth secret", err)
+		return "", ae.GeneralError("auth: unable to sign token", nil)
+	}
+	alg := config.LoginAuthAlg
+	var (
+		secretByte    interface{}
+		signingMethod jwt.SigningMethod
+		ok            bool
+	)
+	switch alg {
+	case "HMAC":
+		secretByte = keyContent
+		signingMethod = jwt.SigningMethodHS512
+	case "ECDSA":
+		block, _ := pem.Decode(keyContent)
+		if block == nil || !strings.Contains(block.Type, "PRIVATE KEY") {
+			Default.Print("Failed to decode PEM block containing private key")
+			return "", ae.GeneralError("auth: unable to sign token", nil)
+		}
+		var err error
+		secretByte, err = x509.ParseECPrivateKey(block.Bytes)
+		if err != nil {
+			Default.Println("Unable to parse private key:", err)
+			return "", ae.GeneralError("auth: unable to sign token", nil)
+		}
+		signingMethod = jwt.SigningMethodES512
+	case "RSA", "EdDSA":
+		block, _ := pem.Decode(keyContent)
+		if block == nil || !strings.Contains(block.Type, "PRIVATE KEY") {
+			Default.Print("Failed to decode PEM block containing private key")
+			return "", ae.GeneralError("auth: unable to sign token", nil)
+		}
+		parsedKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			Default.Println("Unable to parse private key:", err)
+			return "", ae.GeneralError("auth: unable to sign token", nil)
+		}
+		if alg == "RSA" {
+			signingMethod = jwt.SigningMethodRS512
+			secretByte, ok = parsedKey.(*rsa.PrivateKey)
+			if !ok {
+				Default.Println("Not a RSA key")
+				return "", ae.GeneralError("auth: unable to sign token", nil)
+			}
+		}
+		if alg == "EdDSA" {
+			signingMethod = jwt.SigningMethodEdDSA
+			secretByte, ok = parsedKey.(ed25519.PrivateKey)
+			if !ok {
+				Default.Print("Not an ecdsa key")
+				return "", ae.GeneralError("auth: unable to sign token", nil)
+			}
+		}
+	}
+
+	Default.Printf("type: %v; key: %s", signingMethod.Alg(), secretByte)
+	token := jwt.NewWithClaims(signingMethod, claims)
 	tokenStr, err := token.SignedString(secretByte)
 	if err != nil {
 		Default.Println("AuthBuild: error getting signed token:", err)

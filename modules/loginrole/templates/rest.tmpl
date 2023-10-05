@@ -1,0 +1,128 @@
+package loginrole
+
+import (
+	"net/http"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	m "{{.ProjectPath}}/internal/middleware"
+	util "{{.ProjectPath}}/internal/util"
+	"github.com/labstack/echo/v4"
+)
+
+type (
+	ManagerLoginRoleAdapter interface {
+		Get(*LoginRole) error
+		Search(*[]LoginRole, LoginRoleParam) (int, error)
+		Post(*LoginRole) error
+		Patch(LoginRole) error
+		Delete(*LoginRole) error
+	}
+
+	RestLoginRole struct {
+		managerLoginRole ManagerLoginRoleAdapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	sl := InitStorage()
+	ml := NewManagerLoginRole(sl)
+	hl := NewRestLoginRole(ml)
+	hl.LoadLoginRoleRoutes(eg)
+}
+
+func NewRestLoginRole(mlo ManagerLoginRoleAdapter) *RestLoginRole {
+	return &RestLoginRole{managerLoginRole: mlo}
+}
+
+func (h *RestLoginRole) LoadLoginRoleRoutes(eg *echo.Group) {
+	eg.GET("/loginrole/:login_uid/role_uid/:role_uid", h.Get)
+	eg.POST("/loginrole/search", h.Search)
+	eg.POST("/loginrole", h.Post)
+	eg.PATCH("/loginrole", h.Patch)
+	eg.DELETE("/loginrole/:login_uid/role_uid/:role_uid", h.Delete)
+}
+
+func (h *RestLoginRole) Get(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	login_uid := c.Param("login_uid")
+	role_uid := c.Param("role_uid")
+	loginRole := &LoginRole{LoginUid: login_uid, RoleUid: role_uid}
+	if err := h.managerLoginRole.Get(loginRole); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *loginRole, nil, nil))
+}
+
+func (h *RestLoginRole) Search(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	param := LoginRoleParam{}
+	if err := c.Bind(&param); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
+	loginRoles := &[]LoginRole{}
+	totalCount, err := h.managerLoginRole.Search(loginRoles, param)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *loginRoles, nil, &totalCount))
+}
+
+func (h *RestLoginRole) Post(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	lo := LoginRole{}
+	loData := LoginRoleData{Data: lo}
+	if err := c.Bind(&loData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerLoginRole.Post(&loData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, loData.Data, nil, nil))
+}
+
+func (h *RestLoginRole) Patch(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	lo := LoginRole{}
+	loData := LoginRoleData{Data: lo}
+	if err := c.Bind(&loData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerLoginRole.Patch(loData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestLoginRole) Delete(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	login_uid := c.Param("login_uid")
+	role_uid := c.Param("role_uid")
+	loginRole := &LoginRole{LoginUid: login_uid, RoleUid: role_uid}
+	if err := h.managerLoginRole.Delete(loginRole); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}

@@ -199,7 +199,7 @@ func ProcessMigration(db *sqlx.DB, migrationPath, fileName string) error {
 		}
 	case ".bin":
 		cmd := exec.Command(migrationPath)
-		stdOut, errCmd := cmd.Output()
+		stdOut, errCmd := cmd.CombinedOutput()
 		if errCmd != nil {
 			return fmt.Errorf("ProcessMigration: unable to run file binary: %s; %s\n\tOutput: %s", migrationPath, errCmd, stdOut)
 		}

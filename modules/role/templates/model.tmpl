@@ -1,0 +1,33 @@
+package role
+
+import (
+	"{{.ProjectPath}}/config"
+	"{{.ProjectPath}}/internal/util"
+	"gopkg.in/guregu/null.v3"
+)
+
+type (
+	Role struct {
+		Uid         string      `db:"uid" json:"uid"`
+		Name        null.String `db:"name" json:"name"`
+		Description null.String `db:"description" json:"description"`
+	}
+
+	RoleData struct {
+		Data Role `json:"data"`
+	}
+
+	RoleParam struct {
+		// TODO: add any other custom params here
+		util.Param
+	}
+)
+
+const RoleConst = "role"
+
+func InitStorage() DataRoleAdapter {
+	if config.StorageSQL {
+		return InitSQL()
+	}
+	return nil
+}

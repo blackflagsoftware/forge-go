@@ -23,6 +23,7 @@ type (
 		ProjectNameAbbr       string
 		ProjectNameLowerCamel string
 		ProjectNameUpper      string
+		ProjectNameEnv        string
 		// SQLProvider           string // optional if using SQL as a storage, either Psql, MySql or Sqlite; this interfaces with sqlx
 		// SQLProviderLower      string // optional is using SQL, lowercase of above
 		CurrentEntity Entity // rotating entity or templating, will be emptied out after processing

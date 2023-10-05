@@ -1,0 +1,96 @@
+package loginrole
+
+import (
+	"fmt"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	stor "{{.ProjectPath}}/internal/storage"
+	"{{.ProjectPath}}/internal/util"
+	"github.com/jmoiron/sqlx"
+)
+
+type (
+	SQLLoginRole struct {
+		DB *sqlx.DB
+	}
+)
+
+func InitSQL() *SQLLoginRole {
+	db := stor.PostgresInit()
+	return &SQLLoginRole{DB: db}
+}
+
+func (d *SQLLoginRole) Read(lo *LoginRole) error {
+	sqlGet := `
+		SELECT
+			login_uid,
+			role_uid
+		FROM login_role WHERE login_uid = $1 and role_uid = $2`
+	if errDB := d.DB.Get(lo, sqlGet, lo.LoginUid, lo.RoleUid); errDB != nil {
+		return ae.DBError("LoginRole Get: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLLoginRole) ReadAll(lo *[]LoginRole, param LoginRoleParam) (int, error) {
+	searchStmt, args := util.BuildSearchString(param.Search)
+	sqlSearch := fmt.Sprintf(`
+		SELECT
+			login_uid,
+			role_uid
+		FROM login_role
+		%s
+		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+	sqlSearch = d.DB.Rebind(sqlSearch)
+	if errDB := d.DB.Select(lo, sqlSearch, args...); errDB != nil {
+		return 0, ae.DBError("LoginRole Search: unable to select records.", errDB)
+	}
+	sqlCount := fmt.Sprintf(`
+		SELECT
+			COUNT(*)
+		FROM login_role
+		%s`, searchStmt)
+	var count int
+	sqlCount = d.DB.Rebind(sqlCount)
+	if errDB := d.DB.Get(&count, sqlCount, args...); errDB != nil {
+		return 0, ae.DBError("login_role Search: unable to select count.", errDB)
+	}
+	return count, nil
+}
+
+func (d *SQLLoginRole) Create(lo *LoginRole) error {
+	sqlPost := `
+		INSERT INTO login_role (
+			login_uid,
+			role_uid
+		) VALUES (
+			:login_uid,
+			:role_uid
+		)`
+	_, errDB := d.DB.NamedExec(sqlPost, lo)
+	if errDB != nil {
+		return ae.DBError("LoginRole Post: unable to insert record.", errDB)
+	}
+
+	return nil
+}
+
+func (d *SQLLoginRole) Update(lo LoginRole) error {
+	sqlPatch := `
+		UPDATE login_role SET
+			
+		WHERE login_uid = :login_uidrole_uid = :role_uid`
+	if _, errDB := d.DB.NamedExec(sqlPatch, lo); errDB != nil {
+		return ae.DBError("LoginRole Patch: unable to update record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLLoginRole) Delete(lo *LoginRole) error {
+	sqlDelete := `
+		DELETE FROM login_role WHERE login_uid = $1 and role_uid = $2`
+	if _, errDB := d.DB.Exec(sqlDelete, lo.LoginUid, lo.RoleUid); errDB != nil {
+		return ae.DBError("LoginRole Delete: unable to delete record.", errDB)
+	}
+	return nil
+}

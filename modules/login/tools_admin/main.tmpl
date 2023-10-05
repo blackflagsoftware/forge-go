@@ -2,9 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"{{.ProjectPath}}/config"
 	l "{{.ProjectPath}}/internal/v1/login"
+	lr "{{.ProjectPath}}/internal/v1/loginrole"
+	r "{{.ProjectPath}}/internal/v1/role"
+	"{{.ProjectPath}}/internal/util"
 	"gopkg.in/guregu/null.v3"
 )
 
@@ -17,12 +21,35 @@ func main() {
 	mh := l.NewManagerLogin(dh)
 	if err := mh.Post(login); err != nil {
 		fmt.Println("Creating admin error:", err)
-		return
+		os.Exit(1)
 	}
-	reset := l.ResetRequest{EmailAddr: login.EmailAddr.String}
-	if err := mh.ResetRequest(&reset); err != nil {
-		fmt.Println("Creating admin reset error:", err)
-		return
+	dr := r.InitStorage()
+	mr := r.NewManagerRole(dr)
+	roles := []r.Role{}
+	param := r.RoleParam{Param: util.Param{Search: []util.ParamSearch{util.ParamSearch{Column: "name", Compare: "=", Value: "admin"}}}}
+	if _, errDB := mr.Search(&roles, param); errDB != nil {
+		fmt.Println("Creating admin unable to get admin role uid:", errDB)
+		os.Exit(1)
 	}
-	fmt.Println("reset token: ", reset.ResetToken)
+	if len(roles) == 0 {
+		fmt.Println("Creating admin unable to get admin role uid, search failed")
+		os.Exit(1)
+	}
+	adminUid := roles[0].Uid
+	// insert login_role
+	dlr := lr.InitStorage()
+	mlr := lr.NewManagerLoginRole(dlr)
+	loginRole := &lr.LoginRole{LoginUid: login.Uid, RoleUid: adminUid}
+	if err := mlr.Post(loginRole); err != nil {
+		fmt.Println("Create admin unable to set login role:", err)
+		os.Exit(1)
+	}
+	// sent the reset request
+	// reset := l.ResetRequest{EmailAddr: login.EmailAddr.String}
+	// if err := mh.ResetRequest(&reset); err != nil {
+		// fmt.Println("Creating admin reset error:", err)
+		// os.Exit(1)
+	// }
+	// fmt.Println("reset token: ", reset.ResetToken)
+	os.Exit(0)
 }

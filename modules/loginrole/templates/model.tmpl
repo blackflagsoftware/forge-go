@@ -1,0 +1,31 @@
+package loginrole
+
+import (
+	"{{.ProjectPath}}/config"
+	"{{.ProjectPath}}/internal/util"
+)
+
+type (
+	LoginRole struct {
+		LoginUid string `db:"login_uid" json:"login_uid"`
+		RoleUid  string `db:"role_uid" json:"role_uid"`
+	}
+
+	LoginRoleData struct {
+		Data LoginRole `json:"data"`
+	}
+
+	LoginRoleParam struct {
+		// TODO: add any other custom params here
+		util.Param
+	}
+)
+
+const LoginRoleConst = "login_role"
+
+func InitStorage() DataLoginRoleAdapter {
+	if config.StorageSQL {
+		return InitSQL()
+	}
+	return nil
+}

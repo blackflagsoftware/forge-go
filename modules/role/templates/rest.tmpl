@@ -1,0 +1,126 @@
+package role
+
+import (
+	"net/http"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	m "{{.ProjectPath}}/internal/middleware"
+	util "{{.ProjectPath}}/internal/util"
+	"github.com/labstack/echo/v4"
+)
+
+type (
+	ManagerRoleAdapter interface {
+		Get(*Role) error
+		Search(*[]Role, RoleParam) (int, error)
+		Post(*Role) error
+		Patch(Role) error
+		Delete(*Role) error
+	}
+
+	RestRole struct {
+		managerRole ManagerRoleAdapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	sl := InitStorage()
+	ml := NewManagerRole(sl)
+	hl := NewRestRole(ml)
+	hl.LoadRoleRoutes(eg)
+}
+
+func NewRestRole(mrol ManagerRoleAdapter) *RestRole {
+	return &RestRole{managerRole: mrol}
+}
+
+func (h *RestRole) LoadRoleRoutes(eg *echo.Group) {
+	eg.GET("/role/:uid", h.Get)
+	eg.POST("/role/search", h.Search)
+	eg.POST("/role", h.Post)
+	eg.PATCH("/role", h.Patch)
+	eg.DELETE("/role/:uid", h.Delete)
+}
+
+func (h *RestRole) Get(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	uid := c.Param("uid")
+	role := &Role{Uid: uid}
+	if err := h.managerRole.Get(role); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *role, nil, nil))
+}
+
+func (h *RestRole) Search(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	param := RoleParam{}
+	if err := c.Bind(&param); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
+	roles := &[]Role{}
+	totalCount, err := h.managerRole.Search(roles, param)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *roles, nil, &totalCount))
+}
+
+func (h *RestRole) Post(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	rol := Role{}
+	rolData := RoleData{Data: rol}
+	if err := c.Bind(&rolData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerRole.Post(&rolData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, rolData.Data, nil, nil))
+}
+
+func (h *RestRole) Patch(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	rol := Role{}
+	rolData := RoleData{Data: rol}
+	if err := c.Bind(&rolData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerRole.Patch(rolData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestRole) Delete(c echo.Context) error {
+	if !m.AuthContext([]string{"admin"}, c) {
+		return ae.AuthorizationError("User has insufficent role permissions")
+	}
+	uid := c.Param("uid")
+	role := &Role{Uid: uid}
+	if err := h.managerRole.Delete(role); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}

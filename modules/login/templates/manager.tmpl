@@ -25,6 +25,7 @@ type (
 		GetByEmailAddr(*Login) error
 		GetResetRequest(*ResetRequest) error
 		ResetRequest(*ResetRequest) error
+		GetLoginRoles(string, *[]string) error
 	}
 
 	ManagerLogin struct {
@@ -66,7 +67,10 @@ func (m *ManagerLogin) Post(login *Login) error {
 	// check if email is already used before
 	logDup := &Login{EmailAddr: login.EmailAddr}
 	if err := m.dataLogin.GetByEmailAddr(logDup); err != nil {
-		return err
+		title := err.(ae.ApiError).BodyError().Title
+		if title != "No Results Error" {
+			return err
+		}
 	}
 	if logDup.Uid != "" {
 		return ae.DuplicateEmailError(logDup.EmailAddr.String)
@@ -171,8 +175,8 @@ func (m *ManagerLogin) PwdReset(pwd PasswordReset) error {
 	// reset login is still valid
 	resetRequest := ResetRequest{LoginUid: login.Uid, ResetToken: pwd.ResetToken}
 	if errReset := m.dataLogin.GetResetRequest(&resetRequest); errReset != nil {
-		detail := errReset.(ae.ApiError).BodyError().Detail
-		if detail == "No Results Error" {
+		title := errReset.(ae.ApiError).BodyError().Title
+		if title == "No Results Error" {
 			return ae.ResetTokenInvalidError()
 		}
 		return errReset
@@ -219,8 +223,8 @@ func (m *ManagerLogin) ResetRequest(res *ResetRequest) error {
 	login := &Login{EmailAddr: null.StringFrom(res.EmailAddr)}
 	err := m.dataLogin.GetByEmailAddr(login)
 	if err != nil {
-		detail := err.(ae.ApiError).BodyError().Detail
-		if detail == "No Results Error" {
+		title := err.(ae.ApiError).BodyError().Title
+		if title == "No Results Error" {
 			// no valid email, send back success
 			return nil
 		}
@@ -243,8 +247,8 @@ func (m *ManagerLogin) SignIn(logIn Login) (string, error) {
 	login := &Login{EmailAddr: logIn.EmailAddr}
 	err := m.dataLogin.GetByEmailAddr(login)
 	if err != nil {
-		detail := err.(ae.ApiError).BodyError().Detail
-		if detail == "No Results Error" {
+		title := err.(ae.ApiError).BodyError().Title
+		if title == "No Results Error" {
 			return "", ae.EmailPasswordComboError()
 		}
 		return "", err
@@ -252,9 +256,15 @@ func (m *ManagerLogin) SignIn(logIn Login) (string, error) {
 	if err := util.CheckPassword(logIn.Pwd.String, login.Pwd.String); err != nil {
 		return "", err
 	}
-	// TODO: the arguement for AuthBuilder is a list of roles for this person
-	// at the moment it will give everyone 'admin' priviledges, this will need to change
-	token, err := mid.AuthBuild([]string{"admin"})
+	roles := []string{}
+	if errRoles := m.dataLogin.GetLoginRoles(login.Uid, &roles); errRoles != nil {
+		title := errRoles.(ae.ApiError).BodyError().Title
+		if title != "No Results Error" {
+			return "", errRoles
+		}
+	}
+	// the argument for AuthBuilder is a list of roles for this person
+	token, err := mid.AuthBuild(roles)
 	if err != nil {
 		return "", err
 	}

@@ -1,0 +1,81 @@
+package loginrole
+
+import (
+	ae "{{.ProjectPath}}/internal/api_error"
+	a "{{.ProjectPath}}/internal/audit"
+)
+
+//go:generate mockgen -source=manager.go -destination=mock.go -package=loginrole
+type (
+	DataLoginRoleAdapter interface {
+		Read(*LoginRole) error
+		ReadAll(*[]LoginRole, LoginRoleParam) (int, error)
+		Create(*LoginRole) error
+		Update(LoginRole) error
+		Delete(*LoginRole) error
+	}
+
+	ManagerLoginRole struct {
+		dataLoginRole DataLoginRoleAdapter
+		auditWriter   a.AuditAdapter
+	}
+)
+
+func NewManagerLoginRole(clo DataLoginRoleAdapter) *ManagerLoginRole {
+	aw := a.AuditInit()
+	return &ManagerLoginRole{dataLoginRole: clo, auditWriter: aw}
+}
+
+func (m *ManagerLoginRole) Get(lo *LoginRole) error {
+	if lo.LoginUid == "" {
+		return ae.MissingParamError("LoginUid")
+	}
+	if lo.RoleUid == "" {
+		return ae.MissingParamError("RoleUid")
+	}
+	return m.dataLoginRole.Read(lo)
+}
+
+func (m *ManagerLoginRole) Search(lo *[]LoginRole, param LoginRoleParam) (int, error) {
+	param.Param.CalculateParam("", map[string]string{})
+
+	return m.dataLoginRole.ReadAll(lo, param)
+}
+
+func (m *ManagerLoginRole) Post(lo *LoginRole) error {
+
+	if err := m.dataLoginRole.Create(lo); err != nil {
+		return nil
+	}
+	go a.AuditCreate(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_uid", lo.LoginUid, "role_uid", lo.RoleUid))
+	return nil
+}
+
+func (m *ManagerLoginRole) Patch(loIn LoginRole) error {
+	lo := &LoginRole{LoginUid: loIn.LoginUid, RoleUid: loIn.RoleUid}
+	errGet := m.dataLoginRole.Read(lo)
+	if errGet != nil {
+		return errGet
+	}
+	existingValues := make(map[string]interface{})
+
+	if err := m.dataLoginRole.Update(*lo); err != nil {
+		return err
+	}
+	go a.AuditPatch(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_uid", lo.LoginUid, "role_uid", lo.RoleUid), existingValues)
+	return nil
+}
+
+func (m *ManagerLoginRole) Delete(lo *LoginRole) error {
+	if lo.LoginUid == "" {
+		return ae.MissingParamError("LoginUid")
+	}
+	if lo.RoleUid == "" {
+		return ae.MissingParamError("RoleUid")
+	}
+	if err := m.dataLoginRole.Delete(lo); err != nil {
+		return err
+	}
+	go a.AuditDelete(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_uid", lo.LoginUid, "role_uid", lo.RoleUid))
+	return nil
+}

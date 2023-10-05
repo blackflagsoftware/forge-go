@@ -81,7 +81,7 @@ func buildProjectName(p *m.Project) {
 	p.ProjectNameCamel = projectName.Camel
 	p.ProjectNameLower = projectName.Lower
 	p.ProjectNameLowerCamel = projectName.LowerCamel
-	p.ProjectNameUpper = projectName.Upper
+	p.ProjectNameEnv = projectName.EnvVar
 }
 
 func SaveProjectFile(p m.ProjectFile) {

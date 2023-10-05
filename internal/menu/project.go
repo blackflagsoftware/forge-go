@@ -620,4 +620,7 @@ func ModuleAddLogin(p *m.Project) {
 	mod.AddLogin(p)
 	p.ProjectFile.Modules = append(p.ProjectFile.Modules, "login")
 	p.ProjectFile.SaveProjectFile()
+	fmt.Println("")
+	fmt.Println("'Login' module has been added, press 'enter' to continue")
+	util.ParseInput()
 }

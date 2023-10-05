@@ -88,7 +88,7 @@ This module will insert an entity called `Login`, it will follow the same format
 
 The reset password functionality also includes the ability to email a "reset password" email, this will just point to a web page to take the email address and reset token, add provide the user the ability to enter in a new password (and confirm password) then send those pieces of data to the API endpoint to reset the user's password.
 
-A few tables are provided called `login` and `reset_login` and migration files are provided for these tables, see `tools/migration/README.md`.
+A few tables are provided called `login` and `login_reset` and migration files are provided for these tables, see `tools/migration/README.md`.
 
 `Admin Tool` is added in the `tools` directory, this should also be set up as a migration script to allow the `admin` to set their password.  Through the migration process, it guaranteed to run once.  See `tools/migration/README.md` for more information.
 
@@ -111,11 +111,11 @@ The prefix of the above env vars should change to the name of new project.
 ```
 Walkthrough :
 - Setup the above env var(s)
-- If using SQL, enable `FORGE_GO_BASE_MIGRATION_ENABLED` and use the provided migration scripts (see `tools/migration/README.md`) or run the table create statements manually for `login` and `reset_login`.  Scripts are provided for you in the `scripts/migrations` folder.
+- If using SQL, enable `FORGE_GO_BASE_MIGRATION_ENABLED` and use the provided migration scripts (see `tools/migration/README.md`) or run the table create statements manually for `login` and `login_reset`.  Scripts are provided for you in the `scripts/migrations` folder.
 - The `tools/admin` is saved as a `.bin` file for to run under `migration`, if not, run the `tools/admin` manually by doing `go run tools/admin/main.go`.
-- Build and run the `rest` server. If migration is enabled this will create the tables and run the admin binary, or if ran manually, a user will be created with the email from `FORGE_BASE_GO_ADMIN_EMAIL` and a reset token will be created in the `reset_login` table.
+- Build and run the `rest` server. If migration is enabled this will create the tables and run the admin binary, or if ran manually, a user will be created with the email from `FORGE_BASE_GO_ADMIN_EMAIL` and a reset token will be created in the `login_reset` table.
 - An email will be sent (if set up correctly), that will use the `FORGE_GO_BASE_EMAIL_*` env vars to do this.
-- If you have a web site that points to `FORGE_GO_BASE_EMAIL_RESET_URL`, then use that to enter in new password (and confirm password), else you can just call the `/login/reset/pwd` with the payload needed, the token is found in the email or get it from the `reset_login` table.  This will ensure the admin's password is encrypted correctly into the storage (DB, mongo, etc).
+- If you have a web site that points to `FORGE_GO_BASE_EMAIL_RESET_URL`, then use that to enter in new password (and confirm password), else you can just call the `/login/reset/pwd` with the payload needed, the token is found in the email or get it from the `login_reset` table.  This will ensure the admin's password is encrypted correctly into the storage (DB, mongo, etc).
 - Once the admin user is set and a password, than those credentials can be used to add, through the POST endpoint, new users.
 
 Note: `forge` is designed to only allow this module to be added once, unless you remove it from `.forge`, bad things may happen.  You have been warned.

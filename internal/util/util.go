@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -174,4 +176,8 @@ func CopyFile(src, dest string) {
 		fmt.Printf("Unable to close/sync destination file: %s; %s\n", dest, err)
 		return
 	}
+}
+
+func GenerateUUID() string {
+	return uuid.New().String()
 }

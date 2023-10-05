@@ -1,0 +1,143 @@
+package loginrole
+
+import (
+	"context"
+	"encoding/json"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	p "{{.ProjectPath}}/pkg/proto"
+)
+
+type (
+	LoginRoleGrpc struct {
+		p.UnimplementedLoginRoleServiceServer
+		managerLoginRole ManagerLoginRoleAdapter
+	}
+)
+
+func NewLoginRoleGrpc(mlo ManagerLoginRoleAdapter) *LoginRoleGrpc {
+	return &LoginRoleGrpc{managerLoginRole: mlo}
+}
+
+func (a *LoginRoleGrpc) GetLoginRole(ctx context.Context, in *p.LoginRoleIDsIn) (*p.LoginRoleResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.LoginRoleResponse{Result: result}
+	lo := &LoginRole{LoginUid: in.LoginUid, RoleUid: in.RoleUid}
+	if err := a.managerLoginRole.Get(lo); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var err error
+	response.LoginRole, err = translateOut(lo)
+	if err != nil {
+		return response, err
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *LoginRoleGrpc) SearchLoginRole(ctx context.Context, in *p.LoginRole) (*p.LoginRoleRepeatResponse, error) {
+	loginRoleParam := LoginRoleParam{}
+	result := &p.Result{Success: false}
+	response := &p.LoginRoleRepeatResponse{Result: result}
+	los := &[]LoginRole{}
+	if _, err := a.managerLoginRole.Search(los, loginRoleParam); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	for _, a := range *los {
+		protoLoginRole, err := translateOut(&a)
+		if err != nil {
+			return response, err
+		}
+		response.LoginRole = append(response.LoginRole, protoLoginRole)
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *LoginRoleGrpc) CreateLoginRole(ctx context.Context, in *p.LoginRole) (*p.LoginRoleResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.LoginRoleResponse{Result: result}
+	lo, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.managerLoginRole.Post(lo); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var errTranslate error
+	response.LoginRole, errTranslate = translateOut(lo)
+	if err != nil {
+		return response, errTranslate
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *LoginRoleGrpc) UpdateLoginRole(ctx context.Context, in *p.LoginRole) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	lo, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.managerLoginRole.Patch(*lo); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func (a *LoginRoleGrpc) DeleteLoginRole(ctx context.Context, in *p.LoginRoleIDsIn) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	lo := &LoginRole{LoginUid: in.LoginUid, RoleUid: in.RoleUid}
+	if err := a.managerLoginRole.Delete(lo); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func translateOut(lo *LoginRole) (*p.LoginRole, error) {
+	protoLoginRole := p.LoginRole{}
+	protoLoginRole.LoginUid = lo.LoginUid
+	protoLoginRole.RoleUid = lo.RoleUid
+	return &protoLoginRole, nil
+}
+
+func translateIn(in *p.LoginRole) (*LoginRole, error) {
+	lo := LoginRole{}
+	lo.LoginUid = in.LoginUid
+	lo.RoleUid = in.RoleUid
+	return &lo, nil
+}
+
+// found these are slower; deprecated; keep them, just in case
+func translateJsonOut(lo *LoginRole) (*p.LoginRole, error) {
+	protoLoginRole := p.LoginRole{}
+	outBytes, err := json.Marshal(lo)
+	if err != nil {
+		return &protoLoginRole, ae.GeneralError("Unable to encode from LoginRole", err)
+	}
+	err = json.Unmarshal(outBytes, &protoLoginRole)
+	if err != nil {
+		return &protoLoginRole, ae.GeneralError("Unable to decode to proto.LoginRole", err)
+	}
+	return &protoLoginRole, nil
+}
+
+func translateJsonIn(in *p.LoginRole) (*LoginRole, error) {
+	lo := LoginRole{}
+	outBytes, err := json.Marshal(in)
+	if err != nil {
+		return &lo, ae.GeneralError("Unable to encode from proto.LoginRole", err)
+	}
+	err = json.Unmarshal(outBytes, &lo)
+	if err != nil {
+		return &lo, ae.GeneralError("Unable to decode to LoginRole", err)
+	}
+	return &lo, nil
+}

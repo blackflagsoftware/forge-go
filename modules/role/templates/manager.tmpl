@@ -1,0 +1,98 @@
+package role
+
+import (
+	ae "{{.ProjectPath}}/internal/api_error"
+	a "{{.ProjectPath}}/internal/audit"
+)
+
+//go:generate mockgen -source=manager.go -destination=mock.go -package=role
+type (
+	DataRoleAdapter interface {
+		Read(*Role) error
+		ReadAll(*[]Role, RoleParam) (int, error)
+		Create(*Role) error
+		Update(Role) error
+		Delete(*Role) error
+	}
+
+	ManagerRole struct {
+		dataRole    DataRoleAdapter
+		auditWriter a.AuditAdapter
+	}
+)
+
+func NewManagerRole(crol DataRoleAdapter) *ManagerRole {
+	aw := a.AuditInit()
+	return &ManagerRole{dataRole: crol, auditWriter: aw}
+}
+
+func (m *ManagerRole) Get(rol *Role) error {
+	if rol.Uid == "" {
+		return ae.MissingParamError("Uid")
+	}
+	return m.dataRole.Read(rol)
+}
+
+func (m *ManagerRole) Search(rol *[]Role, param RoleParam) (int, error) {
+	param.Param.CalculateParam("name", map[string]string{"name": "name", "description": "description"})
+
+	return m.dataRole.ReadAll(rol, param)
+}
+
+func (m *ManagerRole) Post(rol *Role) error {
+	if !rol.Name.Valid {
+		return ae.MissingParamError("Name")
+	}
+	if rol.Name.Valid && len(rol.Name.ValueOrZero()) > 50 {
+		return ae.StringLengthError("Name", 50)
+	}
+	if rol.Description.Valid && len(rol.Description.ValueOrZero()) > 500 {
+		return ae.StringLengthError("Description", 500)
+	}
+	if err := m.dataRole.Create(rol); err != nil {
+		return nil
+	}
+	go a.AuditCreate(m.auditWriter, *rol, RoleConst, a.KeysToString("uid", rol.Uid))
+	return nil
+}
+
+func (m *ManagerRole) Patch(rolIn Role) error {
+	rol := &Role{Uid: rolIn.Uid}
+	errGet := m.dataRole.Read(rol)
+	if errGet != nil {
+		return errGet
+	}
+	existingValues := make(map[string]interface{})
+	// Name
+	if rolIn.Name.Valid {
+		if rolIn.Name.Valid && len(rolIn.Name.ValueOrZero()) > 50 {
+			return ae.StringLengthError("Name", 50)
+		}
+		existingValues["name"] = rol.Name.String
+		rol.Name = rolIn.Name
+	}
+	// Description
+	if rolIn.Description.Valid {
+		if rolIn.Description.Valid && len(rolIn.Description.ValueOrZero()) > 500 {
+			return ae.StringLengthError("Description", 500)
+		}
+		existingValues["description"] = rol.Description.String
+		rol.Description = rolIn.Description
+	}
+	if err := m.dataRole.Update(*rol); err != nil {
+		return err
+	}
+	go a.AuditPatch(m.auditWriter, *rol, RoleConst, a.KeysToString("uid", rol.Uid), existingValues)
+	return nil
+}
+
+func (m *ManagerRole) Delete(rol *Role) error {
+	if rol.Uid == "" {
+		return ae.MissingParamError("Uid")
+	}
+	if err := m.dataRole.Delete(rol); err != nil {
+		return err
+	}
+	go a.AuditDelete(m.auditWriter, *rol, RoleConst, a.KeysToString("uid", rol.Uid))
+	return nil
+}

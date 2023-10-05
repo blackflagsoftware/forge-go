@@ -97,7 +97,7 @@ func (d *SQLLogin) Create(login *Login, res ResetRequest) (err error) {
 		return err
 	}
 
-	sqlResetInsert := `INSERT INTO reset_login (login_uid, reset_token, created_at) VALUES ($1, $2, $3)`
+	sqlResetInsert := `INSERT INTO login_reset (login_uid, reset_token, created_at) VALUES ($1, $2, $3)`
 	if _, errDB := txn.Exec(sqlResetInsert, res.LoginUid, res.ResetToken, res.CreatedAt); errDB != nil {
 		err = ae.DBError("Create: reset request, unable to insert.", errDB)
 		return
@@ -134,7 +134,7 @@ func (d *SQLLogin) UpdatePwd(login Login) (err error) {
 	}
 	// update all reset records (tokens) if any
 	now := time.Now().UTC()
-	sqlReset := `UPDATE reset_login SET updated_at = $1 WHERE text(login_uid) = $2`
+	sqlReset := `UPDATE login_reset SET updated_at = $1 WHERE text(login_uid) = $2`
 	if _, errDB := txn.Exec(sqlReset, now, login.Uid); errDB != nil {
 		err = ae.DBError("Login UpdatePwd: unable to set finish reset.", errDB)
 		return
@@ -160,7 +160,7 @@ func (d *SQLLogin) GetByEmailAddr(login *Login) error {
 }
 
 func (d *SQLLogin) GetResetRequest(resetRequest *ResetRequest) error {
-	sqlGet := `SELECT login_uid, reset_token, created_at FROM reset_login WHERE text(login_uid) = $1 AND text(reset_token) = $2 AND updated_at IS NULL LIMIT 1`
+	sqlGet := `SELECT login_uid, reset_token, created_at FROM login_reset WHERE text(login_uid) = $1 AND text(reset_token) = $2 AND updated_at IS NULL LIMIT 1`
 	if errDB := d.DB.Get(resetRequest, sqlGet, resetRequest.LoginUid, resetRequest.ResetToken); errDB != nil {
 		return ae.DBError("GetByEmailAddr: unable to get record.", errDB)
 	}
@@ -175,12 +175,12 @@ func (d *SQLLogin) ResetRequest(res *ResetRequest) (err error) {
 	defer util.TxnFinish(txn, &err)
 
 	now := time.Now().UTC()
-	sqlResetUpdate := `UPDATE reset_login SET updated_at = $1 WHERE text(login_uid) = $2`
+	sqlResetUpdate := `UPDATE login_reset SET updated_at = $1 WHERE text(login_uid) = $2`
 	if _, errDB := txn.Exec(sqlResetUpdate, now, res.LoginUid); errDB != nil {
 		err = ae.DBError("Login Reset: unable to update.", errDB)
 		return
 	}
-	sqlResetInsert := `INSERT INTO reset_login (login_uid, reset_token, created_at) VALUES ($1, $2, $3)`
+	sqlResetInsert := `INSERT INTO login_reset (login_uid, reset_token, created_at) VALUES ($1, $2, $3)`
 	if _, errDB := txn.Exec(sqlResetInsert, res.LoginUid, res.ResetToken, now); errDB != nil {
 		err = ae.DBError("Login Reset: unable to insert.", errDB)
 		return
@@ -192,4 +192,17 @@ func (d *SQLLogin) ResetRequest(res *ResetRequest) (err error) {
 		return
 	}
 	return err
+}
+
+func (d *SQLLogin) GetLoginRoles(loginUid string, roles *[]string) error {
+	sqlGet := `
+		SELECT
+			r.name
+		FROM role AS r
+		INNER JOIN login_role AS lr ON r.uid = lr.role_uid
+		WHERE lr.login_uid = $1`
+	if errDB := d.DB.Select(roles, sqlGet, loginUid); errDB != nil {
+		return ae.DBError("GetLoginRoles: unable to get roles", errDB)
+	}
+	return nil
 }
