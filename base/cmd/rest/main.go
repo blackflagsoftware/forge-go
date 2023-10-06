@@ -13,7 +13,7 @@ import (
 	"github.com/blackflagsoftware/forge-go/base/config"
 	ae "github.com/blackflagsoftware/forge-go/base/internal/api_error"
 	m "github.com/blackflagsoftware/forge-go/base/internal/middleware"
-	p "github.com/labstack/echo-contrib/prometheus"
+	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	// --- replace migration header once text - do not remove ---
@@ -46,8 +46,8 @@ func main() {
 		m.Handler,
 	)
 	if config.EnableMetrics {
-		prom := p.NewPrometheus("echo", nil)
-		prom.Use(e)
+		e.Use(echoprometheus.NewMiddleware("FORGE_GO_BASE"))
+		e.GET("/metrics", echoprometheus.NewHandler())
 	}
 
 	// set all non-endpoints here
