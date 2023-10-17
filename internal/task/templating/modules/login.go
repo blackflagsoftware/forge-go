@@ -273,6 +273,11 @@ message LoginRoleResponse {
 	Result result = 2;
 }
 
+message LoginRolePatch {
+	string LoginUid = 1;
+	repeated string RoleUids = 2;
+}
+
 message LoginRoleRepeatResponse {
 	repeated LoginRole LoginRole = 1;
 	Result result = 2;
@@ -282,7 +287,7 @@ service LoginRoleService {
 	rpc GetLoginRole(LoginRoleIDsIn) returns (LoginRoleResponse);
 	rpc SearchLoginRole(LoginRole) returns (LoginRoleRepeatResponse);
 	rpc CreateLoginRole(LoginRole) returns (LoginRoleResponse);
-	rpc UpdateLoginRole(LoginRole) returns (Result);
+	rpc UpdateLoginRole(LoginRolePatch) returns (Result);
 	rpc DeleteLoginRole(LoginRoleIDsIn) returns (Result);
 }
 

@@ -21,6 +21,7 @@ type (
 		PwdReset(PasswordReset) error
 		ResetRequest(*ResetRequest) error
 		SignIn(Login) (string, error)
+		WithRoles(*[]LoginRoles) (int, error)
 	}
 
 	RestLogin struct {
@@ -49,6 +50,7 @@ func (h *RestLogin) LoadLoginRoutes(eg *echo.Group) {
 	eg.PATCH("/login/pwd", h.PatchPwd)
 	eg.DELETE("/login/:uid", h.Delete)
 	eg.POST("/login/verify", h.Verify)
+	eg.GET("/login/roles", h.WithRoles)
 }
 
 func (h *RestLogin) LoadInsecureLoginRoutes(eg *echo.Group) {
@@ -189,4 +191,15 @@ func (h *RestLogin) SignIn(c echo.Context) error {
 func (h *RestLogin) Verify(c echo.Context) error {
 	// if it made it this far, the jwt made it past the middleware auth layer
 	return c.JSON(http.StatusOK, echo.Map{"status": "successful"})
+}
+
+func (h *RestLogin) WithRoles(c echo.Context) error {
+	login := &[]LoginRoles{}
+	totalCount, err := h.managerLogin.WithRoles(login)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *login, nil, &totalCount))
 }

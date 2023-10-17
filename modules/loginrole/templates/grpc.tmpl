@@ -76,9 +76,9 @@ func (a *LoginRoleGrpc) CreateLoginRole(ctx context.Context, in *p.LoginRole) (*
 	return response, nil
 }
 
-func (a *LoginRoleGrpc) UpdateLoginRole(ctx context.Context, in *p.LoginRole) (*p.Result, error) {
+func (a *LoginRoleGrpc) UpdateLoginRole(ctx context.Context, in *p.LoginRolePatch) (*p.Result, error) {
 	response := &p.Result{Success: false}
-	lo, err := translateIn(in)
+	lo, err := translateInPatch(in)
 	if err != nil {
 		return response, err
 	}
@@ -112,6 +112,13 @@ func translateIn(in *p.LoginRole) (*LoginRole, error) {
 	lo := LoginRole{}
 	lo.LoginUid = in.LoginUid
 	lo.RoleUid = in.RoleUid
+	return &lo, nil
+}
+
+func translateInPatch(in *p.LoginRolePatch) (*LoginRolePatch, error) {
+	lo := LoginRolePatch{}
+	lo.LoginUid = in.LoginUid
+	lo.RoleUids = in.RoleUids
 	return &lo, nil
 }
 

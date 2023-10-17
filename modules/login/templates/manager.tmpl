@@ -25,7 +25,8 @@ type (
 		GetByEmailAddr(*Login) error
 		GetResetRequest(*ResetRequest) error
 		ResetRequest(*ResetRequest) error
-		GetLoginRoles(string, *[]string) error
+		GetLoginRoles(string, *[]string) error	
+		WithRoles(*[]LoginRoles) (int, error)
 	}
 
 	ManagerLogin struct {
@@ -269,4 +270,8 @@ func (m *ManagerLogin) SignIn(logIn Login) (string, error) {
 		return "", err
 	}
 	return token, nil
+}
+
+func (m *ManagerLogin) WithRoles(login *[]LoginRoles) (int, error) {
+	return m.dataLogin.WithRoles(login)
 }

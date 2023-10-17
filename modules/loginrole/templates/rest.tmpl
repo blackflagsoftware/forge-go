@@ -14,7 +14,7 @@ type (
 		Get(*LoginRole) error
 		Search(*[]LoginRole, LoginRoleParam) (int, error)
 		Post(*LoginRole) error
-		Patch(LoginRole) error
+		Patch(LoginRolePatch) error
 		Delete(*LoginRole) error
 	}
 
@@ -98,8 +98,7 @@ func (h *RestLoginRole) Patch(c echo.Context) error {
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
-	lo := LoginRole{}
-	loData := LoginRoleData{Data: lo}
+	loData := LoginRolePatchData{}
 	if err := c.Bind(&loData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))

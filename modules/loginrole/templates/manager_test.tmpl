@@ -96,13 +96,13 @@ func TestManagerLoginRole_Patch(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		body    LoginRole
+		body    LoginRolePatch
 		wantErr bool
 		calls   []*gomock.Call
 	}{
 		{
 			"successful",
-			LoginRole{LoginUid: "test value", RoleUid: "test value"},
+			LoginRolePatch{LoginUid: "test value", RoleUids: []string{"test value"}},
 			false,
 			[]*gomock.Call{
 				mockDataLoginRole.EXPECT().Read(gomock.Any()).Return(nil),
@@ -111,7 +111,7 @@ func TestManagerLoginRole_Patch(t *testing.T) {
 		},
 		{
 			"invalid id",
-			LoginRole{LoginUid: "test value", RoleUid: "test value"},
+			LoginRolePatch{LoginUid: "test value", RoleUids: []string{"test value"}},
 			true,
 			[]*gomock.Call{
 				mockDataLoginRole.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),

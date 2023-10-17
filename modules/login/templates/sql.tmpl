@@ -26,7 +26,6 @@ func (d *SQLLogin) Read(login *Login) error {
 		SELECT
 			uid,
 			email_addr,
-			pwd,
 			active,
 			set_pwd,
 			created_at,
@@ -44,7 +43,6 @@ func (d *SQLLogin) ReadAll(login *[]Login, param LoginParam) (int, error) {
 		SELECT
 			uid,
 			email_addr,
-			pwd,
 			active,
 			set_pwd,
 			created_at,
@@ -142,11 +140,18 @@ func (d *SQLLogin) UpdatePwd(login Login) (err error) {
 	return nil
 }
 
-func (d *SQLLogin) Delete(login *Login) error {
+func (d *SQLLogin) Delete(login *Login) (err error) {
+	txn := d.DB.MustBegin()
+	defer util.TxnFinish(txn, &err)
+
 	sqlDelete := `
 		DELETE FROM login WHERE text(uid) = $1`
-	if _, errDB := d.DB.Exec(sqlDelete, login.Uid); errDB != nil {
+	if _, errDB := txn.Exec(sqlDelete, login.Uid); errDB != nil {
 		return ae.DBError("Login Delete: unable to delete record.", errDB)
+	}
+	sqlRoleDelete := `DELETE FROM login_role WHERE login_uid = $1`
+	if _, errDB := txn.Exec(sqlRoleDelete, login.Uid); errDB != nil {
+		return ae.DBError("Login Delete: unable to delete login_role record.", errDB)
 	}
 	return nil
 }
@@ -168,9 +173,6 @@ func (d *SQLLogin) GetResetRequest(resetRequest *ResetRequest) error {
 }
 
 func (d *SQLLogin) ResetRequest(res *ResetRequest) (err error) {
-	// update any reset records (tokens) if any
-	// insert a new record
-	// update login record
 	txn := d.DB.MustBegin()
 	defer util.TxnFinish(txn, &err)
 
@@ -205,4 +207,33 @@ func (d *SQLLogin) GetLoginRoles(loginUid string, roles *[]string) error {
 		return ae.DBError("GetLoginRoles: unable to get roles", errDB)
 	}
 	return nil
+}
+
+func (d *SQLLogin) WithRoles(login *[]LoginRoles) (int, error) {
+	sqlLogin := `
+		SELECT
+			uid,
+			email_addr
+		FROM login
+		WHERE active = true
+		ORDER BY email_addr`
+	if errDB := d.DB.Select(login, sqlLogin); errDB != nil {
+		return 0, ae.DBError("Login WithRoles: unable to select records.", errDB)
+	}
+
+	sqlRoles := `
+		SELECT
+			r.name
+		FROM login_role AS lr
+		INNER JOIN role AS r ON lr.role_uid = r.uid
+		WHERE lr.login_uid = $1`
+	for i := range *login {
+		roles := []string{}
+		if errDB := d.DB.Select(&roles, sqlRoles, (*login)[i].LoginUid); errDB != nil {
+			return 0, ae.DBError("Login WithRoles: unable to select roles records.", errDB)
+		}
+		(*login)[i].Roles = roles
+	}
+	count := len(*login)
+	return count, nil
 }

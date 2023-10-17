@@ -50,6 +50,12 @@ type (
 	PasswordResetData struct {
 		Data PasswordReset `json:"data"`
 	}
+
+	LoginRoles struct {
+		LoginUid  string   `db:"uid" json:"uid"`
+		EmailAddr string   `db:"email_addr" json:"email_address"`
+		Roles     []string `db:"roles" json:"roles"`
+	}
 )
 
 const LoginConst = "login"

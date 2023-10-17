@@ -91,11 +91,19 @@ func (d *SQLRole) Update(rol Role) error {
 	return nil
 }
 
-func (d *SQLRole) Delete(rol *Role) error {
+func (d *SQLRole) Delete(rol *Role) (err error) {
+	txn := d.DB.MustBegin()
+	defer util.TxnFinish(txn, &err)
+
 	sqlDelete := `
 		DELETE FROM role WHERE uid = $1`
-	if _, errDB := d.DB.Exec(sqlDelete, rol.Uid); errDB != nil {
+	if _, errDB := txn.Exec(sqlDelete, rol.Uid); errDB != nil {
 		return ae.DBError("Role Delete: unable to delete record.", errDB)
 	}
+	sqlDeleteLoginRole := `DELETE FROM login_role WHERE role_uid = $1`
+	if _, errDB := txn.Exec(sqlDeleteLoginRole, rol.Uid); errDB != nil {
+		return ae.DBError("Role Delete: unable to delete login roles record.", errDB)
+	}
+
 	return nil
 }

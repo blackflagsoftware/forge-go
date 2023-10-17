@@ -3,6 +3,7 @@ package loginrole
 import (
 	ae "{{.ProjectPath}}/internal/api_error"
 	a "{{.ProjectPath}}/internal/audit"
+	"{{.ProjectPath}}/internal/util"
 )
 
 //go:generate mockgen -source=manager.go -destination=mock.go -package=loginrole
@@ -37,7 +38,7 @@ func (m *ManagerLoginRole) Get(lo *LoginRole) error {
 }
 
 func (m *ManagerLoginRole) Search(lo *[]LoginRole, param LoginRoleParam) (int, error) {
-	param.Param.CalculateParam("", map[string]string{})
+	param.Param.CalculateParam("login_uid", map[string]string{"login_uid": "login_uid"})
 
 	return m.dataLoginRole.ReadAll(lo, param)
 }
@@ -51,18 +52,31 @@ func (m *ManagerLoginRole) Post(lo *LoginRole) error {
 	return nil
 }
 
-func (m *ManagerLoginRole) Patch(loIn LoginRole) error {
-	lo := &LoginRole{LoginUid: loIn.LoginUid, RoleUid: loIn.RoleUid}
-	errGet := m.dataLoginRole.Read(lo)
-	if errGet != nil {
-		return errGet
+func (m *ManagerLoginRole) Patch(loIn LoginRolePatch) error {
+	// get old list
+	loginRoleParam := LoginRoleParam{util.Param{Search: []util.ParamSearch{util.ParamSearch{Column: "login_uid", Compare: "=", Value: loIn.LoginUid}}}}
+	existingLoginRoles := []LoginRole{}
+	_, errSearch := m.dataLoginRole.ReadAll(&existingLoginRoles, loginRoleParam)
+	if errSearch != nil {
+		return errSearch
 	}
-	existingValues := make(map[string]interface{})
-
-	if err := m.dataLoginRole.Update(*lo); err != nil {
-		return err
+	exisingRoles := []string{}
+	for _, e := range existingLoginRoles {
+		exisingRoles = append(exisingRoles, e.RoleUid)
 	}
-	go a.AuditPatch(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_uid", lo.LoginUid, "role_uid", lo.RoleUid), existingValues)
+	// compare new to old
+	addRoles := util.ArrayDiff(exisingRoles, loIn.RoleUids)
+	for _, add := range addRoles {
+		if err := m.dataLoginRole.Create(&LoginRole{LoginUid: loIn.LoginUid, RoleUid: add}); err != nil {
+			return err
+		}
+	}
+	deleteRoles := util.ArrayDiff(loIn.RoleUids, exisingRoles)
+	for _, del := range deleteRoles {
+		if err := m.dataLoginRole.Delete(&LoginRole{LoginUid: loIn.LoginUid, RoleUid: del}); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

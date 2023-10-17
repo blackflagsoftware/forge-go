@@ -39,8 +39,7 @@ func (d *SQLLoginRole) ReadAll(lo *[]LoginRole, param LoginRoleParam) (int, erro
 			login_uid,
 			role_uid
 		FROM login_role
-		%s
-		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+		%s`, searchStmt)
 	sqlSearch = d.DB.Rebind(sqlSearch)
 	if errDB := d.DB.Select(lo, sqlSearch, args...); errDB != nil {
 		return 0, ae.DBError("LoginRole Search: unable to select records.", errDB)

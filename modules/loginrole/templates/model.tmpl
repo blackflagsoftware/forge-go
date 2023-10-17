@@ -19,6 +19,15 @@ type (
 		// TODO: add any other custom params here
 		util.Param
 	}
+
+	LoginRolePatchData struct {
+		Data LoginRolePatch `json:"data"`
+	}
+
+	LoginRolePatch struct {
+		LoginUid string   `json:"login_uid"`
+		RoleUids []string `json:"role_uids"`
+	}
 )
 
 const LoginRoleConst = "login_role"

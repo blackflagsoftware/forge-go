@@ -3,6 +3,7 @@ package role
 import (
 	ae "{{.ProjectPath}}/internal/api_error"
 	a "{{.ProjectPath}}/internal/audit"
+	"{{.ProjectPath}}/internal/util"
 )
 
 //go:generate mockgen -source=manager.go -destination=mock.go -package=role
@@ -52,6 +53,7 @@ func (m *ManagerRole) Post(rol *Role) error {
 	if err := m.dataRole.Create(rol); err != nil {
 		return nil
 	}
+	rol.Uid = util.GenerateUUID()
 	go a.AuditCreate(m.auditWriter, *rol, RoleConst, a.KeysToString("uid", rol.Uid))
 	return nil
 }

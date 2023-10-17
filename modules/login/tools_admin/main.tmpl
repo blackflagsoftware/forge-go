@@ -44,12 +44,5 @@ func main() {
 		fmt.Println("Create admin unable to set login role:", err)
 		os.Exit(1)
 	}
-	// sent the reset request
-	// reset := l.ResetRequest{EmailAddr: login.EmailAddr.String}
-	// if err := mh.ResetRequest(&reset); err != nil {
-		// fmt.Println("Creating admin reset error:", err)
-		// os.Exit(1)
-	// }
-	// fmt.Println("reset token: ", reset.ResetToken)
 	os.Exit(0)
 }

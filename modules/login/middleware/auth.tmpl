@@ -24,11 +24,16 @@ type (
 )
 
 func AuthConfig() echojwt.Config {
+	keyContent, err := base64.StdEncoding.DecodeString(config.LoginAuthSecret)
+	if err != nil {
+		Default.Println("Unable to DecodeString for auth secret", err)
+		return echojwt.Config{}
+	}
 	return echojwt.Config{
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(CustomClaims)
 		},
-		SigningKey: []byte(config.LoginAuthSecret),
+		SigningKey: keyContent,
 	}
 }
 
@@ -72,7 +77,7 @@ func AuthBuild(roles []string) (string, error) {
 	switch alg {
 	case "HMAC":
 		secretByte = keyContent
-		signingMethod = jwt.SigningMethodHS512
+		signingMethod = jwt.SigningMethodHS256 // doesn't like the 512
 	case "ECDSA":
 		block, _ := pem.Decode(keyContent)
 		if block == nil || !strings.Contains(block.Type, "PRIVATE KEY") {
