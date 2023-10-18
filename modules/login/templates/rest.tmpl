@@ -33,8 +33,7 @@ func InitializeRest(eg *echo.Group) {
 	sl := InitStorage()
 	ml := NewManagerLogin(sl)
 	hl := NewRestLogin(ml)
-	hl.LoadInsecureLoginRoutes(eg)
-	eg.Use(echojwt.WithConfig(m.AuthConfig()))
+	eg.Use(echojwt.WithConfig(m.AuthConfig())) // this will secure all routes under 'v1', exceptions see middleware/auth.go
 	hl.LoadLoginRoutes(eg)
 }
 
@@ -51,9 +50,6 @@ func (h *RestLogin) LoadLoginRoutes(eg *echo.Group) {
 	eg.DELETE("/login/:uid", h.Delete)
 	eg.POST("/login/verify", h.Verify)
 	eg.GET("/login/roles", h.WithRoles)
-}
-
-func (h *RestLogin) LoadInsecureLoginRoutes(eg *echo.Group) {
 	eg.POST("/login/reset/pwd", h.PostPwd)
 	eg.GET("/login/reset/:email_addr", h.ResetRequest)
 	eg.POST("/login/signin", h.SignIn)

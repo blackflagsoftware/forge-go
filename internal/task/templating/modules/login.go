@@ -45,6 +45,8 @@ func Config(p m.Project) {
 	LoginEmailFrom         = GetEnvOrDefault("{{.ProjectNameEnv}}_EMAIL_FROM", "")
 	LoginEmailResetUrl     = GetEnvOrDefault("{{.ProjectNameEnv}}_EMAIL_RESET_URL", "")
 	LoginAdminEmail        = GetEnvOrDefault("{{.ProjectNameEnv}}_ADMIN_EMAIL", "")
+	LoginBasicAuthUser     = GetEnvOrDefault("{{.ProjectNameEnv}}_BASIC_AUTH_USER", "")
+	LoginBasicAuthPwd      = GetEnvOrDefault("{{.ProjectNameEnv}}_BASIC_AUTH_PASS", "")
 	\/\/ --- replace config text - do not remove ---
 	`
 	configFile := fmt.Sprintf("%s/config/config.go", p.ProjectFile.FullPath)
@@ -573,7 +575,8 @@ The following env vars are needed to be supplied for the **login** feature
 ` + "`{{.ProjectNameEnv}}_LOGIN_AUTH_ALG`" + `: [string] encryption algorithm name ` + "`HMAC | RSA | ECDSA | EdDSA`" + ` default is ` + "`HMAC`" + `, see ` + "`JWT Signing`" + ` for more info
 ` + "`{{.ProjectNameEnv}}_LOGIN_AUTH_PRIVATE`" + `: [string] base64 encoded private key for ` + "`RSA, ECDSA or EdDSA`" + ` or base64 encoded password for ` + "`HMAC`" + `, see ` + "`JWT Signing`" + ` for more info
 ` + "`{{.ProjectNameEnv}}_LOGIN_AUTH_PUBLIC`" + `: [string] base64 encoded public key for ` + "`RSA, ECDSA or EdDSA`" + ` should match the private file, see ` + "`JWT Signing`" + ` for more info
-` + "`{{.ProjectNameEnv}}_EMAIL_HOST`" + `: [string] host for the stmp service to email
+` + "`{{.ProjectNameEnv}}_LOGIN_BASIC_AUTH_USER`" + `: [string] optional user name for basic auth
+` + "`{{.ProjectNameEnv}}_LOGIN_BASIC_AUTH_PASS`" + `: [string] optional user password for basic auth
 ` + "`{{.ProjectNameEnv}}_EMAIL_PORT`" + `: [int] port for the stmp service
 ` + "`{{.ProjectNameEnv}}_EMAIL_PWD`" + `: [string] password for the stmp service
 ` + "`{{.ProjectNameEnv}}_EMAIL_FROM`" + `: [string] user name for the stmp service

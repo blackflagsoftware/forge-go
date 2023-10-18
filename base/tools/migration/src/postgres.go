@@ -37,7 +37,30 @@ func (p *Postgres) ConnectDB(c Connection, rootDB bool) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func (p *Postgres) CheckDB(db *sqlx.DB, dbName string) error {
+func (p *Postgres) CheckUser(db *sqlx.DB, userName, userPwd string) error {
+	checkSql := "SELECT EXISTS(SELECT rolname FROM pg_roles WHERE rolname = lower($1))"
+	exists := false
+	err := db.Get(&exists, checkSql, userName)
+	if err != nil {
+		return fmt.Errorf("CheckUser[postgres]: unable to check for existing user; %s", err)
+	}
+	if !exists {
+		createSql := fmt.Sprintf("CREATE role %s WITH LOGIN PASSWORD '%s'", userName, userPwd)
+		if _, err := db.Exec(createSql); err != nil {
+			return fmt.Errorf("CheckUser[postgres]: unable to create role; %s", err)
+		}
+		role := []string{"pg_read_all_data", "pg_write_all_data"}
+		for _, r := range role {
+			grantSql := fmt.Sprintf("GRANT %s TO %s", r, userName)
+			if _, err := db.Exec(grantSql); err != nil {
+				return fmt.Errorf("CheckUser[postgres]: unable to grant %s role; %s", r, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (p *Postgres) CheckDB(db *sqlx.DB, dbName, userName string) error {
 	checkSql := "SELECT EXISTS(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower($1))"
 	exists := false
 	err := db.Get(&exists, checkSql, dbName)
@@ -45,7 +68,7 @@ func (p *Postgres) CheckDB(db *sqlx.DB, dbName string) error {
 		return fmt.Errorf("CheckDB[postgres]: unable to check for existing database; %s", err)
 	}
 	if !exists {
-		createSql := fmt.Sprintf("CREATE DATABASE %s", dbName)
+		createSql := fmt.Sprintf("CREATE DATABASE %s OWNER %s", dbName, userName)
 		if _, err := db.Exec(createSql); err != nil {
 			return fmt.Errorf("CheckDB[postgres]: unable to create database; %s", err)
 		}

@@ -29,6 +29,7 @@ type (
 		EntityID  string          `db:"entity_id"`
 		Changed   json.RawMessage `db:"changed"`
 		UserID    int             `db:"user_id"`
+		UserUID   string          `db:"user_uid"`
 	}
 
 	Audit struct {
@@ -37,6 +38,7 @@ type (
 		Updated   map[string]AuditUpdate `json:"updated,omitempty"`
 		Delete    map[string]interface{} `json:"delete,omitempty"`
 		UserID    int                    `json:"user_id,omitempty"`
+		UserUID   string                 `json:"user_uid,omitempty"`
 		Entity    string                 `json:"entity,omitempty"`
 		EntityID  string                 `json:"entity_id,omitempty"`
 	}
@@ -56,10 +58,11 @@ type (
 /* if you are using this, you will need to create a table
 CREATE TABLE IF NOT EXISTS audit (
 	id INT AUTO_INCREMENT, -- or SERIAL
-	user_name VARCHAR(50) NULL,
+	user_id int null,
+	user_uid varchar(50) null,
 	entity VARCHAR(50) NOT NULL,
 	entity_id VARCHAR(50) NOT NULL,
-	changes JSON NOT NULL, -- may not work with sqlite
+	changed JSON NOT NULL, -- may not work with sqlite
 	created_at DATETIME NOT NULL, -- or TIMESTAMP
 	PRIMARY KEY(id)
 );
@@ -135,9 +138,10 @@ func (h AuditSQL) WriteAudit(audit Audit) {
 	h.CreatedAt = time.Now().UTC()
 	h.Changed = bAuditColumn
 	h.UserID = audit.UserID
+	h.UserUID = audit.UserUID
 	h.Entity = audit.Entity
 	h.EntityID = audit.EntityID
-	insertSql := `INSERT INTO audit (created_at, changes, user_id, entity, entity_id) VALUES (:created_at, :changes, :user_id, :entity, :entity_id)`
+	insertSql := `INSERT INTO audit (created_at, changed, user_id, user_uid, entity, entity_id) VALUES (:created_at, :changed, :user_id, :user_uid, :entity, :entity_id)`
 	if _, err := h.DB.NamedExec(insertSql, h); err != nil {
 		fmt.Println("WriteAudit: error insert record", err)
 	}

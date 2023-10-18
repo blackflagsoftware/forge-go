@@ -37,7 +37,23 @@ func (m *Mysql) ConnectDB(c Connection, rootDB bool) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func (m *Mysql) CheckDB(db *sqlx.DB, dbName string) error {
+func (m *Mysql) CheckUser(db *sqlx.DB, userName, userPwd string) error {
+	checkSql := "SELECT EXISTS(SELECT user FROM information_schema.user_attributes WHERE user = $1)"
+	exists := false
+	err := db.Get(&exists, checkSql, userName)
+	if err != nil {
+		return fmt.Errorf("CheckUser[mysql]: unable to check for existing user; %s", err)
+	}
+	if !exists {
+		createSql := fmt.Sprintf("CREATE USER '%s'@'%%' INDENTIFIED BY '%s'", userName, userPwd)
+		if _, err := db.Exec(createSql); err != nil {
+			return fmt.Errorf("CheckUser[mysql]: unable to create role; %s", err)
+		}
+	}
+	return nil
+}
+
+func (m *Mysql) CheckDB(db *sqlx.DB, dbName, userName string) error {
 	checkSql := fmt.Sprintf("SELECT EXISTS(SELECT schema_name FROM information_schema.schemata WHERE schema_name = lower('%s'))", dbName)
 	exists := false
 	err := db.Get(&exists, checkSql)
@@ -48,6 +64,10 @@ func (m *Mysql) CheckDB(db *sqlx.DB, dbName string) error {
 		createSql := fmt.Sprintf("CREATE DATABASE %s", dbName)
 		if _, err := db.Exec(createSql); err != nil {
 			return fmt.Errorf("CheckDB[mysql]: unable to create database; %s", err)
+		}
+		grantSql := fmt.Sprintf("GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%'", dbName, userName)
+		if _, err := db.Exec(grantSql); err != nil {
+			return fmt.Errorf("CheckUser[mysql]: unable to grant all privileges; %s", err)
 		}
 	}
 	return nil

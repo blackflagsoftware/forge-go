@@ -23,6 +23,36 @@ type (
 	}
 )
 
+// add any other insecure routes
+var InsecureRoutes = []string{
+	"/v1/login/reset/pwd",
+	"/v1/login/reset/:email_addr",
+	"/v1/login/signin",
+}
+
+// basic auth
+// if you want to use this conjuction with the jwt auth
+// daisy chain the the eg.Use() calls with this one first
+// e.g.:
+// eg.Use(middleware.BasicAuthWithConfig(m.BasicAuthConfig()))
+// eg.Use(echojwt.WithConfig(m.AuthConfig()))
+func BasicAuthConfig() middleware.BasicAuthConfig {
+	return middleware.BasicAuthConfig{
+		Skipper: SkipperBasicFunc(),
+		Validator: BasicAuthFunc(),
+	}
+}
+
+func BasicAuthFunc() middleware.BasicAuthValidator {
+	return func(userName, userPwd string, c echo.Context) (bool, error) {
+		if config.LoginBasicAuthUser == userName && config.LoginBasicAuthPwd == userPwd {
+			c.Set("authenticated", "true")
+		}
+		return true, nil
+	}
+} 
+
+// jwt auth
 func AuthConfig() echojwt.Config {
 	keyContent, err := base64.StdEncoding.DecodeString(config.LoginAuthSecret)
 	if err != nil {
@@ -30,6 +60,7 @@ func AuthConfig() echojwt.Config {
 		return echojwt.Config{}
 	}
 	return echojwt.Config{
+		Skipper: SkipperJWTFunc(),
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(CustomClaims)
 		},
@@ -128,4 +159,35 @@ func AuthBuild(roles []string) (string, error) {
 		return "", ae.GeneralError("auth: unable to sign token", nil)
 	}
 	return tokenStr, nil
+}
+
+func SkipperBasicFunc() func(echo.Context) bool {
+	return func(c echo.Context) bool {
+		bearer := "Bearer"
+		auth := c.Request().Header.Get(echo.HeaderAuthorization)
+		l := len(bearer)
+		if len(auth) > l+1 && strings.EqualFold(auth[:l], bearer) {
+			return true
+		}
+		for _, url := range InsecureRoutes {
+			if url == c.Request().URL.String() {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+func SkipperJWTFunc() func(echo.Context) bool {
+	return func(c echo.Context) bool {
+		if c.Get("authenticated") == "true" {
+			return true
+		}
+		for _, url := range InsecureRoutes {
+			if url == c.Request().URL.String() {
+				return true
+			}
+		}
+		return false
+	}
 }

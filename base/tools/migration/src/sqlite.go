@@ -21,7 +21,11 @@ func (s *Sqlite) ConnectDB(c Connection, rootDB bool) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func (s *Sqlite) CheckDB(db *sqlx.DB, dbName string) error {
+func (s *Sqlite) CheckUser(db *sqlx.DB, userName, userPwd string) error {
+	return nil
+}
+
+func (s *Sqlite) CheckDB(db *sqlx.DB, dbName, userName string) error {
 	return nil
 }
 
