@@ -135,7 +135,7 @@ func buildPatch(p *m.Project) {
 			rows = append(rows, fmt.Sprintf(PATCH_DEFAULT_ASSIGN, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, patchLenCheck, c.ColumnName.Lower, p.CurrentEntity.Abbr, c.ColumnName.Camel, typeConversion(c.GoType), p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 		case "null.Time":
 			if !(c.ColumnName.Lower == "created_at" || c.ColumnName.Lower == "updated_at") {
-				rows = append(rows, fmt.Sprintf(PATCH_TIME_NULL_ASSIGN, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
+				rows = append(rows, fmt.Sprintf(PATCH_TIME_NULL_ASSIGN, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Lower, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 			}
 		case "*json.RawMessage":
 			rows = append(rows, fmt.Sprintf(PATCH_JSON_NULL_ASSIGN, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.LowerCamel, c.ColumnName.Lower, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
@@ -369,7 +369,7 @@ const (
 	if %sIn.%s.Valid {
 		existingValues["%s"] = %s.%s.Time.Format(time.RFC3339)
 		%s.%s = %sIn.%s
-	}`  // ColCamel, Abbr, ColCamel, ColLower, Abbr, Camel, Abbr, ColCamel, ColCamel, Abbr, ColCamel, Abbr, ColCamel
+	}`  // ColCamel, Abbr, ColCamel, ColLower, Abbr, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 	PATCH_VARCHAR_LEN = `
 		if %sIn.%s.Valid && len(%sIn.%s.ValueOrZero()) > %d {
 			return ae.StringLengthError("%s", %d)

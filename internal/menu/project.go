@@ -194,7 +194,7 @@ PasteLoop:
 		entity.Columns = sqlEntity.Columns
 		entity.ColumnExistence = sqlEntity.ColExistence
 		if sqlEntity.ColExistence.TimeColumn {
-			p.GrpcImport = "\"time\""
+			entity.GrpcImport = "\"time\""
 		}
 		p.Entities = append(p.Entities, entity)
 		cont := util.AskYesOrNo("Paste another table sql schema")
@@ -524,7 +524,7 @@ func processFile(p *m.Project, filePath string) (entities []m.Entity) {
 		name := entity.Name.BuildName(sqlEntity.Name, p.ProjectFile.KnownAliases)
 		p.ProjectFile.KnownAliases = append(p.ProjectFile.KnownAliases, name)
 		if sqlEntity.ColExistence.TimeColumn {
-			p.GrpcImport = "\"time\""
+			entity.GrpcImport = "\"time\""
 		}
 		entity.Columns = sqlEntity.Columns
 		entity.ColumnExistence = sqlEntity.ColExistence

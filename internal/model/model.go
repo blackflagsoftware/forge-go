@@ -44,7 +44,6 @@ type (
 	}
 
 	GrpcTemplate struct {
-		GrpcImport       string // this needs to blank out
 		GrpcArgsInit     string
 		GrpcTranslateIn  string
 		GrpcTranslateOut string
@@ -69,6 +68,7 @@ type (
 		DefaultColumn string
 		SortColumns   string
 		ModuleName    string
+		GrpcImport    string
 		Name
 		ColumnExistence
 	}

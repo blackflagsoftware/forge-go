@@ -3,7 +3,7 @@ package {{.CurrentEntity.AllLower}}
 import (
 	"context"
 	"encoding/json"
-	{{.GrpcImport}}
+	{{.CurrentEntity.GrpcImport}}
 
 	ae "{{.ProjectPath}}/internal/api_error"
 	p "{{.ProjectPath}}/pkg/proto"
