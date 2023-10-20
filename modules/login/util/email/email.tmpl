@@ -32,7 +32,7 @@ func (e Email) SendReset(toEmail, resetToken string) error {
 
 	auth := smtp.PlainAuth("", from, pwd, host)
 	to := []string{toEmail}
-	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: Reset Password Instructions\r\n\r\nTo reset your password: %s&email=%s&token=%s\r\n", toEmail, config.LoginEmailResetUrl, toEmail, resetToken))
+	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: Reset Password Instructions\r\n\r\nTo reset your password: %s?email=%s&token=%s\r\n", toEmail, config.LoginEmailResetUrl, toEmail, resetToken))
 	if err := smtp.SendMail(fmt.Sprintf("%s:%d", host, port), auth, from, to, msg); err != nil {
 		m.Default.Println("unable to send email:", err)
 		return err

@@ -510,7 +510,7 @@ func processFile(p *m.Project, filePath string) (entities []m.Entity) {
 		arraySqlStmt = append(arraySqlStmt, sqlStmt)
 	}
 	fmt.Println("")
-	fmt.Printf("Processed %d tables, press any key to continue or (e) to exit", tableCount)
+	fmt.Printf("Processed %d tables, press 'enter' to continue or (e) to exit", tableCount)
 	cont := util.ParseInput()
 	if strings.ToLower(cont) == "e" {
 		return
