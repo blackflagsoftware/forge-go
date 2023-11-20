@@ -37,38 +37,43 @@ func (p *Postgres) ConnectDB(c Connection, rootDB bool) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func (p *Postgres) CheckUser(db *sqlx.DB, userName, userPwd string) error {
+func (p *Postgres) CheckUser(db *sqlx.DB, c Connection) error {
 	checkSql := "SELECT EXISTS(SELECT rolname FROM pg_roles WHERE rolname = lower($1))"
 	exists := false
-	err := db.Get(&exists, checkSql, userName)
+	err := db.Get(&exists, checkSql, c.User)
 	if err != nil {
 		return fmt.Errorf("CheckUser[postgres]: unable to check for existing user; %s", err)
 	}
 	if !exists {
-		createSql := fmt.Sprintf("CREATE role %s WITH LOGIN PASSWORD '%s'", userName, userPwd)
+		createSql := fmt.Sprintf("CREATE role %s WITH LOGIN PASSWORD '%s'", c.User, c.Pwd)
 		if _, err := db.Exec(createSql); err != nil {
 			return fmt.Errorf("CheckUser[postgres]: unable to create role; %s", err)
 		}
 		role := []string{"pg_read_all_data", "pg_write_all_data"}
 		for _, r := range role {
-			grantSql := fmt.Sprintf("GRANT %s TO %s", r, userName)
+			grantSql := fmt.Sprintf("GRANT %s TO %s", r, c.User)
 			if _, err := db.Exec(grantSql); err != nil {
 				return fmt.Errorf("CheckUser[postgres]: unable to grant %s role; %s", r, err)
 			}
+		}
+		// give postgres access to new role for DB creation
+		grantSql := fmt.Sprintf("GRANT %s TO %s", c.User, c.AdminUser)
+		if _, err := db.Exec(grantSql); err != nil {
+			return fmt.Errorf("CheckUser[postgres]: unable to grant %s to role %s; %s", c.AdminUser, c.User, err)
 		}
 	}
 	return nil
 }
 
-func (p *Postgres) CheckDB(db *sqlx.DB, dbName, userName string) error {
+func (p *Postgres) CheckDB(db *sqlx.DB, c Connection) error {
 	checkSql := "SELECT EXISTS(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower($1))"
 	exists := false
-	err := db.Get(&exists, checkSql, dbName)
+	err := db.Get(&exists, checkSql, c.DB)
 	if err != nil {
 		return fmt.Errorf("CheckDB[postgres]: unable to check for existing database; %s", err)
 	}
 	if !exists {
-		createSql := fmt.Sprintf("CREATE DATABASE %s OWNER %s", dbName, userName)
+		createSql := fmt.Sprintf("CREATE DATABASE %s OWNER %s", c.DB, c.User)
 		if _, err := db.Exec(createSql); err != nil {
 			return fmt.Errorf("CheckDB[postgres]: unable to create database; %s", err)
 		}

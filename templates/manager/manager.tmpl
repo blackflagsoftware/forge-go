@@ -39,7 +39,7 @@ func (m *Manager{{.CurrentEntity.Camel}}) Search({{.CurrentEntity.Abbr}} *[]{{.C
 func (m *Manager{{.CurrentEntity.Camel}}) Post({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	{{.ManagerPostRows}}
 	if err := m.data{{.CurrentEntity.Camel}}.Create({{.CurrentEntity.Abbr}}); err != nil {
-		return nil
+		return err
 	}
 	go a.AuditCreate(m.auditWriter, *{{.CurrentEntity.Abbr}}, {{.CurrentEntity.Camel}}Const, a.KeysToString({{.ManagerAuditKey}}))
 	return nil

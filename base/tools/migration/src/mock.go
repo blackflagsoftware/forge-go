@@ -16,12 +16,12 @@ func (m *Mock) ConnectDB(c Connection, rootDB bool) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func (m *Mock) CheckUser(db *sqlx.DB, userName, userPwd string) error {
+func (m *Mock) CheckUser(db *sqlx.DB, c Connection) error {
 	fmt.Println("Warning: using mock...")
 	return nil
 }
 
-func (m *Mock) CheckDB(db *sqlx.DB, dbName, userName string) error {
+func (m *Mock) CheckDB(db *sqlx.DB, c Connection) error {
 	fmt.Println("Warning: using mock...")
 	return nil
 }

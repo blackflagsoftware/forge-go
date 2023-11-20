@@ -21,7 +21,7 @@ func TestManagerRole_Get(t *testing.T) {
 	}{
 		{
 			"successful",
-			&Role{Uid: "test id"},
+			&Role{Id: "test id"},
 			false,
 			[]*gomock.Call{
 				mockDataRole.EXPECT().Read(gomock.Any()).Return(nil),
@@ -29,7 +29,7 @@ func TestManagerRole_Get(t *testing.T) {
 		},
 		{
 			"invalid id",
-			&Role{Uid: ""},
+			&Role{Id: ""},
 			true,
 			[]*gomock.Call{},
 		},
@@ -60,31 +60,31 @@ func TestManagerRole_Post(t *testing.T) {
 	}{
 		{
 			"successful",
-			&Role{Name: null.NewString("a", true), Description: null.NewString("a", true), Uid: "a"},
+			&Role{Name: null.NewString("a", true), Description: null.NewString("a", true), Id: "a"},
 			false,
 			[]*gomock.Call{mockDataRole.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
 		},
 		{
-			"failed - uid",
-			&Role{Uid: "a", Name: null.NewString("a", true), Description: null.NewString("a", true)},
+			"failed - id",
+			&Role{Id: "a", Name: null.NewString("a", true), Description: null.NewString("a", true)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - name",
-			&Role{Uid: "a", Name: null.NewString("a", false), Description: null.NewString("a", true)},
+			&Role{Id: "a", Name: null.NewString("a", false), Description: null.NewString("a", true)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - length name",
-			&Role{Description: null.NewString("a", true), Uid: "a", Name: null.NewString("012345678901234567890123456789012345678901234567890123456789", true)},
+			&Role{Description: null.NewString("a", true), Id: "a", Name: null.NewString("012345678901234567890123456789012345678901234567890123456789", true)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - length description",
-			&Role{Uid: "a", Name: null.NewString("a", true), Description: null.NewString("012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true)},
+			&Role{Id: "a", Name: null.NewString("a", true), Description: null.NewString("012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true)},
 			true,
 			[]*gomock.Call{},
 		},
@@ -115,7 +115,7 @@ func TestManagerRole_Patch(t *testing.T) {
 	}{
 		{
 			"successful",
-			Role{Uid: "test value"},
+			Role{Id: "test value"},
 			false,
 			[]*gomock.Call{
 				mockDataRole.EXPECT().Read(gomock.Any()).Return(nil),
@@ -124,7 +124,7 @@ func TestManagerRole_Patch(t *testing.T) {
 		},
 		{
 			"invalid id",
-			Role{Uid: "test value"},
+			Role{Id: "test value"},
 			true,
 			[]*gomock.Call{
 				mockDataRole.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
@@ -157,7 +157,7 @@ func TestManagerRole_Delete(t *testing.T) {
 	}{
 		{
 			"successful",
-			&Role{Uid: "test id"},
+			&Role{Id: "test id"},
 			false,
 			[]*gomock.Call{
 				mockDataRole.EXPECT().Delete(gomock.Any()).Return(nil),
@@ -165,7 +165,7 @@ func TestManagerRole_Delete(t *testing.T) {
 		},
 		{
 			"invalid id",
-			&Role{Uid: ""},
+			&Role{Id: ""},
 			true,
 			[]*gomock.Call{},
 		},

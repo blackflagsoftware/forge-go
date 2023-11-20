@@ -7,8 +7,8 @@ import (
 
 type (
 	LoginRole struct {
-		LoginUid string `db:"login_uid" json:"login_uid"`
-		RoleUid  string `db:"role_uid" json:"role_uid"`
+		LoginId string `db:"login_id" json:"login_id"`
+		RoleId  string `db:"role_id" json:"role_id"`
 	}
 
 	LoginRoleData struct {
@@ -25,8 +25,8 @@ type (
 	}
 
 	LoginRolePatch struct {
-		LoginUid string   `json:"login_uid"`
-		RoleUids []string `json:"role_uids"`
+		LoginId string   `json:"loginid"`
+		RoleIds []string `json:"role_ids"`
 	}
 )
 

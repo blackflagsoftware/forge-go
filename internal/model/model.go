@@ -178,6 +178,7 @@ type (
 		AllLower   string `json:"-"`
 		Upper      string `json:"-"`
 		EnvVar     string `json:"-"`
+		KebabCase  string `json:"-"`
 	}
 
 	Format struct {
@@ -216,6 +217,7 @@ func (n *Name) BuildName(name string, knownAliases []string) string {
 	n.Camel = BuildAltName(rawName, "pascalCase")
 	n.LowerCamel = BuildAltName(rawName, "camelCase")
 	n.Lower = BuildAltName(rawName, "lowerCase")
+	n.KebabCase = BuildAltName(rawName, "kebabCase")
 	n.AllLower = strings.ToLower(n.Camel)
 	n.Upper = strings.ToUpper(n.Camel)
 	n.EnvVar = strings.ReplaceAll(strings.ToUpper(rawName), "-", "_")

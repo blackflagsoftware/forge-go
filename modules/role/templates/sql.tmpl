@@ -23,11 +23,11 @@ func InitSQL() *SQLRole {
 func (d *SQLRole) Read(rol *Role) error {
 	sqlGet := `
 		SELECT
-			uid,
+			id,
 			name,
 			description
-		FROM role WHERE uid = $1`
-	if errDB := d.DB.Get(rol, sqlGet, rol.Uid); errDB != nil {
+		FROM role WHERE id = $1`
+	if errDB := d.DB.Get(rol, sqlGet, rol.Id); errDB != nil {
 		return ae.DBError("Role Get: unable to get record.", errDB)
 	}
 	return nil
@@ -37,7 +37,7 @@ func (d *SQLRole) ReadAll(rol *[]Role, param RoleParam) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Search)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
-			uid,
+			id,
 			name,
 			description
 		FROM role
@@ -63,11 +63,11 @@ func (d *SQLRole) ReadAll(rol *[]Role, param RoleParam) (int, error) {
 func (d *SQLRole) Create(rol *Role) error {
 	sqlPost := `
 		INSERT INTO role (
-			uid,
+			id,
 			name,
 			description
 		) VALUES (
-			:uid,
+			:id,
 			:name,
 			:description
 		)`
@@ -84,7 +84,7 @@ func (d *SQLRole) Update(rol Role) error {
 		UPDATE role SET
 			name = :name,
 			description = :description
-		WHERE uid = :uid`
+		WHERE id = :id`
 	if _, errDB := d.DB.NamedExec(sqlPatch, rol); errDB != nil {
 		return ae.DBError("Role Patch: unable to update record.", errDB)
 	}
@@ -96,12 +96,12 @@ func (d *SQLRole) Delete(rol *Role) (err error) {
 	defer util.TxnFinish(txn, &err)
 
 	sqlDelete := `
-		DELETE FROM role WHERE uid = $1`
-	if _, errDB := txn.Exec(sqlDelete, rol.Uid); errDB != nil {
+		DELETE FROM role WHERE id = $1`
+	if _, errDB := txn.Exec(sqlDelete, rol.Id); errDB != nil {
 		return ae.DBError("Role Delete: unable to delete record.", errDB)
 	}
-	sqlDeleteLoginRole := `DELETE FROM login_role WHERE role_uid = $1`
-	if _, errDB := txn.Exec(sqlDeleteLoginRole, rol.Uid); errDB != nil {
+	sqlDeleteLoginRole := `DELETE FROM login_role WHERE role_id = $1`
+	if _, errDB := txn.Exec(sqlDeleteLoginRole, rol.Id); errDB != nil {
 		return ae.DBError("Role Delete: unable to delete login roles record.", errDB)
 	}
 

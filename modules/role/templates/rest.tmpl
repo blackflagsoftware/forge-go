@@ -35,19 +35,19 @@ func NewRestRole(mrol ManagerRoleAdapter) *RestRole {
 }
 
 func (h *RestRole) LoadRoleRoutes(eg *echo.Group) {
-	eg.GET("/role/:uid", h.Get)
+	eg.GET("/role/:id", h.Get)
 	eg.POST("/role/search", h.Search)
 	eg.POST("/role", h.Post)
 	eg.PATCH("/role", h.Patch)
-	eg.DELETE("/role/:uid", h.Delete)
+	eg.DELETE("/role/:id", h.Delete)
 }
 
 func (h *RestRole) Get(c echo.Context) error {
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
-	uid := c.Param("uid")
-	role := &Role{Uid: uid}
+	id := c.Param("id")
+	role := &Role{Id: id}
 	if err := h.managerRole.Get(role); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -115,8 +115,8 @@ func (h *RestRole) Delete(c echo.Context) error {
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
-	uid := c.Param("uid")
-	role := &Role{Uid: uid}
+	id := c.Param("id")
+	role := &Role{Id: id}
 	if err := h.managerRole.Delete(role); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()

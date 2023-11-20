@@ -28,17 +28,17 @@ func NewManagerLoginRole(clo DataLoginRoleAdapter) *ManagerLoginRole {
 }
 
 func (m *ManagerLoginRole) Get(lo *LoginRole) error {
-	if lo.LoginUid == "" {
-		return ae.MissingParamError("LoginUid")
+	if lo.LoginId == "" {
+		return ae.MissingParamError("LoginId")
 	}
-	if lo.RoleUid == "" {
-		return ae.MissingParamError("RoleUid")
+	if lo.RoleId == "" {
+		return ae.MissingParamError("RoleId")
 	}
 	return m.dataLoginRole.Read(lo)
 }
 
 func (m *ManagerLoginRole) Search(lo *[]LoginRole, param LoginRoleParam) (int, error) {
-	param.Param.CalculateParam("login_uid", map[string]string{"login_uid": "login_uid"})
+	param.Param.CalculateParam("login_id", map[string]string{"login_id": "login_id"})
 
 	return m.dataLoginRole.ReadAll(lo, param)
 }
@@ -46,15 +46,15 @@ func (m *ManagerLoginRole) Search(lo *[]LoginRole, param LoginRoleParam) (int, e
 func (m *ManagerLoginRole) Post(lo *LoginRole) error {
 
 	if err := m.dataLoginRole.Create(lo); err != nil {
-		return nil
+		return err
 	}
-	go a.AuditCreate(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_uid", lo.LoginUid, "role_uid", lo.RoleUid))
+	go a.AuditCreate(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_id", lo.LoginId, "role_id", lo.RoleId))
 	return nil
 }
 
 func (m *ManagerLoginRole) Patch(loIn LoginRolePatch) error {
 	// get old list
-	loginRoleParam := LoginRoleParam{util.Param{Search: []util.ParamSearch{util.ParamSearch{Column: "login_uid", Compare: "=", Value: loIn.LoginUid}}}}
+	loginRoleParam := LoginRoleParam{util.Param{Search: []util.ParamSearch{util.ParamSearch{Column: "login_id", Compare: "=", Value: loIn.LoginId}}}}
 	existingLoginRoles := []LoginRole{}
 	_, errSearch := m.dataLoginRole.ReadAll(&existingLoginRoles, loginRoleParam)
 	if errSearch != nil {
@@ -62,18 +62,18 @@ func (m *ManagerLoginRole) Patch(loIn LoginRolePatch) error {
 	}
 	exisingRoles := []string{}
 	for _, e := range existingLoginRoles {
-		exisingRoles = append(exisingRoles, e.RoleUid)
+		exisingRoles = append(exisingRoles, e.RoleId)
 	}
 	// compare new to old
-	addRoles := util.ArrayDiff(exisingRoles, loIn.RoleUids)
+	addRoles := util.ArrayDiff(exisingRoles, loIn.RoleIds)
 	for _, add := range addRoles {
-		if err := m.dataLoginRole.Create(&LoginRole{LoginUid: loIn.LoginUid, RoleUid: add}); err != nil {
+		if err := m.dataLoginRole.Create(&LoginRole{LoginId: loIn.LoginId, RoleId: add}); err != nil {
 			return err
 		}
 	}
-	deleteRoles := util.ArrayDiff(loIn.RoleUids, exisingRoles)
+	deleteRoles := util.ArrayDiff(loIn.RoleIds, exisingRoles)
 	for _, del := range deleteRoles {
-		if err := m.dataLoginRole.Delete(&LoginRole{LoginUid: loIn.LoginUid, RoleUid: del}); err != nil {
+		if err := m.dataLoginRole.Delete(&LoginRole{LoginId: loIn.LoginId, RoleId: del}); err != nil {
 			return err
 		}
 	}
@@ -81,15 +81,15 @@ func (m *ManagerLoginRole) Patch(loIn LoginRolePatch) error {
 }
 
 func (m *ManagerLoginRole) Delete(lo *LoginRole) error {
-	if lo.LoginUid == "" {
-		return ae.MissingParamError("LoginUid")
+	if lo.LoginId == "" {
+		return ae.MissingParamError("LoginId")
 	}
-	if lo.RoleUid == "" {
-		return ae.MissingParamError("RoleUid")
+	if lo.RoleId == "" {
+		return ae.MissingParamError("RoleId")
 	}
 	if err := m.dataLoginRole.Delete(lo); err != nil {
 		return err
 	}
-	go a.AuditDelete(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_uid", lo.LoginUid, "role_uid", lo.RoleUid))
+	go a.AuditDelete(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_id", lo.LoginId, "role_id", lo.RoleId))
 	return nil
 }

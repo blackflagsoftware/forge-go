@@ -42,22 +42,22 @@ func NewRestLogin(mfin ManagerLoginAdapter) *RestLogin {
 }
 
 func (h *RestLogin) LoadLoginRoutes(eg *echo.Group) {
-	eg.GET("/login/:uid", h.Get)
+	eg.GET("/login/:id", h.Get)
 	eg.POST("/login/search", h.Search)
 	eg.POST("/login", h.Post)
 	eg.PATCH("/login", h.Patch)
 	eg.PATCH("/login/pwd", h.PatchPwd)
-	eg.DELETE("/login/:uid", h.Delete)
+	eg.DELETE("/login/:id", h.Delete)
 	eg.POST("/login/verify", h.Verify)
 	eg.GET("/login/roles", h.WithRoles)
 	eg.POST("/login/reset/pwd", h.PostPwd)
-	eg.GET("/login/reset/:email_addr", h.ResetRequest)
+	eg.GET("/login/forgot-password/:email_addr", h.ResetRequest)
 	eg.POST("/login/signin", h.SignIn)
 }
 
 func (h *RestLogin) Get(c echo.Context) error {
-	uid := c.Param("uid")
-	login := &Login{Uid: uid}
+	id := c.Param("id")
+	login := &Login{Id: id}
 	if err := h.managerLogin.Get(login); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -131,8 +131,8 @@ func (h *RestLogin) PatchPwd(c echo.Context) error {
 }
 
 func (h *RestLogin) Delete(c echo.Context) error {
-	uid := c.Param("uid")
-	login := &Login{Uid: uid}
+	id := c.Param("id")
+	login := &Login{Id: id}
 	if err := h.managerLogin.Delete(login); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()

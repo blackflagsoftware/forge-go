@@ -34,11 +34,11 @@ func NewRest{{.CurrentEntity.Camel}}(m{{.CurrentEntity.Abbr}} Manager{{.CurrentE
 }
 
 func (h *Rest{{.CurrentEntity.Camel}}) Load{{.CurrentEntity.Camel}}Routes(eg *echo.Group) {
-	eg.GET("/{{.CurrentEntity.AllLower}}/{{.RestGetDeleteUrl}}", h.Get)
-	eg.POST("/{{.CurrentEntity.AllLower}}/search", h.Search)
-	eg.POST("/{{.CurrentEntity.AllLower}}", h.Post)
-	eg.PATCH("/{{.CurrentEntity.AllLower}}", h.Patch)
-	eg.DELETE("/{{.CurrentEntity.AllLower}}/{{.RestGetDeleteUrl}}", h.Delete)
+	eg.GET("/{{.CurrentEntity.KebabCase}}/{{.RestGetDeleteUrl}}", h.Get)
+	eg.POST("/{{.CurrentEntity.KebabCase}}/search", h.Search)
+	eg.POST("/{{.CurrentEntity.KebabCase}}", h.Post)
+	eg.PATCH("/{{.CurrentEntity.KebabCase}}", h.Patch)
+	eg.DELETE("/{{.CurrentEntity.KebabCase}}/{{.RestGetDeleteUrl}}", h.Delete)
 }
 
 func (h *Rest{{.CurrentEntity.Camel}}) Get(c echo.Context) error {

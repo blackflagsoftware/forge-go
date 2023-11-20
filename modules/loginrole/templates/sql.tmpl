@@ -23,10 +23,10 @@ func InitSQL() *SQLLoginRole {
 func (d *SQLLoginRole) Read(lo *LoginRole) error {
 	sqlGet := `
 		SELECT
-			login_uid,
-			role_uid
-		FROM login_role WHERE login_uid = $1 and role_uid = $2`
-	if errDB := d.DB.Get(lo, sqlGet, lo.LoginUid, lo.RoleUid); errDB != nil {
+			login_id,
+			role_id
+		FROM login_role WHERE login_id = $1 and role_id = $2`
+	if errDB := d.DB.Get(lo, sqlGet, lo.LoginId, lo.RoleId); errDB != nil {
 		return ae.DBError("LoginRole Get: unable to get record.", errDB)
 	}
 	return nil
@@ -36,8 +36,8 @@ func (d *SQLLoginRole) ReadAll(lo *[]LoginRole, param LoginRoleParam) (int, erro
 	searchStmt, args := util.BuildSearchString(param.Search)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
-			login_uid,
-			role_uid
+			login_id,
+			role_id
 		FROM login_role
 		%s`, searchStmt)
 	sqlSearch = d.DB.Rebind(sqlSearch)
@@ -60,11 +60,11 @@ func (d *SQLLoginRole) ReadAll(lo *[]LoginRole, param LoginRoleParam) (int, erro
 func (d *SQLLoginRole) Create(lo *LoginRole) error {
 	sqlPost := `
 		INSERT INTO login_role (
-			login_uid,
-			role_uid
+			login_id,
+			role_id
 		) VALUES (
-			:login_uid,
-			:role_uid
+			:login_id,
+			:role_id
 		)`
 	_, errDB := d.DB.NamedExec(sqlPost, lo)
 	if errDB != nil {
@@ -78,7 +78,7 @@ func (d *SQLLoginRole) Update(lo LoginRole) error {
 	sqlPatch := `
 		UPDATE login_role SET
 			
-		WHERE login_uid = :login_uidrole_uid = :role_uid`
+		WHERE login_id = :login_id and role_id = :role_id`
 	if _, errDB := d.DB.NamedExec(sqlPatch, lo); errDB != nil {
 		return ae.DBError("LoginRole Patch: unable to update record.", errDB)
 	}
@@ -87,8 +87,8 @@ func (d *SQLLoginRole) Update(lo LoginRole) error {
 
 func (d *SQLLoginRole) Delete(lo *LoginRole) error {
 	sqlDelete := `
-		DELETE FROM login_role WHERE login_uid = $1 and role_uid = $2`
-	if _, errDB := d.DB.Exec(sqlDelete, lo.LoginUid, lo.RoleUid); errDB != nil {
+		DELETE FROM login_role WHERE login_id = $1 and role_id = $2`
+	if _, errDB := d.DB.Exec(sqlDelete, lo.LoginId, lo.RoleId); errDB != nil {
 		return ae.DBError("LoginRole Delete: unable to delete record.", errDB)
 	}
 	return nil

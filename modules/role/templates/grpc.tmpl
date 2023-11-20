@@ -22,7 +22,7 @@ func NewRoleGrpc(mrol ManagerRoleAdapter) *RoleGrpc {
 func (a *RoleGrpc) GetRole(ctx context.Context, in *p.RoleIDIn) (*p.RoleResponse, error) {
 	result := &p.Result{Success: false}
 	response := &p.RoleResponse{Result: result}
-	rol := &Role{Uid: in.Uid}
+	rol := &Role{Id: in.Id}
 	if err := a.managerRole.Get(rol); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
@@ -92,7 +92,7 @@ func (a *RoleGrpc) UpdateRole(ctx context.Context, in *p.Role) (*p.Result, error
 
 func (a *RoleGrpc) DeleteRole(ctx context.Context, in *p.RoleIDIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
-	rol := &Role{Uid: in.Uid}
+	rol := &Role{Id: in.Id}
 	if err := a.managerRole.Delete(rol); err != nil {
 		response.Error = err.Error()
 		return response, err
@@ -103,7 +103,7 @@ func (a *RoleGrpc) DeleteRole(ctx context.Context, in *p.RoleIDIn) (*p.Result, e
 
 func translateOut(rol *Role) (*p.Role, error) {
 	protoRole := p.Role{}
-	protoRole.Uid = rol.Uid
+	protoRole.Id = rol.Id
 	protoRole.Name = rol.Name.String
 	protoRole.Description = rol.Description.String
 	return &protoRole, nil
@@ -111,7 +111,7 @@ func translateOut(rol *Role) (*p.Role, error) {
 
 func translateIn(in *p.Role) (*Role, error) {
 	rol := Role{}
-	rol.Uid = in.Uid
+	rol.Id = in.Id
 	rol.Name.Scan(in.Name)
 	rol.Description.Scan(in.Description)
 	return &rol, nil

@@ -28,8 +28,8 @@ func NewManagerRole(crol DataRoleAdapter) *ManagerRole {
 }
 
 func (m *ManagerRole) Get(rol *Role) error {
-	if rol.Uid == "" {
-		return ae.MissingParamError("Uid")
+	if rol.Id== "" {
+		return ae.MissingParamError("Id")
 	}
 	return m.dataRole.Read(rol)
 }
@@ -50,16 +50,16 @@ func (m *ManagerRole) Post(rol *Role) error {
 	if rol.Description.Valid && len(rol.Description.ValueOrZero()) > 500 {
 		return ae.StringLengthError("Description", 500)
 	}
+	rol.Id = util.GenerateUUID()
 	if err := m.dataRole.Create(rol); err != nil {
-		return nil
+		return err
 	}
-	rol.Uid = util.GenerateUUID()
-	go a.AuditCreate(m.auditWriter, *rol, RoleConst, a.KeysToString("uid", rol.Uid))
+	go a.AuditCreate(m.auditWriter, *rol, RoleConst, a.KeysToString("id", rol.Id))
 	return nil
 }
 
 func (m *ManagerRole) Patch(rolIn Role) error {
-	rol := &Role{Uid: rolIn.Uid}
+	rol := &Role{Id: rolIn.Id}
 	errGet := m.dataRole.Read(rol)
 	if errGet != nil {
 		return errGet
@@ -84,17 +84,17 @@ func (m *ManagerRole) Patch(rolIn Role) error {
 	if err := m.dataRole.Update(*rol); err != nil {
 		return err
 	}
-	go a.AuditPatch(m.auditWriter, *rol, RoleConst, a.KeysToString("uid", rol.Uid), existingValues)
+	go a.AuditPatch(m.auditWriter, *rol, RoleConst, a.KeysToString("id", rol.Id), existingValues)
 	return nil
 }
 
 func (m *ManagerRole) Delete(rol *Role) error {
-	if rol.Uid == "" {
-		return ae.MissingParamError("Uid")
+	if rol.Id == "" {
+		return ae.MissingParamError("Id")
 	}
 	if err := m.dataRole.Delete(rol); err != nil {
 		return err
 	}
-	go a.AuditDelete(m.auditWriter, *rol, RoleConst, a.KeysToString("uid", rol.Uid))
+	go a.AuditDelete(m.auditWriter, *rol, RoleConst, a.KeysToString("id", rol.Id))
 	return nil
 }

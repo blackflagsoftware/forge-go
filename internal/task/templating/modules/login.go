@@ -206,7 +206,7 @@ func ProtoFile(p m.Project) {
 	protoFile := fmt.Sprintf("%s/pkg/proto/%s.proto", p.ProjectFile.FullPath, p.ProjectFile.AppName)
 	proto := `
 message Login {
-	string Uid = 1;
+	string Id = 1;
 	string EmailAddr = 2;
 	string Pwd = 3;
 	bool Active = 4;
@@ -234,11 +234,11 @@ service LoginService {
 }
 
 message LoginIDIn {
-	string Uid = 1;
+	string Id = 1;
 }
 
 message Role {
-	string Uid = 1;
+	string Id = 1;
 	string Name = 2;
 	string Description = 3;
 }
@@ -262,12 +262,12 @@ service RoleService {
 }
 
 message RoleIDIn {
-	string Uid = 1;
+	string Id = 1;
 }
 
 message LoginRole {
-	string LoginUid = 1;
-	string RoleUid = 2;
+	string LoginId = 1;
+	string RoleId = 2;
 }
 
 message LoginRoleResponse {
@@ -276,8 +276,8 @@ message LoginRoleResponse {
 }
 
 message LoginRolePatch {
-	string LoginUid = 1;
-	repeated string RoleUids = 2;
+	string LoginId = 1;
+	repeated string RoleIds = 2;
 }
 
 message LoginRoleRepeatResponse {
@@ -294,8 +294,8 @@ service LoginRoleService {
 }
 
 message LoginRoleIDsIn {
-	string LoginUid = 1;
-	string RoleUid = 2;
+	string LoginId = 1;
+	string RoleId = 2;
 }`
 	file, err := os.OpenFile(protoFile, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -365,42 +365,42 @@ func MigrationScripts(p m.Project) {
 		b = "INTEGER"
 	}
 	loginScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS login (
-	uid %s NOT NULL,
+	id %s NOT NULL,
 	email_addr VARCHAR(100) NOT NULL,
 	pwd VARCHAR(250) NOT NULL,
 	active %s DEFAULT true NOT NULL,
 	set_pwd %s DEFAULT false NOT NULL,
 	created_at %s NOT NULL,
 	updated_at %s NULL,
-	PRIMARY KEY(uid)
+	PRIMARY KEY(id)
 );`, uuid, b, b, ts, ts)
 
 	resetScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS login_reset (
-	login_uid %s NOT NULL,
+	login_id %s NOT NULL,
 	reset_token %s NOT NULL,
 	created_at %s NOT NULL,
 	updated_at %s NULL,
-	PRIMARY KEY(login_uid, reset_token)
+	PRIMARY KEY(login_id, reset_token)
 );`, uuid, uuid, ts, ts)
 
 	roleScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS role (
-	uid %s NOT NULL,
+	id %s NOT NULL,
 	name VARCHAR(50) NOT NULL,
 	description VARCHAR(500) NULL,
-	PRIMARY KEY(uid)
+	PRIMARY KEY(id)
 );`, uuid)
 
 	loginRoleScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS login_role (
-	login_uid %s NOT NULL,
-	role_uid %s NOT NULL,
-	PRIMARY KEY(login_uid, role_uid)
+	login_id %s NOT NULL,
+	role_id %s NOT NULL,
+	PRIMARY KEY(login_id, role_id)
 );`, uuid, uuid)
 
-	adminUid := util.GenerateUUID()
-	userUid := util.GenerateUUID()
-	roleInsert := fmt.Sprintf(`INSERT INTO role (uid, name, description) VALUES
+	adminId := util.GenerateUUID()
+	userId := util.GenerateUUID()
+	roleInsert := fmt.Sprintf(`INSERT INTO role (id, name, description) VALUES
 	('%s', 'admin', 'System admin - this should be limited'),
-	('%s', 'user', 'Default user');`, adminUid, userUid)
+	('%s', 'user', 'Default user');`, adminId, userId)
 
 	scriptDir := fmt.Sprintf("%s/scripts/migrations", p.ProjectFile.FullPath)
 	if err := os.MkdirAll(scriptDir, os.ModePerm); err != nil {
@@ -480,8 +480,8 @@ func buildRoleEntities(project *m.Project) {
 		uuid = "TEXT"
 	}
 	// role
-	uidName := m.Name{}
-	uidName.BuildName("uid", []string{})
+	idName := m.Name{}
+	idName.BuildName("id", []string{})
 	nameName := m.Name{}
 	nameName.BuildName("name", []string{})
 	descName := m.Name{}
@@ -492,7 +492,7 @@ func buildRoleEntities(project *m.Project) {
 	role := m.Entity{
 		Columns: []m.Column{
 			{
-				ColumnName:   uidName,
+				ColumnName:   idName,
 				DBType:       uuid,
 				GoType:       "string",
 				GoTypeNonSql: "string",
@@ -524,17 +524,17 @@ func buildRoleEntities(project *m.Project) {
 	}
 	project.Entities = append(project.Entities, role)
 	// login_role
-	loginUidName := m.Name{}
-	loginUidName.BuildName("login_uid", []string{})
-	roleUidName := m.Name{}
-	roleUidName.BuildName("role_uid", []string{})
+	loginIdName := m.Name{}
+	loginIdName.BuildName("login_id", []string{})
+	roleIdName := m.Name{}
+	roleIdName.BuildName("role_id", []string{})
 	loginRoleName := m.Name{}
 	lrName := loginRoleName.BuildName("login_role", project.KnownAliases)
 	project.KnownAliases = append(project.KnownAliases, lrName)
 	loginRole := m.Entity{
 		Columns: []m.Column{
 			{
-				ColumnName:   loginUidName,
+				ColumnName:   loginIdName,
 				DBType:       uuid,
 				GoType:       "string",
 				GoTypeNonSql: "string",
@@ -542,7 +542,7 @@ func buildRoleEntities(project *m.Project) {
 				PrimaryKey:   true,
 			},
 			{
-				ColumnName:   roleUidName,
+				ColumnName:   roleIdName,
 				DBType:       uuid,
 				GoType:       "string",
 				GoTypeNonSql: "string",

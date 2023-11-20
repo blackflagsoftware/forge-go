@@ -19,8 +19,8 @@ import (
 type (
 	EngineAdapter interface {
 		ConnectDB(Connection, bool) (*sqlx.DB, error) // the second argument is to tell the function to use admin user/pwd and connect to root DB
-		CheckUser(*sqlx.DB, string, string) error
-		CheckDB(*sqlx.DB, string, string) error
+		CheckUser(*sqlx.DB, Connection) error
+		CheckDB(*sqlx.DB, Connection) error
 		CheckTable(*sqlx.DB) error
 		LockTable(*sqlx.DB) bool
 		UnlockTable(*sqlx.DB) error
@@ -106,10 +106,10 @@ func InitializeDB(ea EngineAdapter, c Connection) error {
 			return err
 		}
 		defer db.Close()
-		if err := ea.CheckUser(db, c.User, c.Pwd); err != nil {
+		if err := ea.CheckUser(db, c); err != nil {
 			return err
 		}
-		if err := ea.CheckDB(db, c.DB, c.User); err != nil {
+		if err := ea.CheckDB(db, c); err != nil {
 			return err
 		}
 	}

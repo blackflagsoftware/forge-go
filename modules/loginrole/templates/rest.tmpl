@@ -35,20 +35,20 @@ func NewRestLoginRole(mlo ManagerLoginRoleAdapter) *RestLoginRole {
 }
 
 func (h *RestLoginRole) LoadLoginRoleRoutes(eg *echo.Group) {
-	eg.GET("/loginrole/:login_uid/role_uid/:role_uid", h.Get)
-	eg.POST("/loginrole/search", h.Search)
-	eg.POST("/loginrole", h.Post)
-	eg.PATCH("/loginrole", h.Patch)
-	eg.DELETE("/loginrole/:login_uid/role_uid/:role_uid", h.Delete)
+	eg.GET("/login-role/:login_id/role-id/:role_id", h.Get)
+	eg.POST("/login-role/search", h.Search)
+	eg.POST("/login-role", h.Post)
+	eg.PATCH("/login-role", h.Patch)
+	eg.DELETE("/login-role/:login_id/role-id/:role_id", h.Delete)
 }
 
 func (h *RestLoginRole) Get(c echo.Context) error {
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
-	login_uid := c.Param("login_uid")
-	role_uid := c.Param("role_uid")
-	loginRole := &LoginRole{LoginUid: login_uid, RoleUid: role_uid}
+	loginId := c.Param("login_id")
+	roleId := c.Param("role_id")
+	loginRole := &LoginRole{LoginId: loginId, RoleId: roleId}
 	if err := h.managerLoginRole.Get(loginRole); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -115,9 +115,9 @@ func (h *RestLoginRole) Delete(c echo.Context) error {
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
-	login_uid := c.Param("login_uid")
-	role_uid := c.Param("role_uid")
-	loginRole := &LoginRole{LoginUid: login_uid, RoleUid: role_uid}
+	loginId := c.Param("login_id")
+	roleId := c.Param("role_id")
+	loginRole := &LoginRole{LoginId: loginId, RoleId: roleId}
 	if err := h.managerLoginRole.Delete(loginRole); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()

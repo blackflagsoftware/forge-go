@@ -37,15 +37,15 @@ func (m *Mysql) ConnectDB(c Connection, rootDB bool) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func (m *Mysql) CheckUser(db *sqlx.DB, userName, userPwd string) error {
+func (m *Mysql) CheckUser(db *sqlx.DB, c Connection) error {
 	checkSql := "SELECT EXISTS(SELECT user FROM information_schema.user_attributes WHERE user = $1)"
 	exists := false
-	err := db.Get(&exists, checkSql, userName)
+	err := db.Get(&exists, checkSql, c.User)
 	if err != nil {
 		return fmt.Errorf("CheckUser[mysql]: unable to check for existing user; %s", err)
 	}
 	if !exists {
-		createSql := fmt.Sprintf("CREATE USER '%s'@'%%' INDENTIFIED BY '%s'", userName, userPwd)
+		createSql := fmt.Sprintf("CREATE USER '%s'@'%%' INDENTIFIED BY '%s'", c.User, c.Pwd)
 		if _, err := db.Exec(createSql); err != nil {
 			return fmt.Errorf("CheckUser[mysql]: unable to create role; %s", err)
 		}
@@ -53,19 +53,19 @@ func (m *Mysql) CheckUser(db *sqlx.DB, userName, userPwd string) error {
 	return nil
 }
 
-func (m *Mysql) CheckDB(db *sqlx.DB, dbName, userName string) error {
-	checkSql := fmt.Sprintf("SELECT EXISTS(SELECT schema_name FROM information_schema.schemata WHERE schema_name = lower('%s'))", dbName)
+func (m *Mysql) CheckDB(db *sqlx.DB, c Connection) error {
+	checkSql := fmt.Sprintf("SELECT EXISTS(SELECT schema_name FROM information_schema.schemata WHERE schema_name = lower('%s'))", c.DB)
 	exists := false
 	err := db.Get(&exists, checkSql)
 	if err != nil {
 		return fmt.Errorf("CheckDB[mysql]: unable to check for existing database; %s", err)
 	}
 	if !exists {
-		createSql := fmt.Sprintf("CREATE DATABASE %s", dbName)
+		createSql := fmt.Sprintf("CREATE DATABASE %s", c.DB)
 		if _, err := db.Exec(createSql); err != nil {
 			return fmt.Errorf("CheckDB[mysql]: unable to create database; %s", err)
 		}
-		grantSql := fmt.Sprintf("GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%'", dbName, userName)
+		grantSql := fmt.Sprintf("GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%'", c.DB, c.User)
 		if _, err := db.Exec(grantSql); err != nil {
 			return fmt.Errorf("CheckUser[mysql]: unable to grant all privileges; %s", err)
 		}

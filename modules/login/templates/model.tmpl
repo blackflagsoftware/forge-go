@@ -10,7 +10,7 @@ import (
 
 type (
 	Login struct {
-		Uid        string      `db:"uid" json:"uid"`
+		Id        string      `db:"id" json:"id"`
 		EmailAddr  null.String `db:"email_addr" json:"email_address"`
 		Pwd        null.String `db:"pwd" json:"password"`
 		ConfirmPwd null.String `json:"confirm_password,omitempty"`
@@ -31,7 +31,7 @@ type (
 
 	ResetRequest struct {
 		EmailAddr  string    `db:"email_addr" json:"email_addr"`
-		LoginUid   string    `db:"login_uid"`
+		LoginId   string    `db:"login_id"`
 		ResetToken string    `db:"reset_token"`
 		CreatedAt  time.Time `db:"created_at"`
 	}
@@ -52,7 +52,7 @@ type (
 	}
 
 	LoginRoles struct {
-		LoginUid  string   `db:"uid" json:"uid"`
+		LoginId  string   `db:"id" json:"id"`
 		EmailAddr string   `db:"email_addr" json:"email_address"`
 		Roles     []string `db:"roles" json:"roles"`
 	}

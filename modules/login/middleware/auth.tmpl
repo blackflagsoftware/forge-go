@@ -27,7 +27,7 @@ type (
 // add any other insecure routes
 var InsecureRoutes = []string{
 	"/v1/login/reset/pwd",
-	"/v1/login/reset/:email_addr",
+	"/v1/login/forgot-password",
 	"/v1/login/signin",
 }
 
@@ -171,7 +171,9 @@ func SkipperBasicFunc() func(echo.Context) bool {
 			return true
 		}
 		for _, url := range InsecureRoutes {
-			if url == c.Request().URL.String() {
+			// this will check with contains, so if your path is complex
+			// you may need to change the way this works
+			if strings.Contains(c.Request().URL.String(), url) {
 				return true
 			}
 		}
@@ -185,7 +187,9 @@ func SkipperJWTFunc() func(echo.Context) bool {
 			return true
 		}
 		for _, url := range InsecureRoutes {
-			if url == c.Request().URL.String() {
+			// this will check with contains, so if your path is complex
+			// you may need to change the way this works
+			if strings.Contains(c.Request().URL.String(), url) {
 				return true
 			}
 		}

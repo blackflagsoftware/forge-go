@@ -77,7 +77,7 @@ func (p *Param) CalculateParam(primarySort string, availableSort map[string]stri
 		p.Sort = primarySort
 	}
 	sorted := []string{}
-	sortParts := strings.Split(p.Sort, ":")
+	sortParts := strings.Split(p.Sort, ",")
 	for _, s := range sortParts {
 		direction := "ASC"
 		name := s
