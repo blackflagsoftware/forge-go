@@ -38,3 +38,5 @@ See config/config.go for the complete list of `env vars`, most are self-explanat
 `FORGE_GO_BASE_ENABLE_AUDITING`: [bool] true/false to enable/disable
 `FORGE_GO_BASE_AUDIT_STORAGE`: [string] which storage type to save row audit data `file | sql`
 `FORGE_GO_BASE_AUDIT_FILE_PATH`: [string] if `file` is the storage type, path to read/save the audit file
+
+**Add your documentation here**

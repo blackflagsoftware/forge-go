@@ -166,6 +166,17 @@ func Test_theRestParse(t *testing.T) {
 		wantPrimaryKey   bool
 	}{
 		{
+			"theRestParse - empty",
+			args{
+				"",
+			},
+			&m.Column{},
+			true,
+			"",
+			"",
+			false,
+		},
+		{
 			"theRestParse - null",
 			args{
 				"null",

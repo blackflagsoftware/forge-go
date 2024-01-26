@@ -75,7 +75,14 @@ func buildStorageTemplate(p *m.Project) {
 			}
 			patchKeys += fmt.Sprintf("%s = :%s", c.ColumnName.Lower, c.ColumnName.Lower)
 			keyCount++
-			values += fmt.Sprintf("%s.%s", p.CurrentEntity.Abbr, c.ColumnName.Camel)
+			if c.DBType == "uuid" {
+				if p.StorageImport == "" {
+					p.StorageImport = "\"strings\""
+				}
+				values += fmt.Sprintf("strings.ToLower(%s.%s)", p.CurrentEntity.Abbr, c.ColumnName.Camel)
+			} else {
+				values += fmt.Sprintf("%s.%s", p.CurrentEntity.Abbr, c.ColumnName.Camel)
+			}
 			// listOrder += fmt.Sprintf("%s", c.ColumnName.Lower)
 			keysCount++
 			fileKey = append(fileKey, fmt.Sprintf("%sObj.%s == %s.%s", p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))

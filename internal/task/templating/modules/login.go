@@ -33,7 +33,23 @@ func AddLogin(p *m.Project) {
 }
 
 func Config(p m.Project) {
-	configLine := `LoginPwdCost           = GetEnvOrDefault("{{.ProjectNameEnv}}_LOGIN_PWD_COST", "10")             \/\/ algorithm cost
+	configVarLine := `LoginPwdCost string
+	LoginResetDuration     string
+	LoginExpiresAtDuration string
+	LoginAuthAlg           string
+	LoginAuthSecret        string
+	LoginAuthPublic        string
+	LoginEmailHost         string
+	LoginEmailPort         string
+	LoginEmailPwd          string
+	LoginEmailFrom         string
+	LoginEmailResetUrl     string
+	LoginAdminEmail        string
+	LoginBasicAuthUser     string
+	LoginBasicAuthPwd      string
+	\/\/ --- replace config var text - do not remove ---
+	`
+	configInitLine := `LoginPwdCost           = GetEnvOrDefault("{{.ProjectNameEnv}}_LOGIN_PWD_COST", "10")             \/\/ algorithm cost
 	LoginResetDuration     = GetEnvOrDefault("{{.ProjectNameEnv}}_LOGIN_RESET_DURATION", "7")        \/\/ in days
 	LoginExpiresAtDuration = GetEnvOrDefault("{{.ProjectNameEnv}}_LOGIN_EXPIRES_AT_DURATION", "168") \/\/ in hours (7 days)
 	LoginAuthAlg           = GetEnvOrDefault("{{.ProjectNameEnv}}_LOGIN_AUTH_ALG", "HMAC")           \/\/ HMAC, RSA, ECDSA or EdDSA (only use the 512 size)
@@ -47,19 +63,33 @@ func Config(p m.Project) {
 	LoginAdminEmail        = GetEnvOrDefault("{{.ProjectNameEnv}}_ADMIN_EMAIL", "")
 	LoginBasicAuthUser     = GetEnvOrDefault("{{.ProjectNameEnv}}_BASIC_AUTH_USER", "")
 	LoginBasicAuthPwd      = GetEnvOrDefault("{{.ProjectNameEnv}}_BASIC_AUTH_PASS", "")
-	\/\/ --- replace config text - do not remove ---
+	\/\/ --- replace config init text - do not remove ---
 	`
 	configFile := fmt.Sprintf("%s/config/config.go", p.ProjectFile.FullPath)
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		fmt.Printf("%s is missing unable to write in hooks\n", configFile)
 	} else {
 		var configReplace bytes.Buffer
-		tConfig := template.Must(template.New("config").Parse(configLine))
+		// config var lines
+		tConfig := template.Must(template.New("config").Parse(configVarLine))
 		errConfig := tConfig.Execute(&configReplace, p)
 		if errConfig != nil {
 			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
 		} else {
-			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
+			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config var text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
+			execConfig := exec.Command("bash", "-c", cmdConfig)
+			errConfigCmd := execConfig.Run()
+			if errConfigCmd != nil {
+				fmt.Printf("%s: error in replace for config text [%s]\n", configFile, errConfigCmd)
+			}
+		}
+		// config init lines
+		tConfig = template.Must(template.New("config").Parse(configInitLine))
+		errConfig = tConfig.Execute(&configReplace, p)
+		if errConfig != nil {
+			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
+		} else {
+			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config inti text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
 			execConfig := exec.Command("bash", "-c", cmdConfig)
 			errConfigCmd := execConfig.Run()
 			if errConfigCmd != nil {

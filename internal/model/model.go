@@ -116,6 +116,7 @@ type (
 		StoragePatchColumns     string
 		StoragePatchWhere       string
 		StoragePatchWhereValues string
+		StorageImport           string
 	}
 
 	PostPutTest struct {
@@ -421,7 +422,7 @@ func (e *Entity) HasNullColumn() bool {
 
 func (e *Entity) HasTimeColumn() bool {
 	for _, c := range e.Columns {
-		if c.GoType == "time.Time" || c.ColumnName.Lower == "created_at" || c.ColumnName.Lower == "updated_at" {
+		if c.GoType == "time.Time" || c.GoType == "null.Time" || c.ColumnName.Lower == "created_at" || c.ColumnName.Lower == "updated_at" {
 			return true
 		}
 	}

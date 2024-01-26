@@ -53,7 +53,7 @@ How to add your *object* to the project.  The next menu asks this:
 
 `File as input` as suggested, it will prompt for a file to load, this can be a file of multiple SQL create table statements, `forge` will create CRUD for each of the tables
 
-`Paste as input` as suggested, this will prompt to paste in the SQL create table statement.  It prompts for multiple statements if needed.
+`Paste as input` as suggested, this will prompt to paste in the SQL create table statement.  It prompts for multiple statements if needed. **NOTE** when pasting in a `create table` statement be aware NOT to have any blank lines between any of the other lines.  This will cause the prompt parser not to get the whole statement, and the process will not create the boilerplate code.
 
 `Prompt as input`, this will prompt for entity name and then add as many fields as you need.  It will prompt for column type, is it null, etc.  When finished it will save the SQL to `./prompt_schema` for your reference.
 

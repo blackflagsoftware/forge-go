@@ -180,11 +180,11 @@ func UpdateModFiles(projectName string) {
 	// this assumes we are in the root folder
 	commands := []*exec.Cmd{
 		exec.Command("protoc", "--go_out=./pkg/proto", "--go-grpc_out=./pkg/proto", fmt.Sprintf("./pkg/proto/%s.proto", projectName)),
-		exec.Command("go", "get", "-u", "all"),
+		// exec.Command("go", "get", "-u", "all"),
 		exec.Command("go", "mod", "tidy"),
 		exec.Command("go", "fmt", "./..."),
 		exec.Command("go", "generate", "./..."),
-		exec.Command("go", "get", "-u", "all"),
+		// exec.Command("go", "get", "-u", "all"),
 		exec.Command("go", "mod", "tidy"),
 	}
 	for _, command := range commands {

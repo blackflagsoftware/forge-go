@@ -27,7 +27,7 @@ func buildManagerTemplate(p *m.Project) {
 	if p.CurrentEntity.HasTimeColumn() {
 		importLines = append(importLines, "\"time\"\n")
 	}
-	if p.ManagerGetRows != "" {
+	if p.ManagerPostRows != "" || p.ManagerGetRows != "" {
 		importLines = append(importLines, fmt.Sprintf("ae \"%s/internal/api_error\"", p.ProjectPath))
 	}
 	importLines = append(importLines, fmt.Sprintf("a \"%s/internal/audit\"", p.ProjectFile.ProjectPath))
@@ -76,6 +76,9 @@ func buildPost(p *m.Project) {
 	uuidColumn := ""
 	setCreatedAt := false
 	for _, c := range p.CurrentEntity.Columns {
+		if c.ColumnName.Lower == "created_at" {
+			setCreatedAt = true
+		}
 		if c.DBType == "uuid" && c.PrimaryKey {
 			uuidColumn = c.ColumnName.Camel
 		}
@@ -95,12 +98,13 @@ func buildPost(p *m.Project) {
 				rows = append(rows, fmt.Sprintf(POST_NULL_LEN, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.Length, c.ColumnName.Camel, c.Length))
 			}
 		} else {
+			if setCreatedAt {
+				// do not set create_at
+				continue
+			}
 			if !c.Null {
 				rows = append(rows, fmt.Sprintf(POST_NULL, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
 			}
-		}
-		if c.ColumnName.Lower == "created_at" {
-			setCreatedAt = true
 		}
 	}
 	if setCreatedAt {
@@ -329,34 +333,34 @@ func typeConversion(goType string) string {
 const (
 	GET_DELETE_INT = `if %s.%s < 1 {
 		return ae.MissingParamError("%s")
-	}`  // Abbr, Camel, Camel
+	}` // Abbr, Camel, Camel
 
 	GET_DELETE_STRING = `if %s.%s == "" {
 		return ae.MissingParamError("%s")
-	}`  // Abbr, Camel, Camel
+	}` // Abbr, Camel, Camel
 
 	POST_STRING = `if %s.%s == "" {
 		return ae.MissingParamError("%s")
-	}`  // Abbr, Lower, Camel
+	}` // Abbr, Lower, Camel
 	POST_NULL = `if !%s.%s.Valid {
 		return ae.MissingParamError("%s")
-	}`  // Abbr, Lower, Camel
+	}` // Abbr, Lower, Camel
 	POST_NULL_LEN = `if %s.%s.Valid && len(%s.%s.ValueOrZero()) > %d {
 		return ae.StringLengthError("%s", %d)
-	}`  // Abbr, ColumnCamel, Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
+	}` // Abbr, ColumnCamel, Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
 	POST_STRING_LEN = `if len(%s.%s) > %d {
 		return ae.StringLengthError("%s", %d)
-	}`  // Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
+	}` // Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
 
 	PATCH_STRING_ASSIGN = `// %s
 	if %sIn.%s != "" {
 		%s.%s = %sIn.%s
-	}`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, Abbr, ColCamel
+	}` // ColCamel, Abbr, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 	PATCH_DEFAULT_ASSIGN = `// %s
 	if %sIn.%s.Valid {%s
 		existingValues["%s"] = %s.%s%s
 		%s.%s = %sIn.%s
-	}`  // ColCamel, Abbr, ColCamel, StringLenCheck, ColLower, Abbr, ColCamel, typeConversion(), Abbr, ColCamel, Abbr. ColCamel
+	}` // ColCamel, Abbr, ColCamel, StringLenCheck, ColLower, Abbr, ColCamel, typeConversion(), Abbr, ColCamel, Abbr. ColCamel
 	PATCH_JSON_NULL_ASSIGN = `// %s
 	if %sIn.%s != nil {
 		if !util.ValidJson(*%sIn.%s) {
@@ -364,14 +368,14 @@ const (
 		}
 		existingValues["%s"] = %s.%s
 		%s.%s = %sIn.%s
-	}`  // ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColLowerCamel, ColLower, Abbr, ColCamel, Abbr, ColCamel, Abbr, ColCamel
+	}` // ColCamel, Abbr, ColCamel, Abbr, ColCamel, ColLowerCamel, ColLower, Abbr, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 	PATCH_TIME_NULL_ASSIGN = `// %s
 	if %sIn.%s.Valid {
 		existingValues["%s"] = %s.%s.Time.Format(time.RFC3339)
 		%s.%s = %sIn.%s
-	}`  // ColCamel, Abbr, ColCamel, ColLower, Abbr, ColCamel, Abbr, ColCamel, Abbr, ColCamel
+	}` // ColCamel, Abbr, ColCamel, ColLower, Abbr, ColCamel, Abbr, ColCamel, Abbr, ColCamel
 	PATCH_VARCHAR_LEN = `
 		if %sIn.%s.Valid && len(%sIn.%s.ValueOrZero()) > %d {
 			return ae.StringLengthError("%s", %d)
-	}`  // Abbr, ColumnCamel, Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
+	}` // Abbr, ColumnCamel, Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
 )

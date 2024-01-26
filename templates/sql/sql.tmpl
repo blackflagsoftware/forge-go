@@ -2,6 +2,7 @@ package {{.CurrentEntity.AllLower}}
 
 import (
 	"fmt"
+	{{.StorageImport}}
 
 	"github.com/jmoiron/sqlx"
 	ae "{{.ProjectPath}}/internal/api_error"

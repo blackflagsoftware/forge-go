@@ -188,6 +188,9 @@ func setGoType(col *m.Column) {
 	case col.DBType == "uuid":
 		col.GoType = "string"
 		col.GoTypeNonSql = "string"
+		if !col.PrimaryKey {
+			col.GoType = "null.String"
+		}
 	case col.DBType == "autoincrement":
 		col.GoType = "int"
 		col.GoTypeNonSql = "int"

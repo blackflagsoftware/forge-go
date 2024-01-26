@@ -193,40 +193,68 @@ func PopulateConfig(projectFile *m.ProjectFile) {
 		fmt.Printf("%s is missing unable to write in hooks\n", configFile)
 	} else {
 		// env lines
-		configLines := []string{}
+		configVarLines := []string{}
+		configInitLines := []string{}
 		switch projectFile.Storage {
 		case "s":
 			lowerSqlEngine := strings.ToLower(m.SqlTypeToProper(projectFile.SqlStorage))
-			configLines = append(configLines, "StorageSQL = true")
-			configLines = append(configLines, fmt.Sprintf("DBEngine = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_ENGINE\", \"%s\")", lowerSqlEngine))
+			configInitLines = append(configInitLines, "StorageSQL = true")
+			configVarLines = append(configVarLines, "DBEngine string")
+			configInitLines = append(configInitLines, fmt.Sprintf("DBEngine = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_ENGINE\", \"%s\")", lowerSqlEngine))
 			if projectFile.SqlStorage == "p" || projectFile.SqlStorage == "m" {
-				configLines = append(configLines, "DBHost = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_HOST\", \"\")")
-				configLines = append(configLines, "DBDB = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_DB\", \"\")")
-				configLines = append(configLines, "DBUser = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_USER\",\"\")")
-				configLines = append(configLines, "DBPass = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_PASS\", \"\")")
-				configLines = append(configLines, "AdminDBUser = GetEnvOrDefault(\"{{.Name.EnvVar}}_ADMIN_DB_USER\",\"\")")
-				configLines = append(configLines, "AdminDBPass = GetEnvOrDefault(\"{{.Name.EnvVar}}_ADMIN_DB_PASS\", \"\")")
+				configVarLines = append(configVarLines, "DBHost string")
+				configInitLines = append(configInitLines, "DBHost = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_HOST\", \"\")")
+				configVarLines = append(configVarLines, "DBDB string")
+				configInitLines = append(configInitLines, "DBDB = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_DB\", \"\")")
+				configVarLines = append(configVarLines, "DBUser string")
+				configInitLines = append(configInitLines, "DBUser = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_USER\",\"\")")
+				configVarLines = append(configVarLines, "DBPass string")
+				configInitLines = append(configInitLines, "DBPass = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_PASS\", \"\")")
+				configVarLines = append(configVarLines, "AdminDBUser string")
+				configInitLines = append(configInitLines, "AdminDBUser = GetEnvOrDefault(\"{{.Name.EnvVar}}_ADMIN_DB_USER\",\"\")")
+				configVarLines = append(configVarLines, "AdminDBPass string")
+				configInitLines = append(configInitLines, "AdminDBPass = GetEnvOrDefault(\"{{.Name.EnvVar}}_ADMIN_DB_PASS\", \"\")")
 			} else {
-				configLines = append(configLines, "SqlitePath = GetEnvOrDefault(\"{{.Name.EnvVar}}_SQLITE_PATH\",\"\")")
+				configVarLines = append(configVarLines, "SqlitePath string")
+				configInitLines = append(configInitLines, "SqlitePath = GetEnvOrDefault(\"{{.Name.EnvVar}}_SQLITE_PATH\",\"\")")
 			}
 		case "f":
-			configLines = append(configLines, "StorageFile = true")
-			configLines = append(configLines, "SqlitePath = GetEnvOrDefault(\"{{.Name.EnvVar}}_SQLITE_PATH\", \"/tmp/{{.Name.Lower}}.db\")")
+			configInitLines = append(configInitLines, "StorageFile = true")
+			configVarLines = append(configVarLines, "StorageFileDir string")
+			configInitLines = append(configInitLines, "StorageFileDir = GetEnvOrDefault(\"{{.Name.EnvVar}}_STORAGE_FILE_DIR\", \"/tmp/{{.Name.Lower}}.db\")")
 		case "m":
-			configLines = append(configLines, "StorageMongo = true")
-			configLines = append(configLines, "MongoHost = GetEnvOrDefault(\"{{.Name.EnvVar}}_MONGO_HOST\", \"localhost\")")
-			configLines = append(configLines, "MongoPort = GetEnvOrDefault(\"{{.Name.EnvVar}}_MONGO_PORT\", \"27017\")")
+			configInitLines = append(configInitLines, "StorageMongo = true")
+			configVarLines = append(configVarLines, "MongoHost string")
+			configInitLines = append(configInitLines, "MongoHost = GetEnvOrDefault(\"{{.Name.EnvVar}}_MONGO_HOST\", \"localhost\")")
+			configVarLines = append(configVarLines, "MongoPort string")
+			configInitLines = append(configInitLines, "MongoPort = GetEnvOrDefault(\"{{.Name.EnvVar}}_MONGO_PORT\", \"27017\")")
 		}
-		configLines = append(configLines, `\/\/ --- replace config text - do not remove ---`)
-		configLine := strings.Join(configLines, "\n\t")
+		configVarLines = append(configVarLines, `\/\/ --- replace config var text - do not remove ---`)
+		configInitLines = append(configInitLines, `\/\/ --- replace config init text - do not remove ---`)
+		configVarLine := strings.Join(configVarLines, "\n\t")
+		configInitLine := strings.Join(configInitLines, "\n\t")
 
 		var configReplace bytes.Buffer
-		tConfig := template.Must(template.New("config").Parse(configLine))
+		// config var lines
+		tConfig := template.Must(template.New("config-var").Parse(configVarLine))
 		errConfig := tConfig.Execute(&configReplace, projectFile)
 		if errConfig != nil {
 			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
 		} else {
-			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
+			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config var text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
+			execConfig := exec.Command("bash", "-c", cmdConfig)
+			errConfigCmd := execConfig.Run()
+			if errConfigCmd != nil {
+				fmt.Printf("%s: error in replace for config text [%s]\n", configFile, errConfigCmd)
+			}
+		}
+		// config init lines
+		tConfig = template.Must(template.New("config-init").Parse(configInitLine))
+		errConfig = tConfig.Execute(&configReplace, projectFile)
+		if errConfig != nil {
+			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
+		} else {
+			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config init text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
 			execConfig := exec.Command("bash", "-c", cmdConfig)
 			errConfigCmd := execConfig.Run()
 			if errConfigCmd != nil {

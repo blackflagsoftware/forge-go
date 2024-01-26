@@ -45,7 +45,7 @@ func main() {
 		middleware.Recover(),
 		middleware.CORSWithConfig(middleware.CORSConfig{
 			AllowOrigins: []string{"*"},
-		}), // remove if you don't need
+		}), // TODO: may not need for production, remove if you don't need
 		m.Handler,
 	)
 	if config.EnableMetrics {
