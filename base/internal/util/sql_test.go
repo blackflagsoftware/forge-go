@@ -170,3 +170,66 @@ func TestSearchBuilder_String(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchBuilder_AppendIn(t *testing.T) {
+	type fields struct {
+		Params []string
+		Values []interface{}
+	}
+	type args struct {
+		param string
+		value interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   []string
+	}{
+		{
+			"successful - empty",
+			fields{
+				[]string{},
+				[]interface{}{},
+			},
+			args{
+				"addr",
+				"street",
+			},
+			[]string{""},
+		},
+		{
+			"successful - slice of string",
+			fields{
+				[]string{},
+				[]interface{}{},
+			},
+			args{
+				"addr",
+				[]string{"street", "home", "cow"},
+			},
+			[]string{"addr IN ('street', 'home', 'cow')"},
+		},
+		{
+			"successful - slice of int",
+			fields{
+				[]string{},
+				[]interface{}{},
+			},
+			args{
+				"addr",
+				[]int{1, 101, 1000012},
+			},
+			[]string{"addr IN ('1', '101', '1000012')"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &SearchBuilder{
+				Params: tt.fields.Params,
+				Values: tt.fields.Values,
+			}
+			s.AppendIn(tt.args.param, tt.args.value)
+		})
+	}
+}

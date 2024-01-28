@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -24,6 +25,8 @@ func BuildSearchString(search []ParamSearch) (string, []interface{}) {
 			sb.AppendNull(s.Column, true)
 		case "NOT NULL":
 			sb.AppendNull(s.Column, false)
+		case "IN":
+			sb.AppendIn(s.Column, s.Value)
 		default:
 			if s.Compare != "" {
 				sb.AppendCompare(s.Column, s.Compare, s.Value)
@@ -48,6 +51,27 @@ func (s *SearchBuilder) AppendNull(param string, wantNull bool) {
 		nullStmt = "IS NULL"
 	}
 	s.Params = append(s.Params, fmt.Sprintf("%s %s", param, nullStmt))
+}
+
+// this will produce a string that represents an "IN" clause as long as the incoming arg 'value' is of type slice or array
+// the output will always be sql string array, most DB engines will deal with the single quotes even if the underlying columns is not a text type
+// []string{1, 2, 3} => IN ('1', '2', '3'), this is what is expected
+func (s *SearchBuilder) AppendIn(param string, value interface{}) {
+	slice := reflect.ValueOf(value)
+	if slice.Kind() == reflect.Slice || slice.Kind() == reflect.Array {
+		b := make([]interface{}, slice.Len())
+		for i := 0; i < slice.Len(); i++ {
+			b[i] = slice.Index(i).Interface()
+		}
+		inListArray := []string{}
+		for _, i := range b {
+			inListArray = append(inListArray, fmt.Sprintf("'%v'", i))
+		}
+		inList := strings.Join(inListArray, ", ")
+		s.Params = append(s.Params, fmt.Sprintf("%s IN (%s)", param, inList))
+		return
+	}
+	fmt.Println("Not a slice")
 }
 
 func (s *SearchBuilder) String() string {

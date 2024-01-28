@@ -1,14 +1,13 @@
 package api_error
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -113,13 +112,15 @@ func SetCaller(err error, stackLevel int) ProgramData {
 
 func getApiErrorCode() string {
 	codeLen := 6
-	rand.Seed(time.Now().UTC().UnixNano())
 	const validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	result := make([]byte, codeLen)
+	ll := len(validChars)
+	b := make([]byte, codeLen)
+	rand.Read(b)
 	for i := 0; i < codeLen; i++ {
-		result[i] = validChars[rand.Intn(len(validChars))]
+		fmt.Println(b[i], int(b[i]), int(b[i])%ll)
+		b[i] = validChars[int(b[i])%ll]
 	}
-	return string(result)
+	return string(b)
 }
 
 // ***** Error methods *****
