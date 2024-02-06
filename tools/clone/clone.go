@@ -54,6 +54,11 @@ func main() {
 		fmt.Println("Good bye")
 		return
 	}
+	// replace full path
+	if err := SearchAndReplace(destinationDir, "full-path-here", destinationDir); err != nil {
+		fmt.Println("Good bye")
+		return
+	}
 	split := strings.Split(projectPath, "/")
 	projectName := split[len(split)-1]
 	// replace normal syntax name

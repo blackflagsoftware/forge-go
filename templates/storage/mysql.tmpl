@@ -32,3 +32,7 @@ func GetMySqlConnection() string {
 	}
 	return mySqlConnection
 }
+
+func FormatPagination(limit, offset int) string {
+	return fmt.Sprintf("LIMIT %d, %d", offset, limit)
+}

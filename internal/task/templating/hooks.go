@@ -198,7 +198,7 @@ func PopulateConfig(projectFile *m.ProjectFile) {
 		switch projectFile.Storage {
 		case "s":
 			lowerSqlEngine := strings.ToLower(m.SqlTypeToProper(projectFile.SqlStorage))
-			configInitLines = append(configInitLines, "StorageSQL = true")
+			configVarLines = append(configVarLines, "StorageSQL = true")
 			configVarLines = append(configVarLines, "DBEngine string")
 			configInitLines = append(configInitLines, fmt.Sprintf("DBEngine = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_ENGINE\", \"%s\")", lowerSqlEngine))
 			if projectFile.SqlStorage == "p" || projectFile.SqlStorage == "m" {
@@ -219,7 +219,7 @@ func PopulateConfig(projectFile *m.ProjectFile) {
 				configInitLines = append(configInitLines, "SqlitePath = GetEnvOrDefault(\"{{.Name.EnvVar}}_SQLITE_PATH\",\"\")")
 			}
 		case "f":
-			configInitLines = append(configInitLines, "StorageFile = true")
+			configVarLines = append(configVarLines, "StorageFile = true")
 			configVarLines = append(configVarLines, "StorageFileDir string")
 			configInitLines = append(configInitLines, "StorageFileDir = GetEnvOrDefault(\"{{.Name.EnvVar}}_STORAGE_FILE_DIR\", \"/tmp/{{.Name.Lower}}.db\")")
 		case "m":
@@ -234,14 +234,15 @@ func PopulateConfig(projectFile *m.ProjectFile) {
 		configVarLine := strings.Join(configVarLines, "\n\t")
 		configInitLine := strings.Join(configInitLines, "\n\t")
 
-		var configReplace bytes.Buffer
+		var varReplace bytes.Buffer
+		var initReplace bytes.Buffer
 		// config var lines
 		tConfig := template.Must(template.New("config-var").Parse(configVarLine))
-		errConfig := tConfig.Execute(&configReplace, projectFile)
+		errConfig := tConfig.Execute(&varReplace, projectFile)
 		if errConfig != nil {
 			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
 		} else {
-			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config var text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
+			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config var text - do not remove ---/%s/g' %s`, varReplace.String(), configFile)
 			execConfig := exec.Command("bash", "-c", cmdConfig)
 			errConfigCmd := execConfig.Run()
 			if errConfigCmd != nil {
@@ -250,11 +251,11 @@ func PopulateConfig(projectFile *m.ProjectFile) {
 		}
 		// config init lines
 		tConfig = template.Must(template.New("config-init").Parse(configInitLine))
-		errConfig = tConfig.Execute(&configReplace, projectFile)
+		errConfig = tConfig.Execute(&initReplace, projectFile)
 		if errConfig != nil {
 			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
 		} else {
-			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config init text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
+			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config init text - do not remove ---/%s/g' %s`, initReplace.String(), configFile)
 			execConfig := exec.Command("bash", "-c", cmdConfig)
 			errConfigCmd := execConfig.Run()
 			if errConfigCmd != nil {

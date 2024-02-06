@@ -117,7 +117,6 @@ func getApiErrorCode() string {
 	b := make([]byte, codeLen)
 	rand.Read(b)
 	for i := 0; i < codeLen; i++ {
-		fmt.Println(b[i], int(b[i]), int(b[i])%ll)
 		b[i] = validChars[int(b[i])%ll]
 	}
 	return string(b)

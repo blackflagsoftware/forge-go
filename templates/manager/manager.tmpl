@@ -2,6 +2,7 @@ package {{.CurrentEntity.AllLower}}
 
 import (
 	{{.ManagerImport}}
+	stor "{{.ProjectPath}}/internal/storage"
 )
 
 //go:generate mockgen -source=manager.go -destination=mock.go -package={{.CurrentEntity.AllLower}}
@@ -31,7 +32,9 @@ func (m *Manager{{.CurrentEntity.Camel}}) Get({{.CurrentEntity.Abbr}} *{{.Curren
 }
 
 func (m *Manager{{.CurrentEntity.Camel}}) Search({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
+	// the second argument (map[string]string) is a list of columns to use for filtering, the key is the actual column name (if aliases are used in your query) the value should match your json struct tag, this can obfuscate your true column names
 	param.Param.CalculateParam("{{.CurrentEntity.DefaultColumn}}", map[string]string{ {{.CurrentEntity.SortColumns}} })
+	param.Param.PaginationString = stor.FormatPagination(param.Param.Limit, param.Param.Offset)
 
 	return m.data{{.CurrentEntity.Camel}}.ReadAll({{.CurrentEntity.Abbr}}, param)
 }

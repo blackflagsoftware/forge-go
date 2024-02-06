@@ -33,13 +33,13 @@ func (d *SQL{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentEn
 }
 
 func (d *SQL{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
-	searchStmt, args := util.BuildSearchString(param.Search)
+	searchStmt, args := util.BuildSearchString(param.Search.Filters)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
 			{{.StorageGetColumns}}
 		FROM {{.StorageTable}}
 		%s
-		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+		ORDER BY %s %s`, searchStmt, param.Sort, param.PaginationString)
 	sqlSearch = d.DB.Rebind(sqlSearch)
 	if errDB := d.DB.Select({{.CurrentEntity.Abbr}}, sqlSearch, args...); errDB != nil {
 		return 0, ae.DBError("{{.CurrentEntity.Camel}} Search: unable to select records.", errDB)

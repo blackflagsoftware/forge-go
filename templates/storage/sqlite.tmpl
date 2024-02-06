@@ -31,3 +31,7 @@ func GetSqliteConnection() string {
 	}
 	return fmt.Sprintf("%s?cache=shared&mode=wrc", config.SqlitePath)
 }
+
+func FormatPagination(limit, offset int) string {
+	return fmt.Sprintf("LIMIT %d, %d", offset, limit)
+}

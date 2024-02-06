@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path"
 
 	// --- replace config import text - do not remove ---
 	"github.com/kardianos/osext"
 )
 
 var (
+	RootDir           = "full-path-here" // this is good for local dev but it used below to read the .env files so setting it for production is vital
 	AppName           = "forge-go-base"
 	AppVersion        string
 	RestPort          string
@@ -36,6 +38,7 @@ func init() {
 }
 
 func loadEnvVars() {
+	RootDir = GetEnvOrDefault("FORGE_GO_BASE_ROOT_DIR", "")
 	AppVersion = GetEnvOrDefault("FORGE_GO_BASE_APP_VERSION", "1.0.0")
 	RestPort = GetEnvOrDefault("FORGE_GO_BASE_REST_PORT", "12580")
 	GrpcPort = GetEnvOrDefault("FORGE_GO_BASE_GRPC_PORT", "12581")
@@ -54,13 +57,14 @@ func loadEnvVars() {
 
 func loadEnvFiles() {
 	// load any and all .env.* files if present at the root level of the binary
-	// the order of presedence goes from local to just plain .env, later WILL override earlier
+	// the order of presedence goes from local to just plain .env, the later WILL override earlier
 	// if the env var is already declared at the console/terminal level, this will override it too
 	envFiles := []string{".env.local", ".env.dev", ".env.qa", ".env.prod", ".env"} // if you want another name, just add it to this list in the order of precedence
 	for _, envFile := range envFiles {
-		if _, err := os.Stat(envFile); !os.IsNotExist(err) {
+		envFileFull := path.Join(RootDir, envFile)
+		if _, err := os.Stat(envFileFull); !os.IsNotExist(err) {
 			// found the file
-			loadEnvVarsFromFile(envFile)
+			loadEnvVarsFromFile(envFileFull)
 		}
 	}
 }

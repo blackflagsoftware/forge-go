@@ -11,21 +11,29 @@ import (
 
 type (
 	Param struct {
-		Limit       string        // holds the calculated limit string
-		Search      []ParamSearch `json:"search"`
-		ParamFilter `json:"filter"`
+		Search           Search `json:"search"`
+		Limit            int    // holds the calculated limit
+		Offset           int    // holds the offset number
+		PaginationString string // holds the limit/offset tring
+		Sort             string // holds the calculated sort string
+		AvailableColumns map[string]string
 	}
 
-	ParamSearch struct {
+	Search struct {
+		Filters    []Filter   `json:"filters"`
+		Pagination Pagination `json:"pagination"`
+		Sort       string     `json:"sort"` // comma separated string, use a '-' before column name to sort DESC i.e.: id,-name => "SORT BY id ASC, name DESC"
+	}
+
+	Filter struct {
 		Column  string      `json:"column"`
 		Compare string      `json:"compare"`
 		Value   interface{} `json:"value"`
 	}
 
-	ParamFilter struct {
-		Sort       string `json:"sort"` // comma separated string, use a '-' before column name to sort DESC i.e.: id,-name => "SORT BY id ASC, name DESC"
-		PageLimit  int    `json:"page_limit"`
-		PageNumber int    `json:"page_number"`
+	Pagination struct {
+		PageLimit  int `json:"page_limit"`
+		PageNumber int `json:"page_number"`
 	}
 )
 
@@ -59,25 +67,26 @@ func ValidJson(jsonValue json.RawMessage) bool {
 }
 
 func (p *Param) CalculateParam(primarySort string, availableSort map[string]string) (err error) {
+	p.AvailableColumns = availableSort
 	// calculate the limit
-	if p.PageLimit > 0 {
-		if p.PageNumber == 0 {
+	if p.Search.Pagination.PageLimit > 0 {
+		if p.Search.Pagination.PageNumber == 0 {
 			// should not be empty, default to first page
-			p.PageNumber = 1
+			p.Search.Pagination.PageNumber = 1
 		}
-		offset := p.PageNumber - 1
-		offset *= p.PageLimit
-		p.Limit = fmt.Sprintf("LIMIT %d, %d", offset, p.PageLimit)
+		p.Limit = p.Search.Pagination.PageLimit
+		p.Offset = p.Search.Pagination.PageNumber - 1
+		p.Offset *= p.Search.Pagination.PageLimit
 	}
 	// calculate the sort
 	if primarySort == "" {
 		return
 	}
-	if p.Sort == "" {
-		p.Sort = primarySort
+	if p.Search.Sort == "" {
+		p.Search.Sort = primarySort
 	}
 	sorted := []string{}
-	sortParts := strings.Split(p.Sort, ",")
+	sortParts := strings.Split(p.Search.Sort, ",")
 	for _, s := range sortParts {
 		direction := "ASC"
 		name := s

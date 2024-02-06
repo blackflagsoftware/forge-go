@@ -15,7 +15,7 @@ type (
 	}
 )
 
-func BuildSearchString(search []ParamSearch) (string, []interface{}) {
+func BuildSearchString(search []Filter) (string, []interface{}) {
 	sb := SearchBuilder{}
 	for _, s := range search {
 		switch s.Compare {

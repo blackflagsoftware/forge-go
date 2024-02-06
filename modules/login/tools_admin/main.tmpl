@@ -26,7 +26,7 @@ func main() {
 	dr := r.InitStorage()
 	mr := r.NewManagerRole(dr)
 	roles := []r.Role{}
-	param := r.RoleParam{Param: util.Param{Search: []util.ParamSearch{util.ParamSearch{Column: "name", Compare: "=", Value: "admin"}}}}
+	param := r.RoleParam{Param: util.Param{Search: util.Search{Filters: []util.Filter{util.Filter{Column: "name", Compare: "=", Value: "admin"}}}}}
 	if _, errDB := mr.Search(&roles, param); errDB != nil {
 		fmt.Println("Creating admin unable to get admin role id:", errDB)
 		os.Exit(1)
