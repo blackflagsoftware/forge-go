@@ -33,7 +33,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentEn
 }
 
 func (d *SQL{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
-	searchStmt, args := util.BuildSearchString(param.Search.Filters)
+	searchStmt, args := util.BuildSearchString(param.Param, false) // false => include the where clause, see internal/util/sql.go
 	sqlSearch := fmt.Sprintf(`
 		SELECT
 			{{.StorageGetColumns}}

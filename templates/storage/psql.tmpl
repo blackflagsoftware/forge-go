@@ -34,5 +34,8 @@ func GetPostgresConnection() string {
 }
 
 func FormatPagination(limit, offset int) string {
+	if limit == 0 {
+		return ""
+	}
 	return fmt.Sprintf("LIMIT %d OFFSET %d", limit, offset)
 }

@@ -16,7 +16,7 @@ type (
 		Offset           int    // holds the offset number
 		PaginationString string // holds the limit/offset tring
 		Sort             string // holds the calculated sort string
-		AvailableColumns map[string]string
+		ColumnMapping    map[string]string
 	}
 
 	Search struct {
@@ -67,7 +67,7 @@ func ValidJson(jsonValue json.RawMessage) bool {
 }
 
 func (p *Param) CalculateParam(primarySort string, availableSort map[string]string) (err error) {
-	p.AvailableColumns = availableSort
+	p.ColumnMapping = availableSort
 	// calculate the limit
 	if p.Search.Pagination.PageLimit > 0 {
 		if p.Search.Pagination.PageNumber == 0 {

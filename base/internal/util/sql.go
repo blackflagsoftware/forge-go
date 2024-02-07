@@ -10,26 +10,29 @@ import (
 
 type (
 	SearchBuilder struct {
-		Params []string
-		Values []interface{}
+		Params       []string
+		Values       []interface{}
+		ExcludeWhere bool
 	}
 )
 
-func BuildSearchString(search []Filter) (string, []interface{}) {
-	sb := SearchBuilder{}
+func BuildSearchString(param Param, excludeWhere bool) (string, []interface{}) {
+	sb := SearchBuilder{ExcludeWhere: excludeWhere}
+	search := param.Search.Filters
 	for _, s := range search {
+		column := param.ColumnMapping[s.Column]
 		switch s.Compare {
 		case "LIKE":
-			sb.AppendLike(s.Column, s.Value.(string))
+			sb.AppendLike(column, s.Value.(string))
 		case "NULL":
-			sb.AppendNull(s.Column, true)
+			sb.AppendNull(column, true)
 		case "NOT NULL":
-			sb.AppendNull(s.Column, false)
+			sb.AppendNull(column, false)
 		case "IN":
-			sb.AppendIn(s.Column, s.Value)
+			sb.AppendIn(column, s.Value)
 		default:
 			if s.Compare != "" {
-				sb.AppendCompare(s.Column, s.Compare, s.Value)
+				sb.AppendCompare(column, s.Compare, s.Value)
 			}
 		}
 	}
