@@ -1,0 +1,146 @@
+package authrefresh
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	p "{{.ProjectPath}}/pkg/proto"
+)
+
+type (
+	AuthRefreshGrpc struct {
+		p.UnimplementedAuthRefreshServiceServer
+		managerAuthRefresh ManagerAuthRefreshAdapter
+	}
+)
+
+func NewAuthRefreshGrpc(mar ManagerAuthRefreshAdapter) *AuthRefreshGrpc {
+	return &AuthRefreshGrpc{managerAuthRefresh: mar}
+}
+
+func (a *AuthRefreshGrpc) GetAuthRefresh(ctx context.Context, in *p.AuthRefreshIDIn) (*p.AuthRefreshResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.AuthRefreshResponse{Result: result}
+	ar := &AuthRefresh{ClientId: in.ClientId, Token: in.Token}
+	if err := a.managerAuthRefresh.Get(ar); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var err error
+	response.AuthRefresh, err = translateOut(ar)
+	if err != nil {
+		return response, err
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthRefreshGrpc) SearchAuthRefresh(ctx context.Context, in *p.AuthRefresh) (*p.AuthRefreshRepeatResponse, error) {
+	authRefreshParam := AuthRefreshParam{}
+	result := &p.Result{Success: false}
+	response := &p.AuthRefreshRepeatResponse{Result: result}
+	ars := &[]AuthRefresh{}
+	if _, err := a.managerAuthRefresh.Search(ars, authRefreshParam); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	for _, a := range *ars {
+		protoAuthRefresh, err := translateOut(&a)
+		if err != nil {
+			return response, err
+		}
+		response.AuthRefresh = append(response.AuthRefresh, protoAuthRefresh)
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthRefreshGrpc) CreateAuthRefresh(ctx context.Context, in *p.AuthRefresh) (*p.AuthRefreshResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.AuthRefreshResponse{Result: result}
+	ar, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.managerAuthRefresh.Post(ar); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var errTranslate error
+	response.AuthRefresh, errTranslate = translateOut(ar)
+	if err != nil {
+		return response, errTranslate
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthRefreshGrpc) UpdateAuthRefresh(ctx context.Context, in *p.AuthRefresh) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	ar, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.managerAuthRefresh.Patch(*ar); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func (a *AuthRefreshGrpc) DeleteAuthRefresh(ctx context.Context, in *p.AuthRefreshIDIn) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	ar := &AuthRefresh{ClientId: in.ClientId, Token: in.Token}
+	if err := a.managerAuthRefresh.Delete(ar); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func translateOut(ar *AuthRefresh) (*p.AuthRefresh, error) {
+	protoAuthRefresh := p.AuthRefresh{}
+	protoAuthRefresh.ClientId = ar.ClientId
+	protoAuthRefresh.Token = ar.Token
+	protoAuthRefresh.CreatedAt = ar.CreatedAt.Time.Format(time.RFC3339)
+	return &protoAuthRefresh, nil
+}
+
+func translateIn(in *p.AuthRefresh) (*AuthRefresh, error) {
+	ar := AuthRefresh{}
+	ar.ClientId = in.ClientId
+	ar.Token = in.Token
+	ar.CreatedAt.Scan(in.CreatedAt)
+	return &ar, nil
+}
+
+// found these are slower; deprecated; keep them, just in case
+func translateJsonOut(ar *AuthRefresh) (*p.AuthRefresh, error) {
+	protoAuthRefresh := p.AuthRefresh{}
+	outBytes, err := json.Marshal(ar)
+	if err != nil {
+		return &protoAuthRefresh, ae.GeneralError("Unable to encode from AuthRefresh", err)
+	}
+	err = json.Unmarshal(outBytes, &protoAuthRefresh)
+	if err != nil {
+		return &protoAuthRefresh, ae.GeneralError("Unable to decode to proto.AuthRefresh", err)
+	}
+	return &protoAuthRefresh, nil
+}
+
+func translateJsonIn(in *p.AuthRefresh) (*AuthRefresh, error) {
+	ar := AuthRefresh{}
+	outBytes, err := json.Marshal(in)
+	if err != nil {
+		return &ar, ae.GeneralError("Unable to encode from proto.AuthRefresh", err)
+	}
+	err = json.Unmarshal(outBytes, &ar)
+	if err != nil {
+		return &ar, ae.GeneralError("Unable to decode to AuthRefresh", err)
+	}
+	return &ar, nil
+}

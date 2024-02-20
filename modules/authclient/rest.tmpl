@@ -1,0 +1,110 @@
+package authclient
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+	ae "{{.ProjectPath}}/internal/api_error"
+	util "{{.ProjectPath}}/internal/util"
+)
+
+type (
+	ManagerAuthClientAdapter interface {
+		Get(*AuthClient) error
+		Search(*[]AuthClient, AuthClientParam) (int, error)
+		Post(*AuthClient) error
+		Patch(AuthClient) error
+		Delete(*AuthClient) error
+	}
+
+	RestAuthClient struct {
+		managerAuthClient ManagerAuthClientAdapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	sl := InitStorage()
+	ml := NewManagerAuthClient(sl)
+	hl := NewRestAuthClient(ml)
+	hl.LoadAuthClientRoutes(eg)
+}
+
+func NewRestAuthClient(maut ManagerAuthClientAdapter) *RestAuthClient {
+	return &RestAuthClient{managerAuthClient: maut}
+}
+
+func (h *RestAuthClient) LoadAuthClientRoutes(eg *echo.Group) {
+	eg.GET("/auth-client/:id", h.Get)
+	eg.POST("/auth-client/search", h.Search)
+	eg.POST("/auth-client", h.Post)
+	eg.PATCH("/auth-client", h.Patch)
+	eg.DELETE("/auth-client/:id", h.Delete)
+}
+
+func (h *RestAuthClient) Get(c echo.Context) error {
+
+	authClient := &AuthClient{}
+	if err := h.managerAuthClient.Get(authClient); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authClient, nil, nil))
+}
+
+func (h *RestAuthClient) Search(c echo.Context) error {
+	param := AuthClientParam{}
+	if err := c.Bind(&param); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
+	authClients := &[]AuthClient{}
+	totalCount, err := h.managerAuthClient.Search(authClients, param)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authClients, nil, &totalCount))
+}
+
+func (h *RestAuthClient) Post(c echo.Context) error {
+	aut := AuthClient{}
+	autData := AuthClientData{Data: aut}
+	if err := c.Bind(&autData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerAuthClient.Post(&autData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, autData.Data, nil, nil))
+}
+
+func (h *RestAuthClient) Patch(c echo.Context) error {
+	aut := AuthClient{}
+	autData := AuthClientData{Data: aut}
+	if err := c.Bind(&autData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerAuthClient.Patch(autData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestAuthClient) Delete(c echo.Context) error {
+
+	authClient := &AuthClient{}
+	if err := h.managerAuthClient.Delete(authClient); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}

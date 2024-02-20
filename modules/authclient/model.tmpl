@@ -1,0 +1,35 @@
+package authclient
+
+import (
+	"{{.ProjectPath}}/config"
+	"{{.ProjectPath}}/internal/util"
+	"gopkg.in/guregu/null.v3"
+)
+
+type (
+	AuthClient struct {
+		Id          string      `db:"id" json:"id"`
+		Name        null.String `db:"name" json:"name"`
+		Description null.String `db:"description" json:"description"`
+		HomepageUrl null.String `db:"homepage_url" json:"homepage_url"`
+		CallbackUrl null.String `db:"callback_url" json:"callback_url"`
+	}
+
+	AuthClientData struct {
+		Data AuthClient `json:"data"`
+	}
+
+	AuthClientParam struct {
+		// TODO: add any other custom params here
+		util.Param
+	}
+)
+
+const AuthClientConst = "auth_client"
+
+func InitStorage() DataAuthClientAdapter {
+	if config.StorageSQL {
+		return InitSQL()
+	}
+	return nil
+}

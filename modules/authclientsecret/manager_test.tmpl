@@ -1,0 +1,154 @@
+package authclientsecret
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestManagerAuthClientSecret_Get(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthClientSecret := NewMockDataAuthClientSecretAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		au      *AuthClientSecret
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClientSecret{dataAuthClientSecret: mockDataAuthClientSecret}
+			err := m.Get(tt.au)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClientSecret.Get().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClientSecret.Get().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthClientSecret_Post(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthClientSecret := NewMockDataAuthClientSecretAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		au      *AuthClientSecret
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			&AuthClientSecret{ClientId: "a", Secret: "a"},
+			false,
+			[]*gomock.Call{mockDataAuthClientSecret.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+		},
+		{
+			"failed - clientId",
+			&AuthClientSecret{ClientId: "", Secret: "a"},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length clientId",
+			&AuthClientSecret{ClientId: "0123456789012345678901234567890123456789", Secret: "a"},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - secret",
+			&AuthClientSecret{ClientId: "a", Secret: ""},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length secret",
+			&AuthClientSecret{ClientId: "a", Secret: "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"},
+			true,
+			[]*gomock.Call{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClientSecret{dataAuthClientSecret: mockDataAuthClientSecret}
+			err := m.Post(tt.au)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClientSecret.Create().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClientSecret.Create().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthClientSecret_Patch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthClientSecret := NewMockDataAuthClientSecretAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		body    AuthClientSecret
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			AuthClientSecret{},
+			false,
+			[]*gomock.Call{
+				mockDataAuthClientSecret.EXPECT().Read(gomock.Any()).Return(nil),
+				mockDataAuthClientSecret.EXPECT().Update(gomock.Any()).Return(nil),
+			},
+		},
+		{
+			"invalid id",
+			AuthClientSecret{},
+			true,
+			[]*gomock.Call{
+				mockDataAuthClientSecret.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClientSecret{dataAuthClientSecret: mockDataAuthClientSecret}
+			err := m.Patch(tt.body)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClientSecret.Update().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClientSecret.Update().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthClientSecret_Delete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthClientSecret := NewMockDataAuthClientSecretAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		au      *AuthClientSecret
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClientSecret{dataAuthClientSecret: mockDataAuthClientSecret}
+			err := m.Delete(tt.au)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClientSecret.Delete().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClientSecret.Delete().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}

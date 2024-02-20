@@ -1,0 +1,111 @@
+package authclient
+
+import (
+	"fmt"
+
+	"github.com/jmoiron/sqlx"
+	ae "{{.ProjectPath}}/internal/api_error"
+	stor "{{.ProjectPath}}/internal/storage"
+	"{{.ProjectPath}}/internal/util"
+)
+
+type (
+	SQLAuthClient struct {
+		DB *sqlx.DB
+	}
+)
+
+func InitSQL() *SQLAuthClient {
+	db := stor.PostgresInit()
+	return &SQLAuthClient{DB: db}
+}
+
+func (d *SQLAuthClient) Read(aut *AuthClient) error {
+	sqlGet := `
+		SELECT
+			id,
+			name,
+			description,
+			homepage_url,
+			callback_url
+		FROM auth_client WHERE id = $1`
+	if errDB := d.DB.Get(aut, sqlGet, aut.Id); errDB != nil {
+		return ae.DBError("AuthClient Get: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthClient) ReadAll(aut *[]AuthClient, param AuthClientParam) (int, error) {
+	searchStmt, args := util.BuildSearchString(param.Search)
+	sqlSearch := fmt.Sprintf(`
+		SELECT
+			id,
+			name,
+			description,
+			homepage_url,
+			callback_url
+		FROM auth_client
+		%s
+		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+	sqlSearch = d.DB.Rebind(sqlSearch)
+	if errDB := d.DB.Select(aut, sqlSearch, args...); errDB != nil {
+		return 0, ae.DBError("AuthClient Search: unable to select records.", errDB)
+	}
+	sqlCount := fmt.Sprintf(`
+		SELECT
+			COUNT(*)
+		FROM auth_client
+		%s`, searchStmt)
+	var count int
+	sqlCount = d.DB.Rebind(sqlCount)
+	if errDB := d.DB.Get(&count, sqlCount, args...); errDB != nil {
+		return 0, ae.DBError("auth_client Search: unable to select count.", errDB)
+	}
+	return count, nil
+}
+
+func (d *SQLAuthClient) Create(aut *AuthClient) error {
+	sqlPost := `
+		INSERT INTO auth_client (
+			id,
+			name,
+			description,
+			homepage_url,
+			callback_url
+		) VALUES (
+			:id,
+			:name,
+			:description,
+			:homepage_url,
+			:callback_url
+		)`
+	_, errDB := d.DB.NamedExec(sqlPost, aut)
+	if errDB != nil {
+		return ae.DBError("AuthClient Post: unable to insert record.", errDB)
+	}
+
+	return nil
+}
+
+func (d *SQLAuthClient) Update(aut AuthClient) error {
+	sqlPatch := `
+		UPDATE auth_client SET
+			name = :name,
+			description = :description,
+			homepage_url = :homepage_url,
+			callback_url = :callback_url
+		WHERE id = :id`
+	if _, errDB := d.DB.NamedExec(sqlPatch, aut); errDB != nil {
+		return ae.DBError("AuthClient Patch: unable to update record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthClient) Delete(aut *AuthClient) error {
+	sqlDelete := `
+		DELETE FROM auth_client WHERE id = $1`
+	if _, errDB := d.DB.Exec(sqlDelete, aut.Id); errDB != nil {
+		return ae.DBError("AuthClient Delete: unable to delete record.", errDB)
+	}
+	return nil
+}

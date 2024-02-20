@@ -22,6 +22,7 @@ type (
 		ResetRequest(*ResetRequest) error
 		SignIn(Login) (string, error)
 		WithRoles(*[]LoginRoles) (int, error)
+		OAuthSignIn(OAuthLogin) (OAuthResponse, error)
 	}
 
 	RestLogin struct {
@@ -53,6 +54,9 @@ func (h *RestLogin) LoadLoginRoutes(eg *echo.Group) {
 	eg.POST("/login/reset/pwd", h.PostPwd)
 	eg.GET("/login/forgot-password/:email_addr", h.ResetRequest)
 	eg.POST("/login/signin", h.SignIn)
+	eg.GET("/login/oauth2/authorize", h.OAuth2Authorize)
+	eg.POST("/login/oauth2/verify-consent", h.OAuth2VerifyConsent)
+	eg.POST("/login/oauth2/token", h.OAuth2Exchange)
 }
 
 func (h *RestLogin) Get(c echo.Context) error {
@@ -199,3 +203,128 @@ func (h *RestLogin) WithRoles(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, util.NewOutput(c, *login, nil, &totalCount))
 }
+
+func (h *RestLogin) OAuth2Authorize(c echo.Context) error {
+	// check the client_id
+	// save off the state or save off pkce if given and how it is encoded
+	// return the login form code or consent form (if already logged in)
+	// the login form will have to include the redirect_url
+	responseType := c.FormValue("response_type")
+	if responseType != "code" {
+		responseErr := ae.GeneralError("Invalid response_type, 'code' is the only valid option", nil)
+		return c.JSON(responseErr.StatusCode, util.NewOutput(c, nil, &responseErr, nil))
+	}
+	clientId := c.FormValue("client_id")
+	redirectUrl := c.FormValue("redirect_url")
+	scope := c.FormValue("scope") // empty for now
+	state := c.FormValue("state")
+	codeChallenge := c.FormValue("code_challenge")
+	codeChallengeMethod := c.FormValue("code_challenge_method")
+
+	authClient := ac.AuthClient{Id: clientId}
+	acs := ac.InitStorage()
+	acm := ac.NewManagerAuthClient(acs)
+	if err := acm.Get(&authClient); err != nil {
+		// TODO: make new errors (make it for all the errors within these new functions)
+		responseErr := ae.GeneralError("Not a valid client", err)
+		return c.JSON(responseErr.StatusCode, util.NewOutput(c, nil, &responseErr, nil))
+	}
+	authorizeId := util.GenerateRandomString(32)
+	consentId := util.GenerateRandomString(32)
+	authAuthorize := aa.AuthAuthorize{
+		Id:                   authorizeId,
+		ClientId:             null.StringFrom(authClient.Id),
+		Verifier:             null.StringFrom(codeChallenge),
+		VerifierEncodeMethod: null.StringFrom(codeChallengeMethod),
+		State:                null.StringFrom(state),
+		Scope:                null.StringFrom(scope),
+		ConsentId:            null.StringFrom(consentId),
+	}
+	aas := aa.InitStorage()
+	aam := aa.NewManagerAuthAuthorize(aas)
+	if err := aam.Post(&authAuthorize); err != nil {
+		responseErr := ae.GeneralError("Error creating auth authorize", err)
+		return c.JSON(responseErr.StatusCode, util.NewOutput(c, nil, &responseErr, nil))
+	}
+
+	fmt.Printf("client_id: %s; redirect_url: %s; scope: %s; state: %s; codeChallenge: %s; codeChallengeMethod: %s", clientId, redirectUrl, scope, state, codeChallenge, codeChallengeMethod)
+	sendHtml := fmt.Sprintf(html, "hello")
+	// template html
+	return c.HTML(http.StatusSeeOther, sendHtml)
+}
+
+func (h *RestLogin) OAuth2SignIn(c echo.Context) error {
+	// this is called from the login form or consent form
+	// like a normal sign in
+	// instead of a jwt token, send back a new code with the state with the redirect
+
+	login := OAuthLogin{}
+	logData := OAuthLoginData{Data: login}
+	if err := c.Bind(&logData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	response, err := h.managerLogin.OAuthSignIn(logData.Data)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, response, nil, nil))
+}
+
+func (h *RestLogin) OAuth2Exchange(c echo.Context) error {
+	// grant_type=authorization_code
+	// code=auth_code
+	// redirect_uri=
+	// code_verifier=base64(pkce)
+	// client_id=
+	// client_secret=
+	oAuthToken := OAuthToken{}
+
+	if err := c.Bind(&oAuthToken); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+
+	// check the code, will need to check the timing on when that code was created
+	// check the client_secret
+	// encode the state (pkce) and verify from the earlier saved off state (pkce)
+	// return a oauth.Token
+	// or
+	// refresh
+	// grant_type=refresh_token
+	// refresh_token=
+	// client_id=
+	// client_secret=
+	// return a new oauth.token (do we generate a new refresh_token?)
+	return nil
+}
+
+func (h *RestLogin) OAuth2VerifyConsent(c echo.Context) error {
+	authAuthorize := aa.AuthAuthorize{}
+	if err := c.Bind(&authAuthorize); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
+	aas := aa.InitStorage()
+	aam := aa.NewManagerAuthAuthorize(aas)
+	if err := aam.VerifyConsent(authAuthorize); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+var html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	<p>Log In</p>
+	<input id="pc_authorize_id" type="hidden">%s</input>
+</body>
+</html>`

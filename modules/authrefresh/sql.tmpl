@@ -1,0 +1,100 @@
+package authrefresh
+
+import (
+	"fmt"
+
+	"github.com/jmoiron/sqlx"
+	ae "{{.ProjectPath}}/internal/api_error"
+	stor "{{.ProjectPath}}/internal/storage"
+	"{{.ProjectPath}}/internal/util"
+)
+
+type (
+	SQLAuthRefresh struct {
+		DB *sqlx.DB
+	}
+)
+
+func InitSQL() *SQLAuthRefresh {
+	db := stor.PostgresInit()
+	return &SQLAuthRefresh{DB: db}
+}
+
+func (d *SQLAuthRefresh) Read(ar *AuthRefresh) error {
+	sqlGet := `
+		SELECT
+			client_id,
+			token,
+			created_at
+		FROM auth_refresh WHERE client_id = $1 and token = $2`
+	if errDB := d.DB.Get(ar, sqlGet, ar.ClientId, ar.Token); errDB != nil {
+		return ae.DBError("AuthRefresh Get: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthRefresh) ReadAll(ar *[]AuthRefresh, param AuthRefreshParam) (int, error) {
+	searchStmt, args := util.BuildSearchString(param.Search)
+	sqlSearch := fmt.Sprintf(`
+		SELECT
+			client_id,
+			token,
+			created_at
+		FROM auth_refresh
+		%s
+		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+	sqlSearch = d.DB.Rebind(sqlSearch)
+	if errDB := d.DB.Select(ar, sqlSearch, args...); errDB != nil {
+		return 0, ae.DBError("AuthRefresh Search: unable to select records.", errDB)
+	}
+	sqlCount := fmt.Sprintf(`
+		SELECT
+			COUNT(*)
+		FROM auth_refresh
+		%s`, searchStmt)
+	var count int
+	sqlCount = d.DB.Rebind(sqlCount)
+	if errDB := d.DB.Get(&count, sqlCount, args...); errDB != nil {
+		return 0, ae.DBError("auth_refresh Search: unable to select count.", errDB)
+	}
+	return count, nil
+}
+
+func (d *SQLAuthRefresh) Create(ar *AuthRefresh) error {
+	sqlPost := `
+		INSERT INTO auth_refresh (
+			client_id,
+			token,
+			created_at
+		) VALUES (
+			:client_id,
+			:token,
+			:created_at
+		)`
+	_, errDB := d.DB.NamedExec(sqlPost, ar)
+	if errDB != nil {
+		return ae.DBError("AuthRefresh Post: unable to insert record.", errDB)
+	}
+
+	return nil
+}
+
+func (d *SQLAuthRefresh) Update(ar AuthRefresh) error {
+	sqlPatch := `
+		UPDATE auth_refresh SET
+			created_at = :created_at
+		WHERE client_id = :client_idtoken = :token`
+	if _, errDB := d.DB.NamedExec(sqlPatch, ar); errDB != nil {
+		return ae.DBError("AuthRefresh Patch: unable to update record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthRefresh) Delete(ar *AuthRefresh) error {
+	sqlDelete := `
+		DELETE FROM auth_refresh WHERE client_id = $1 and token = $2`
+	if _, errDB := d.DB.Exec(sqlDelete, ar.ClientId, ar.Token); errDB != nil {
+		return ae.DBError("AuthRefresh Delete: unable to delete record.", errDB)
+	}
+	return nil
+}

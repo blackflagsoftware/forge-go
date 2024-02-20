@@ -1,0 +1,186 @@
+package authauthorize
+
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/guregu/null.v3"
+)
+
+func TestManagerAuthAuthorize_Get(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthAuthorize := NewMockDataAuthAuthorizeAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		aa      *AuthAuthorize
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthAuthorize{dataAuthAuthorize: mockDataAuthAuthorize}
+			err := m.Get(tt.aa)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthAuthorize.Get().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthAuthorize.Get().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthAuthorize_Post(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthAuthorize := NewMockDataAuthAuthorizeAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		aa      *AuthAuthorize
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			&AuthAuthorize{Scope: null.NewString("a", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), Id: "a", ClientId: null.NewString("a", true), State: null.NewString("a", true), AuthCode: null.NewString("a", true), Verifier: null.NewString("a", true), VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			false,
+			[]*gomock.Call{mockDataAuthAuthorize.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+		},
+		{
+			"failed - id",
+			&AuthAuthorize{Verifier: null.NewString("a", true), VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), AuthCode: null.NewString("a", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), Id: "", ClientId: null.NewString("a", true), State: null.NewString("a", true), Scope: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length id",
+			&AuthAuthorize{Verifier: null.NewString("a", true), VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), AuthCode: null.NewString("a", true), Id: "0123456789012345678901234567890123456789", ClientId: null.NewString("a", true), State: null.NewString("a", true), Scope: null.NewString("a", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - clientId",
+			&AuthAuthorize{Verifier: null.NewString("a", true), VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), AuthCode: null.NewString("a", true), Id: "a", ClientId: null.NewString("a", false), State: null.NewString("a", true), Scope: null.NewString("a", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length clientId",
+			&AuthAuthorize{Verifier: null.NewString("a", true), VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), AuthCode: null.NewString("a", true), Id: "a", ClientId: null.NewString("0123456789012345678901234567890123456789", true), State: null.NewString("a", true), Scope: null.NewString("a", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length verifierEncodeMethod",
+			&AuthAuthorize{AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), Id: "a", ClientId: null.NewString("a", true), State: null.NewString("a", true), Scope: null.NewString("a", true), Verifier: null.NewString("a", true), VerifierEncodeMethod: null.NewString("01234567890123456789", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), AuthCode: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length state",
+			&AuthAuthorize{VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), AuthCode: null.NewString("a", true), Verifier: null.NewString("a", true), ClientId: null.NewString("a", true), State: null.NewString("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true), Scope: null.NewString("a", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), Id: "a"},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length scope",
+			&AuthAuthorize{ClientId: null.NewString("a", true), State: null.NewString("a", true), Scope: null.NewString("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), Id: "a", VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), AuthCode: null.NewString("a", true), Verifier: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - authorizedAt",
+			&AuthAuthorize{Scope: null.NewString("a", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), Id: "a", ClientId: null.NewString("a", true), State: null.NewString("a", true), AuthCode: null.NewString("a", true), Verifier: null.NewString("a", true), VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), false)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length authCode",
+			&AuthAuthorize{Verifier: null.NewString("a", true), VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), AuthCode: null.NewString("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true), Id: "a", ClientId: null.NewString("a", true), State: null.NewString("a", true), Scope: null.NewString("a", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthAuthorize{dataAuthAuthorize: mockDataAuthAuthorize}
+			err := m.Post(tt.aa)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthAuthorize.Create().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthAuthorize.Create().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthAuthorize_Patch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthAuthorize := NewMockDataAuthAuthorizeAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		body    AuthAuthorize
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			AuthAuthorize{},
+			false,
+			[]*gomock.Call{
+				mockDataAuthAuthorize.EXPECT().Read(gomock.Any()).Return(nil),
+				mockDataAuthAuthorize.EXPECT().Update(gomock.Any()).Return(nil),
+			},
+		},
+		{
+			"invalid id",
+			AuthAuthorize{},
+			true,
+			[]*gomock.Call{
+				mockDataAuthAuthorize.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthAuthorize{dataAuthAuthorize: mockDataAuthAuthorize}
+			err := m.Patch(tt.body)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthAuthorize.Update().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthAuthorize.Update().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthAuthorize_Delete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthAuthorize := NewMockDataAuthAuthorizeAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		aa      *AuthAuthorize
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthAuthorize{dataAuthAuthorize: mockDataAuthAuthorize}
+			err := m.Delete(tt.aa)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthAuthorize.Delete().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthAuthorize.Delete().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}

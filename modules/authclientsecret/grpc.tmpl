@@ -1,0 +1,143 @@
+package authclientsecret
+
+import (
+	"context"
+	"encoding/json"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	p "{{.ProjectPath}}/pkg/proto"
+)
+
+type (
+	AuthClientSecretGrpc struct {
+		p.UnimplementedAuthClientSecretServiceServer
+		managerAuthClientSecret ManagerAuthClientSecretAdapter
+	}
+)
+
+func NewAuthClientSecretGrpc(mau ManagerAuthClientSecretAdapter) *AuthClientSecretGrpc {
+	return &AuthClientSecretGrpc{managerAuthClientSecret: mau}
+}
+
+func (a *AuthClientSecretGrpc) GetAuthClientSecret(ctx context.Context, in *p.AuthClientSecretIDIn) (*p.AuthClientSecretResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.AuthClientSecretResponse{Result: result}
+	au := &AuthClientSecret{ClientId: in.ClientId, Secret: in.Secret}
+	if err := a.managerAuthClientSecret.Get(au); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var err error
+	response.AuthClientSecret, err = translateOut(au)
+	if err != nil {
+		return response, err
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthClientSecretGrpc) SearchAuthClientSecret(ctx context.Context, in *p.AuthClientSecret) (*p.AuthClientSecretRepeatResponse, error) {
+	authClientSecretParam := AuthClientSecretParam{}
+	result := &p.Result{Success: false}
+	response := &p.AuthClientSecretRepeatResponse{Result: result}
+	aus := &[]AuthClientSecret{}
+	if _, err := a.managerAuthClientSecret.Search(aus, authClientSecretParam); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	for _, a := range *aus {
+		protoAuthClientSecret, err := translateOut(&a)
+		if err != nil {
+			return response, err
+		}
+		response.AuthClientSecret = append(response.AuthClientSecret, protoAuthClientSecret)
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthClientSecretGrpc) CreateAuthClientSecret(ctx context.Context, in *p.AuthClientSecret) (*p.AuthClientSecretResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.AuthClientSecretResponse{Result: result}
+	au, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.managerAuthClientSecret.Post(au); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var errTranslate error
+	response.AuthClientSecret, errTranslate = translateOut(au)
+	if err != nil {
+		return response, errTranslate
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthClientSecretGrpc) UpdateAuthClientSecret(ctx context.Context, in *p.AuthClientSecret) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	au, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.managerAuthClientSecret.Patch(*au); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func (a *AuthClientSecretGrpc) DeleteAuthClientSecret(ctx context.Context, in *p.AuthClientSecretIDIn) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	au := &AuthClientSecret{ClientId: in.ClientId, Secret: in.Secret}
+	if err := a.managerAuthClientSecret.Delete(au); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func translateOut(au *AuthClientSecret) (*p.AuthClientSecret, error) {
+	protoAuthClientSecret := p.AuthClientSecret{}
+	protoAuthClientSecret.ClientId = au.ClientId
+	protoAuthClientSecret.Secret = au.Secret
+	return &protoAuthClientSecret, nil
+}
+
+func translateIn(in *p.AuthClientSecret) (*AuthClientSecret, error) {
+	au := AuthClientSecret{}
+	au.ClientId = in.ClientId
+	au.Secret = in.Secret
+	return &au, nil
+}
+
+// found these are slower; deprecated; keep them, just in case
+func translateJsonOut(au *AuthClientSecret) (*p.AuthClientSecret, error) {
+	protoAuthClientSecret := p.AuthClientSecret{}
+	outBytes, err := json.Marshal(au)
+	if err != nil {
+		return &protoAuthClientSecret, ae.GeneralError("Unable to encode from AuthClientSecret", err)
+	}
+	err = json.Unmarshal(outBytes, &protoAuthClientSecret)
+	if err != nil {
+		return &protoAuthClientSecret, ae.GeneralError("Unable to decode to proto.AuthClientSecret", err)
+	}
+	return &protoAuthClientSecret, nil
+}
+
+func translateJsonIn(in *p.AuthClientSecret) (*AuthClientSecret, error) {
+	au := AuthClientSecret{}
+	outBytes, err := json.Marshal(in)
+	if err != nil {
+		return &au, ae.GeneralError("Unable to encode from proto.AuthClientSecret", err)
+	}
+	err = json.Unmarshal(outBytes, &au)
+	if err != nil {
+		return &au, ae.GeneralError("Unable to decode to AuthClientSecret", err)
+	}
+	return &au, nil
+}

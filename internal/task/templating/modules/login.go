@@ -426,6 +426,41 @@ func MigrationScripts(p m.Project) {
 	PRIMARY KEY(login_id, role_id)
 );`, uuid, uuid)
 
+	authAuthorizeScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS auth_authorize (
+		id VARCHAR(32) NOT NULL,
+		client_id VARCHAR(32) NOT NULL,
+		verifier TEXT,
+		verifier_encode_method VARCHAR(10),
+		state VARCHAR(100),
+		scope VARCHAR(256),
+		authorized_at %s NOT NULL,
+		auth_code_at %s,
+		auth_code VARCHAR(256),
+		PRIMARY KEY(id)
+);`, ts, ts)
+
+	authClientScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS auth_client (
+		id VARCHAR(32) NOT NULL,
+		name VARCHAR(100) NOT NULL,
+		description VARCHAR(1000),
+		homepage_url VARCHAR(500) NOT NULL,
+		callback_url VARCHAR(500) NOT NULL,
+		PRIMARY KEY(id)
+);`)
+
+	authClientSecretScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS auth_client_secret (
+		client_id VARCHAR(32) NOT NULL,
+		secret VARCHAR(256) NOT NULL,
+		PRIMARY KEY(client_id, secret)
+);`)
+
+	authRefreshScript := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS auth_refresh (
+		client_id VARCHAR(32) NOT NULL,
+		token VARCHAR(256) NOT NULL,
+		created_at %s NOT NULL,
+		PRIMARY KEY(client_id, token)
+);`, ts)
+
 	adminId := util.GenerateUUID()
 	userId := util.GenerateUUID()
 	roleInsert := fmt.Sprintf(`INSERT INTO role (id, name, description) VALUES
@@ -437,59 +472,32 @@ func MigrationScripts(p m.Project) {
 		fmt.Println("Creating scripts/migrations dir", err)
 		return
 	}
-	now := time.Now().Format("20060102150405")
-	loginName := fmt.Sprintf("%s/%s-create-table-login.sql", scriptDir, now)
-	f, err := os.Create(loginName)
-	if err != nil {
-		fmt.Println("Unable to creating scripts/migrations/login.sql file", err)
-		return
+	scripts := map[string]string{
+		"%s/%s-create-table-login.sql":              loginScript,
+		"%s/%s-create-table-reset-login.sql":        resetScript,
+		"%s/%s-create-table-role.sql":               roleScript,
+		"%s/%s-create-table-login-role.sql":         loginRoleScript,
+		"%s/%s-insert-role.sql":                     roleInsert,
+		"%s/%s-create-table-auth-authorize.sql":     authAuthorizeScript,
+		"%s/%s-create-table-auth-client.sql":        authClientScript,
+		"%s/%s-create-table-auth-client-secret.sql": authClientSecretScript,
+		"%s/%s-create-table-auth-refresh.sql":       authRefreshScript,
 	}
-	f.WriteString(loginScript)
-	f.Close()
-	time.Sleep(time.Second) // let's make sure a second has passed
-	now = time.Now().Format("20060102150405")
-	resetName := fmt.Sprintf("%s/%s-create-table-reset-login.sql", scriptDir, now)
-	f, err = os.Create(resetName)
-	if err != nil {
-		fmt.Println("Unable to create scripts/migrations/reset-login.sql file", err)
-		return
+	for fileName, script := range scripts {
+		now := time.Now().Format("20060102150405")
+		loginName := fmt.Sprintf(fileName, scriptDir, now)
+		f, err := os.Create(loginName)
+		if err != nil {
+			fmt.Printf("Unable to creating %s file: %s\n", loginName, err)
+			return
+		}
+		f.WriteString(script)
+		f.Close()
+		time.Sleep(time.Second) // let's make sure a second has passed
 	}
-	f.WriteString(resetScript)
-	f.Close()
-	time.Sleep(time.Second) // let's make sure a second has passed
-	now = time.Now().Format("20060102150405")
-	roleName := fmt.Sprintf("%s/%s-create-table-role.sql", scriptDir, now)
-	f, err = os.Create(roleName)
-	if err != nil {
-		fmt.Println("Unable to create scripts/migrations/role.sql file", err)
-		return
-	}
-	f.WriteString(roleScript)
-	f.Close()
-	time.Sleep(time.Second) // let's make sure a second has passed
-	now = time.Now().Format("20060102150405")
-	loginRoleName := fmt.Sprintf("%s/%s-create-table-login-role.sql", scriptDir, now)
-	f, err = os.Create(loginRoleName)
-	if err != nil {
-		fmt.Println("Unable to create scripts/migrations/login-role.sql file", err)
-		return
-	}
-	f.WriteString(loginRoleScript)
-	f.Close()
-	time.Sleep(time.Second) // let's make sure a second has passed
-	now = time.Now().Format("20060102150405")
-	roles := fmt.Sprintf("%s/%s-insert-role.sql", scriptDir, now)
-	f, err = os.Create(roles)
-	if err != nil {
-		fmt.Println("Unable to create scripts/migrations/insert-role.sql file", err)
-		return
-	}
-	f.WriteString(roleInsert)
-	f.Close()
 	// note: this has to run last
-	time.Sleep(time.Second) // let's make sure a second has passed
 	// compile the admin tool, move binary to scripts/migrations
-	now = time.Now().Format("20060102150405")
+	now := time.Now().Format("20060102150405")
 	execDest := fmt.Sprintf("-o=%s/%s-admin-tool.bin", scriptDir, now)
 	execAdmin := exec.Command("go", "build", execDest, "tools/admin/main.go")
 	output, errAdminCmd := execAdmin.CombinedOutput()

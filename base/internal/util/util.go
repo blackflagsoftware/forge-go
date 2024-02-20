@@ -1,8 +1,11 @@
 package util
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 
@@ -39,6 +42,13 @@ type (
 
 func GenerateUUID() string {
 	return uuid.New().String()
+}
+
+func GenerateRandomString(l int) string {
+	buff := make([]byte, int(math.Ceil(float64(l)/float64(1.33333333333))))
+	rand.Read(buff)
+	str := base64.RawURLEncoding.EncodeToString(buff)
+	return str[:l] // get desired length
 }
 
 func GetTypeCount(i interface{}) int {

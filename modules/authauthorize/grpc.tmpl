@@ -1,0 +1,158 @@
+package authauthorize
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	p "{{.ProjectPath}}/pkg/proto"
+)
+
+type (
+	AuthAuthorizeGrpc struct {
+		p.UnimplementedAuthAuthorizeServiceServer
+		managerAuthAuthorize ManagerAuthAuthorizeAdapter
+	}
+)
+
+func NewAuthAuthorizeGrpc(maa ManagerAuthAuthorizeAdapter) *AuthAuthorizeGrpc {
+	return &AuthAuthorizeGrpc{managerAuthAuthorize: maa}
+}
+
+func (a *AuthAuthorizeGrpc) GetAuthAuthorize(ctx context.Context, in *p.AuthAuthorizeIDIn) (*p.AuthAuthorizeResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.AuthAuthorizeResponse{Result: result}
+	aa := &AuthAuthorize{Id: in.Id}
+	if err := a.managerAuthAuthorize.Get(aa); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var err error
+	response.AuthAuthorize, err = translateOut(aa)
+	if err != nil {
+		return response, err
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthAuthorizeGrpc) SearchAuthAuthorize(ctx context.Context, in *p.AuthAuthorize) (*p.AuthAuthorizeRepeatResponse, error) {
+	authAuthorizeParam := AuthAuthorizeParam{}
+	result := &p.Result{Success: false}
+	response := &p.AuthAuthorizeRepeatResponse{Result: result}
+	aas := &[]AuthAuthorize{}
+	if _, err := a.managerAuthAuthorize.Search(aas, authAuthorizeParam); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	for _, a := range *aas {
+		protoAuthAuthorize, err := translateOut(&a)
+		if err != nil {
+			return response, err
+		}
+		response.AuthAuthorize = append(response.AuthAuthorize, protoAuthAuthorize)
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthAuthorizeGrpc) CreateAuthAuthorize(ctx context.Context, in *p.AuthAuthorize) (*p.AuthAuthorizeResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.AuthAuthorizeResponse{Result: result}
+	aa, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.managerAuthAuthorize.Post(aa); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var errTranslate error
+	response.AuthAuthorize, errTranslate = translateOut(aa)
+	if err != nil {
+		return response, errTranslate
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthAuthorizeGrpc) UpdateAuthAuthorize(ctx context.Context, in *p.AuthAuthorize) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	aa, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.managerAuthAuthorize.Patch(*aa); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func (a *AuthAuthorizeGrpc) DeleteAuthAuthorize(ctx context.Context, in *p.AuthAuthorizeIDIn) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	aa := &AuthAuthorize{Id: in.Id}
+	if err := a.managerAuthAuthorize.Delete(aa); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func translateOut(aa *AuthAuthorize) (*p.AuthAuthorize, error) {
+	protoAuthAuthorize := p.AuthAuthorize{}
+	protoAuthAuthorize.Id = aa.Id
+	protoAuthAuthorize.ClientId = aa.ClientId.String
+	protoAuthAuthorize.Verifier = aa.Verifier.String
+	protoAuthAuthorize.VerifierEncodeMethod = aa.VerifierEncodeMethod.String
+	protoAuthAuthorize.State = aa.State.String
+	protoAuthAuthorize.Scope = aa.Scope.String
+	protoAuthAuthorize.AuthorizedAt = aa.AuthorizedAt.Time.Format(time.RFC3339)
+	protoAuthAuthorize.AuthCodeAt = aa.AuthCodeAt.Time.Format(time.RFC3339)
+	protoAuthAuthorize.AuthCode = aa.AuthCode.String
+	return &protoAuthAuthorize, nil
+}
+
+func translateIn(in *p.AuthAuthorize) (*AuthAuthorize, error) {
+	aa := AuthAuthorize{}
+	aa.Id = in.Id
+	aa.ClientId.Scan(in.ClientId)
+	aa.Verifier.Scan(in.Verifier)
+	aa.VerifierEncodeMethod.Scan(in.VerifierEncodeMethod)
+	aa.State.Scan(in.State)
+	aa.Scope.Scan(in.Scope)
+	aa.AuthorizedAt.Scan(in.AuthorizedAt)
+	aa.AuthCodeAt.Scan(in.AuthCodeAt)
+	aa.AuthCode.Scan(in.AuthCode)
+	return &aa, nil
+}
+
+// found these are slower; deprecated; keep them, just in case
+func translateJsonOut(aa *AuthAuthorize) (*p.AuthAuthorize, error) {
+	protoAuthAuthorize := p.AuthAuthorize{}
+	outBytes, err := json.Marshal(aa)
+	if err != nil {
+		return &protoAuthAuthorize, ae.GeneralError("Unable to encode from AuthAuthorize", err)
+	}
+	err = json.Unmarshal(outBytes, &protoAuthAuthorize)
+	if err != nil {
+		return &protoAuthAuthorize, ae.GeneralError("Unable to decode to proto.AuthAuthorize", err)
+	}
+	return &protoAuthAuthorize, nil
+}
+
+func translateJsonIn(in *p.AuthAuthorize) (*AuthAuthorize, error) {
+	aa := AuthAuthorize{}
+	outBytes, err := json.Marshal(in)
+	if err != nil {
+		return &aa, ae.GeneralError("Unable to encode from proto.AuthAuthorize", err)
+	}
+	err = json.Unmarshal(outBytes, &aa)
+	if err != nil {
+		return &aa, ae.GeneralError("Unable to decode to AuthAuthorize", err)
+	}
+	return &aa, nil
+}

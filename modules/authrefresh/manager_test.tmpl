@@ -1,0 +1,162 @@
+package authrefresh
+
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/guregu/null.v3"
+)
+
+func TestManagerAuthRefresh_Get(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthRefresh := NewMockDataAuthRefreshAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		ar      *AuthRefresh
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthRefresh{dataAuthRefresh: mockDataAuthRefresh}
+			err := m.Get(tt.ar)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthRefresh.Get().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthRefresh.Get().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthRefresh_Post(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthRefresh := NewMockDataAuthRefreshAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		ar      *AuthRefresh
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			&AuthRefresh{ClientId: "a", Token: "a", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			false,
+			[]*gomock.Call{mockDataAuthRefresh.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+		},
+		{
+			"failed - clientId",
+			&AuthRefresh{ClientId: "", Token: "a", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length clientId",
+			&AuthRefresh{ClientId: "0123456789012345678901234567890123456789", Token: "a", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - token",
+			&AuthRefresh{ClientId: "a", Token: "", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length token",
+			&AuthRefresh{ClientId: "a", Token: "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - createdAt",
+			&AuthRefresh{ClientId: "a", Token: "a", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), false)},
+			true,
+			[]*gomock.Call{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthRefresh{dataAuthRefresh: mockDataAuthRefresh}
+			err := m.Post(tt.ar)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthRefresh.Create().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthRefresh.Create().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthRefresh_Patch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthRefresh := NewMockDataAuthRefreshAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		body    AuthRefresh
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			AuthRefresh{},
+			false,
+			[]*gomock.Call{
+				mockDataAuthRefresh.EXPECT().Read(gomock.Any()).Return(nil),
+				mockDataAuthRefresh.EXPECT().Update(gomock.Any()).Return(nil),
+			},
+		},
+		{
+			"invalid id",
+			AuthRefresh{},
+			true,
+			[]*gomock.Call{
+				mockDataAuthRefresh.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthRefresh{dataAuthRefresh: mockDataAuthRefresh}
+			err := m.Patch(tt.body)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthRefresh.Update().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthRefresh.Update().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthRefresh_Delete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthRefresh := NewMockDataAuthRefreshAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		ar      *AuthRefresh
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthRefresh{dataAuthRefresh: mockDataAuthRefresh}
+			err := m.Delete(tt.ar)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthRefresh.Delete().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthRefresh.Delete().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}

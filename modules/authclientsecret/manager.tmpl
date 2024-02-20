@@ -1,0 +1,70 @@
+package authclientsecret
+
+import (
+	a "{{.ProjectPath}}/internal/audit"
+)
+
+//go:generate mockgen -source=manager.go -destination=mock.go -package=authclientsecret
+type (
+	DataAuthClientSecretAdapter interface {
+		Read(*AuthClientSecret) error
+		ReadAll(*[]AuthClientSecret, AuthClientSecretParam) (int, error)
+		Create(*AuthClientSecret) error
+		Update(AuthClientSecret) error
+		Delete(*AuthClientSecret) error
+	}
+
+	ManagerAuthClientSecret struct {
+		dataAuthClientSecret DataAuthClientSecretAdapter
+		auditWriter          a.AuditAdapter
+	}
+)
+
+func NewManagerAuthClientSecret(cau DataAuthClientSecretAdapter) *ManagerAuthClientSecret {
+	aw := a.AuditInit()
+	return &ManagerAuthClientSecret{dataAuthClientSecret: cau, auditWriter: aw}
+}
+
+func (m *ManagerAuthClientSecret) Get(au *AuthClientSecret) error {
+
+	return m.dataAuthClientSecret.Read(au)
+}
+
+func (m *ManagerAuthClientSecret) Search(au *[]AuthClientSecret, param AuthClientSecretParam) (int, error) {
+	param.Param.CalculateParam("", map[string]string{})
+
+	return m.dataAuthClientSecret.ReadAll(au, param)
+}
+
+func (m *ManagerAuthClientSecret) Post(au *AuthClientSecret) error {
+
+	if err := m.dataAuthClientSecret.Create(au); err != nil {
+		return err
+	}
+	go a.AuditCreate(m.auditWriter, *au, AuthClientSecretConst, a.KeysToString("client_id", au.ClientId, "secret", au.Secret))
+	return nil
+}
+
+func (m *ManagerAuthClientSecret) Patch(auIn AuthClientSecret) error {
+	au := &AuthClientSecret{ClientId: auIn.ClientId, Secret: auIn.Secret}
+	errGet := m.dataAuthClientSecret.Read(au)
+	if errGet != nil {
+		return errGet
+	}
+	existingValues := make(map[string]interface{})
+
+	if err := m.dataAuthClientSecret.Update(*au); err != nil {
+		return err
+	}
+	go a.AuditPatch(m.auditWriter, *au, AuthClientSecretConst, a.KeysToString("client_id", au.ClientId, "secret", au.Secret), existingValues)
+	return nil
+}
+
+func (m *ManagerAuthClientSecret) Delete(au *AuthClientSecret) error {
+
+	if err := m.dataAuthClientSecret.Delete(au); err != nil {
+		return err
+	}
+	go a.AuditDelete(m.auditWriter, *au, AuthClientSecretConst, a.KeysToString("client_id", au.ClientId, "secret", au.Secret))
+	return nil
+}

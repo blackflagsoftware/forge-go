@@ -1,0 +1,40 @@
+package authauthorize
+
+import (
+	"gopkg.in/guregu/null.v3"
+	"{{.ProjectPath}}/config"
+	"{{.ProjectPath}}/internal/util"
+)
+
+type (
+	AuthAuthorize struct {
+		Id                   string      `db:"id" json:"id"`
+		ClientId             null.String `db:"client_id" json:"client_id"`
+		Verifier             null.String `db:"verifier" json:"verifier"`
+		VerifierEncodeMethod null.String `db:"verifier_encode_method" json:"verifier_encode_method"`
+		State                null.String `db:"state" json:"state"`
+		Scope                null.String `db:"scope" json:"scope"`
+		ConsentId            null.String `db:"consent_id" json:"consent_id"`
+		AuthorizedAt         null.Time   `db:"authorized_at" json:"authorized_at"`
+		AuthCodeAt           null.Time   `db:"auth_code_at" json:"auth_code_at"`
+		AuthCode             null.String `db:"auth_code" json:"auth_code"`
+	}
+
+	AuthAuthorizeData struct {
+		Data AuthAuthorize `json:"data"`
+	}
+
+	AuthAuthorizeParam struct {
+		// TODO: add any other custom params here
+		util.Param
+	}
+)
+
+const AuthAuthorizeConst = "auth_authorize"
+
+func InitStorage() DataAuthAuthorizeAdapter {
+	if config.StorageSQL {
+		return InitSQL()
+	}
+	return nil
+}

@@ -1,0 +1,110 @@
+package authclientsecret
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+	ae "{{.ProjectPath}}/internal/api_error"
+	util "{{.ProjectPath}}/internal/util"
+)
+
+type (
+	ManagerAuthClientSecretAdapter interface {
+		Get(*AuthClientSecret) error
+		Search(*[]AuthClientSecret, AuthClientSecretParam) (int, error)
+		Post(*AuthClientSecret) error
+		Patch(AuthClientSecret) error
+		Delete(*AuthClientSecret) error
+	}
+
+	RestAuthClientSecret struct {
+		managerAuthClientSecret ManagerAuthClientSecretAdapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	sl := InitStorage()
+	ml := NewManagerAuthClientSecret(sl)
+	hl := NewRestAuthClientSecret(ml)
+	hl.LoadAuthClientSecretRoutes(eg)
+}
+
+func NewRestAuthClientSecret(mau ManagerAuthClientSecretAdapter) *RestAuthClientSecret {
+	return &RestAuthClientSecret{managerAuthClientSecret: mau}
+}
+
+func (h *RestAuthClientSecret) LoadAuthClientSecretRoutes(eg *echo.Group) {
+	eg.GET("/auth-client-secret/:client_id/secret/:secret", h.Get)
+	eg.POST("/auth-client-secret/search", h.Search)
+	eg.POST("/auth-client-secret", h.Post)
+	eg.PATCH("/auth-client-secret", h.Patch)
+	eg.DELETE("/auth-client-secret/:client_id/secret/:secret", h.Delete)
+}
+
+func (h *RestAuthClientSecret) Get(c echo.Context) error {
+
+	authClientSecret := &AuthClientSecret{}
+	if err := h.managerAuthClientSecret.Get(authClientSecret); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authClientSecret, nil, nil))
+}
+
+func (h *RestAuthClientSecret) Search(c echo.Context) error {
+	param := AuthClientSecretParam{}
+	if err := c.Bind(&param); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
+	authClientSecrets := &[]AuthClientSecret{}
+	totalCount, err := h.managerAuthClientSecret.Search(authClientSecrets, param)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authClientSecrets, nil, &totalCount))
+}
+
+func (h *RestAuthClientSecret) Post(c echo.Context) error {
+	au := AuthClientSecret{}
+	auData := AuthClientSecretData{Data: au}
+	if err := c.Bind(&auData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerAuthClientSecret.Post(&auData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, auData.Data, nil, nil))
+}
+
+func (h *RestAuthClientSecret) Patch(c echo.Context) error {
+	au := AuthClientSecret{}
+	auData := AuthClientSecretData{Data: au}
+	if err := c.Bind(&auData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerAuthClientSecret.Patch(auData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestAuthClientSecret) Delete(c echo.Context) error {
+
+	authClientSecret := &AuthClientSecret{}
+	if err := h.managerAuthClientSecret.Delete(authClientSecret); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}

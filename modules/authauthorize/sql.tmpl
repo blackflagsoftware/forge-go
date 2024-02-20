@@ -1,0 +1,148 @@
+package authauthorize
+
+import (
+	"fmt"
+
+	"github.com/jmoiron/sqlx"
+	ae "{{.ProjectPath}}/internal/api_error"
+	stor "{{.ProjectPath}}/internal/storage"
+	"{{.ProjectPath}}/internal/util"
+)
+
+type (
+	SQLAuthAuthorize struct {
+		DB *sqlx.DB
+	}
+)
+
+func InitSQL() *SQLAuthAuthorize {
+	db := stor.PostgresInit()
+	return &SQLAuthAuthorize{DB: db}
+}
+
+func (d *SQLAuthAuthorize) Read(aa *AuthAuthorize) error {
+	sqlGet := `
+		SELECT
+			id,
+			client_id,
+			verifier,
+			verifier_encode_method,
+			state,
+			scope,
+			consent_id,
+			authorized_at,
+			auth_code_at,
+			auth_code
+		FROM auth_authorize WHERE id = $1`
+	if errDB := d.DB.Get(aa, sqlGet, aa.Id); errDB != nil {
+		return ae.DBError("AuthAuthorize Get: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthAuthorize) ReadAll(aa *[]AuthAuthorize, param AuthAuthorizeParam) (int, error) {
+	searchStmt, args := util.BuildSearchString(param.Search)
+	sqlSearch := fmt.Sprintf(`
+		SELECT
+			id,
+			client_id,
+			verifier,
+			verifier_encode_method,
+			state,
+			scope,
+			consent_id,
+			authorized_at,
+			auth_code_at,
+			auth_code
+		FROM auth_authorize
+		%s
+		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+	sqlSearch = d.DB.Rebind(sqlSearch)
+	if errDB := d.DB.Select(aa, sqlSearch, args...); errDB != nil {
+		return 0, ae.DBError("AuthAuthorize Search: unable to select records.", errDB)
+	}
+	sqlCount := fmt.Sprintf(`
+		SELECT
+			COUNT(*)
+		FROM auth_authorize
+		%s`, searchStmt)
+	var count int
+	sqlCount = d.DB.Rebind(sqlCount)
+	if errDB := d.DB.Get(&count, sqlCount, args...); errDB != nil {
+		return 0, ae.DBError("auth_authorize Search: unable to select count.", errDB)
+	}
+	return count, nil
+}
+
+func (d *SQLAuthAuthorize) Create(aa *AuthAuthorize) error {
+	sqlPost := `
+		INSERT INTO auth_authorize (
+			id,
+			client_id,
+			verifier,
+			verifier_encode_method,
+			state,
+			scope,
+			consent_id,
+			authorized_at,
+			auth_code_at,
+			auth_code
+		) VALUES (
+			:id,
+			:client_id,
+			:verifier,
+			:verifier_encode_method,
+			:state,
+			:scope,
+			:consent_id,
+			:authorized_at,
+			:auth_code_at,
+			:auth_code
+		)`
+	_, errDB := d.DB.NamedExec(sqlPost, aa)
+	if errDB != nil {
+		return ae.DBError("AuthAuthorize Post: unable to insert record.", errDB)
+	}
+
+	return nil
+}
+
+func (d *SQLAuthAuthorize) Update(aa AuthAuthorize) error {
+	sqlPatch := `
+		UPDATE auth_authorize SET
+			client_id = :client_id,
+			verifier = :verifier,
+			verifier_encode_method = :verifier_encode_method,
+			state = :state,
+			scope = :scope,
+			consent_id = :consent_id,
+			authorized_at = :authorized_at,
+			auth_code_at = :auth_code_at,
+			auth_code = :auth_code
+		WHERE id = :id`
+	if _, errDB := d.DB.NamedExec(sqlPatch, aa); errDB != nil {
+		return ae.DBError("AuthAuthorize Patch: unable to update record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthAuthorize) Delete(aa *AuthAuthorize) error {
+	sqlDelete := `
+		DELETE FROM auth_authorize WHERE id = $1`
+	if _, errDB := d.DB.Exec(sqlDelete, aa.Id); errDB != nil {
+		return ae.DBError("AuthAuthorize Delete: unable to delete record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthAuthorize) VerifyConsent(aa AuthAuthorize) error {
+	exists := false
+	sqlGet := `SELECT EXIST(SELECT id FROM auth_authorize WHERE id = $1 AND consent_id = $2)`
+	if errDB := d.DB.Get(&exists, sqlGet, aa.Id, aa.ConsentId); errDB != nil {
+		return ae.DBError("AuthAuthorize Get: unable to get record.", errDB)
+	}
+	if !exists {
+		return ae.DBEmptyRowError(nil) // TODO: fix this
+	}
+	return nil
+}

@@ -1,0 +1,33 @@
+package authrefresh
+
+import (
+	"{{.ProjectPath}}/config"
+	"{{.ProjectPath}}/internal/util"
+	"gopkg.in/guregu/null.v3"
+)
+
+type (
+	AuthRefresh struct {
+		ClientId  string    `db:"client_id" json:"client_id"`
+		Token     string    `db:"token" json:"token"`
+		CreatedAt null.Time `db:"created_at" json:"created_at"`
+	}
+
+	AuthRefreshData struct {
+		Data AuthRefresh `json:"data"`
+	}
+
+	AuthRefreshParam struct {
+		// TODO: add any other custom params here
+		util.Param
+	}
+)
+
+const AuthRefreshConst = "auth_refresh"
+
+func InitStorage() DataAuthRefreshAdapter {
+	if config.StorageSQL {
+		return InitSQL()
+	}
+	return nil
+}

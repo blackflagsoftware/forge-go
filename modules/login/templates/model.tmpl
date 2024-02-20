@@ -29,6 +29,31 @@ type (
 		util.Param
 	}
 
+	OAuthLogin struct {
+		EmailAddr null.String `db:"email_addr" json:"email_address"`
+		Pwd       null.String `db:"pwd" json:"password"`
+		AuthId    null.String `json:"auth_id"`
+	}
+
+	OAuthResponse struct {
+		State    string `json:"state"`
+		AuthCode string `json:"code"`
+	}
+
+	OAuthToken struct {
+		TokenType    string `json:"token_type"`
+		AccessToken  string `json:"access_token"`
+		ExpiresIn    int    `json:"expires_in"` // in seconds
+		Scope        string `json:"scope"`      // comma delimeted list
+		RefreshToken string `json:"refresh_token"`
+		GrantType    string `json:"grant_type,omitempty"` // authorization_code || refresh_token
+		CodeVerifier string `json:"code_verifier,omitempty"`
+		ClientId     string `json:"client_id,omitempty"`
+		ClientSecret string `json:"client_secret,omitempty"`
+		Code         string `json:"code,omitempty"`
+		RedirectUrl  string `json:"redirect_url,omitempty"`
+	}
+
 	ResetRequest struct {
 		EmailAddr  string    `db:"email_addr" json:"email_addr"`
 		LoginId   string    `db:"login_id"`

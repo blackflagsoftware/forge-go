@@ -1,0 +1,31 @@
+package authclientsecret
+
+import (
+	"{{.ProjectPath}}/config"
+	"{{.ProjectPath}}/internal/util"
+)
+
+type (
+	AuthClientSecret struct {
+		ClientId string `db:"client_id" json:"client_id"`
+		Secret   string `db:"secret" json:"secret"`
+	}
+
+	AuthClientSecretData struct {
+		Data AuthClientSecret `json:"data"`
+	}
+
+	AuthClientSecretParam struct {
+		// TODO: add any other custom params here
+		util.Param
+	}
+)
+
+const AuthClientSecretConst = "auth_client_secret"
+
+func InitStorage() DataAuthClientSecretAdapter {
+	if config.StorageSQL {
+		return InitSQL()
+	}
+	return nil
+}

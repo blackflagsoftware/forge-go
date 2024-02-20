@@ -1,0 +1,111 @@
+package authauthorize
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+	ae "{{.ProjectPath}}/internal/api_error"
+	util "{{.ProjectPath}}/internal/util"
+)
+
+type (
+	ManagerAuthAuthorizeAdapter interface {
+		Get(*AuthAuthorize) error
+		Search(*[]AuthAuthorize, AuthAuthorizeParam) (int, error)
+		Post(*AuthAuthorize) error
+		Patch(AuthAuthorize) error
+		Delete(*AuthAuthorize) error
+		VerifyConsent(AuthAuthorize) error
+	}
+
+	RestAuthAuthorize struct {
+		managerAuthAuthorize ManagerAuthAuthorizeAdapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	sl := InitStorage()
+	ml := NewManagerAuthAuthorize(sl)
+	hl := NewRestAuthAuthorize(ml)
+	hl.LoadAuthAuthorizeRoutes(eg)
+}
+
+func NewRestAuthAuthorize(maa ManagerAuthAuthorizeAdapter) *RestAuthAuthorize {
+	return &RestAuthAuthorize{managerAuthAuthorize: maa}
+}
+
+func (h *RestAuthAuthorize) LoadAuthAuthorizeRoutes(eg *echo.Group) {
+	eg.GET("/auth-authorize/:id", h.Get)
+	eg.POST("/auth-authorize/search", h.Search)
+	eg.POST("/auth-authorize", h.Post)
+	eg.PATCH("/auth-authorize", h.Patch)
+	eg.DELETE("/auth-authorize/:id", h.Delete)
+}
+
+func (h *RestAuthAuthorize) Get(c echo.Context) error {
+
+	authAuthorize := &AuthAuthorize{}
+	if err := h.managerAuthAuthorize.Get(authAuthorize); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authAuthorize, nil, nil))
+}
+
+func (h *RestAuthAuthorize) Search(c echo.Context) error {
+	param := AuthAuthorizeParam{}
+	if err := c.Bind(&param); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
+	authAuthorizes := &[]AuthAuthorize{}
+	totalCount, err := h.managerAuthAuthorize.Search(authAuthorizes, param)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authAuthorizes, nil, &totalCount))
+}
+
+func (h *RestAuthAuthorize) Post(c echo.Context) error {
+	aa := AuthAuthorize{}
+	aaData := AuthAuthorizeData{Data: aa}
+	if err := c.Bind(&aaData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerAuthAuthorize.Post(&aaData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, aaData.Data, nil, nil))
+}
+
+func (h *RestAuthAuthorize) Patch(c echo.Context) error {
+	aa := AuthAuthorize{}
+	aaData := AuthAuthorizeData{Data: aa}
+	if err := c.Bind(&aaData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerAuthAuthorize.Patch(aaData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestAuthAuthorize) Delete(c echo.Context) error {
+
+	authAuthorize := &AuthAuthorize{}
+	if err := h.managerAuthAuthorize.Delete(authAuthorize); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}

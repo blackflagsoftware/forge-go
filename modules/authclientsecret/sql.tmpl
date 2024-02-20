@@ -1,0 +1,96 @@
+package authclientsecret
+
+import (
+	"fmt"
+
+	"github.com/jmoiron/sqlx"
+	ae "{{.ProjectPath}}/internal/api_error"
+	stor "{{.ProjectPath}}/internal/storage"
+	"{{.ProjectPath}}/internal/util"
+)
+
+type (
+	SQLAuthClientSecret struct {
+		DB *sqlx.DB
+	}
+)
+
+func InitSQL() *SQLAuthClientSecret {
+	db := stor.PostgresInit()
+	return &SQLAuthClientSecret{DB: db}
+}
+
+func (d *SQLAuthClientSecret) Read(au *AuthClientSecret) error {
+	sqlGet := `
+		SELECT
+			client_id,
+			secret
+		FROM auth_client_secret WHERE client_id = $1 and secret = $2`
+	if errDB := d.DB.Get(au, sqlGet, au.ClientId, au.Secret); errDB != nil {
+		return ae.DBError("AuthClientSecret Get: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthClientSecret) ReadAll(au *[]AuthClientSecret, param AuthClientSecretParam) (int, error) {
+	searchStmt, args := util.BuildSearchString(param.Search)
+	sqlSearch := fmt.Sprintf(`
+		SELECT
+			client_id,
+			secret
+		FROM auth_client_secret
+		%s
+		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+	sqlSearch = d.DB.Rebind(sqlSearch)
+	if errDB := d.DB.Select(au, sqlSearch, args...); errDB != nil {
+		return 0, ae.DBError("AuthClientSecret Search: unable to select records.", errDB)
+	}
+	sqlCount := fmt.Sprintf(`
+		SELECT
+			COUNT(*)
+		FROM auth_client_secret
+		%s`, searchStmt)
+	var count int
+	sqlCount = d.DB.Rebind(sqlCount)
+	if errDB := d.DB.Get(&count, sqlCount, args...); errDB != nil {
+		return 0, ae.DBError("auth_client_secret Search: unable to select count.", errDB)
+	}
+	return count, nil
+}
+
+func (d *SQLAuthClientSecret) Create(au *AuthClientSecret) error {
+	sqlPost := `
+		INSERT INTO auth_client_secret (
+			client_id,
+			secret
+		) VALUES (
+			:client_id,
+			:secret
+		)`
+	_, errDB := d.DB.NamedExec(sqlPost, au)
+	if errDB != nil {
+		return ae.DBError("AuthClientSecret Post: unable to insert record.", errDB)
+	}
+
+	return nil
+}
+
+func (d *SQLAuthClientSecret) Update(au AuthClientSecret) error {
+	sqlPatch := `
+		UPDATE auth_client_secret SET
+			
+		WHERE client_id = :client_idsecret = :secret`
+	if _, errDB := d.DB.NamedExec(sqlPatch, au); errDB != nil {
+		return ae.DBError("AuthClientSecret Patch: unable to update record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthClientSecret) Delete(au *AuthClientSecret) error {
+	sqlDelete := `
+		DELETE FROM auth_client_secret WHERE client_id = $1 and secret = $2`
+	if _, errDB := d.DB.Exec(sqlDelete, au.ClientId, au.Secret); errDB != nil {
+		return ae.DBError("AuthClientSecret Delete: unable to delete record.", errDB)
+	}
+	return nil
+}

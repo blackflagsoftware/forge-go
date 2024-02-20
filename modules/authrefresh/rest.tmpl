@@ -1,0 +1,110 @@
+package authrefresh
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+	ae "{{.ProjectPath}}/internal/api_error"
+	util "{{.ProjectPath}}/internal/util"
+)
+
+type (
+	ManagerAuthRefreshAdapter interface {
+		Get(*AuthRefresh) error
+		Search(*[]AuthRefresh, AuthRefreshParam) (int, error)
+		Post(*AuthRefresh) error
+		Patch(AuthRefresh) error
+		Delete(*AuthRefresh) error
+	}
+
+	RestAuthRefresh struct {
+		managerAuthRefresh ManagerAuthRefreshAdapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	sl := InitStorage()
+	ml := NewManagerAuthRefresh(sl)
+	hl := NewRestAuthRefresh(ml)
+	hl.LoadAuthRefreshRoutes(eg)
+}
+
+func NewRestAuthRefresh(mar ManagerAuthRefreshAdapter) *RestAuthRefresh {
+	return &RestAuthRefresh{managerAuthRefresh: mar}
+}
+
+func (h *RestAuthRefresh) LoadAuthRefreshRoutes(eg *echo.Group) {
+	eg.GET("/auth-refresh/:client_id/token/:token", h.Get)
+	eg.POST("/auth-refresh/search", h.Search)
+	eg.POST("/auth-refresh", h.Post)
+	eg.PATCH("/auth-refresh", h.Patch)
+	eg.DELETE("/auth-refresh/:client_id/token/:token", h.Delete)
+}
+
+func (h *RestAuthRefresh) Get(c echo.Context) error {
+
+	authRefresh := &AuthRefresh{}
+	if err := h.managerAuthRefresh.Get(authRefresh); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authRefresh, nil, nil))
+}
+
+func (h *RestAuthRefresh) Search(c echo.Context) error {
+	param := AuthRefreshParam{}
+	if err := c.Bind(&param); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
+	authRefreshs := &[]AuthRefresh{}
+	totalCount, err := h.managerAuthRefresh.Search(authRefreshs, param)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authRefreshs, nil, &totalCount))
+}
+
+func (h *RestAuthRefresh) Post(c echo.Context) error {
+	ar := AuthRefresh{}
+	arData := AuthRefreshData{Data: ar}
+	if err := c.Bind(&arData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerAuthRefresh.Post(&arData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, arData.Data, nil, nil))
+}
+
+func (h *RestAuthRefresh) Patch(c echo.Context) error {
+	ar := AuthRefresh{}
+	arData := AuthRefreshData{Data: ar}
+	if err := c.Bind(&arData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerAuthRefresh.Patch(arData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (h *RestAuthRefresh) Delete(c echo.Context) error {
+
+	authRefresh := &AuthRefresh{}
+	if err := h.managerAuthRefresh.Delete(authRefresh); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}

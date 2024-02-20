@@ -1,0 +1,162 @@
+package authauthorize
+
+import (
+	"time"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	a "{{.ProjectPath}}/internal/audit"
+)
+
+//go:generate mockgen -source=manager.go -destination=mock.go -package=authauthorize
+type (
+	DataAuthAuthorizeAdapter interface {
+		Read(*AuthAuthorize) error
+		ReadAll(*[]AuthAuthorize, AuthAuthorizeParam) (int, error)
+		Create(*AuthAuthorize) error
+		Update(AuthAuthorize) error
+		Delete(*AuthAuthorize) error
+		VerifyConsent(AuthAuthorize) error
+	}
+
+	ManagerAuthAuthorize struct {
+		dataAuthAuthorize DataAuthAuthorizeAdapter
+		auditWriter       a.AuditAdapter
+	}
+)
+
+func NewManagerAuthAuthorize(caa DataAuthAuthorizeAdapter) *ManagerAuthAuthorize {
+	aw := a.AuditInit()
+	return &ManagerAuthAuthorize{dataAuthAuthorize: caa, auditWriter: aw}
+}
+
+func (m *ManagerAuthAuthorize) Get(aa *AuthAuthorize) error {
+
+	return m.dataAuthAuthorize.Read(aa)
+}
+
+func (m *ManagerAuthAuthorize) Search(aa *[]AuthAuthorize, param AuthAuthorizeParam) (int, error) {
+	param.Param.CalculateParam("client_id", map[string]string{"client_id": "client_id", "verifier": "verifier", "verifier_encode_method": "verifier_encode_method", "state": "state", "scope": "scope", "authorized_at": "authorized_at", "auth_code_at": "auth_code_at", "auth_code": "auth_code"})
+
+	return m.dataAuthAuthorize.ReadAll(aa, param)
+}
+
+func (m *ManagerAuthAuthorize) Post(aa *AuthAuthorize) error {
+	if !aa.ClientId.Valid {
+		return ae.MissingParamError("ClientId")
+	}
+	if aa.ClientId.Valid && len(aa.ClientId.ValueOrZero()) > 32 {
+		return ae.StringLengthError("ClientId", 32)
+	}
+	if aa.VerifierEncodeMethod.Valid && len(aa.VerifierEncodeMethod.ValueOrZero()) > 10 {
+		return ae.StringLengthError("VerifierEncodeMethod", 10)
+	}
+	if aa.State.Valid && len(aa.State.ValueOrZero()) > 100 {
+		return ae.StringLengthError("State", 100)
+	}
+	if aa.Scope.Valid && len(aa.Scope.ValueOrZero()) > 256 {
+		return ae.StringLengthError("Scope", 256)
+	}
+	if aa.ConsentId.Valid && len(aa.ConsentId.ValueOrZero()) > 32 {
+		return ae.StringLengthError("Scope", 256)
+	}
+	aa.AuthorizedAt.Time = time.Now().UTC()
+	if aa.AuthCode.Valid && len(aa.AuthCode.ValueOrZero()) > 256 {
+		return ae.StringLengthError("AuthCode", 256)
+	}
+	if err := m.dataAuthAuthorize.Create(aa); err != nil {
+		return err
+	}
+	go a.AuditCreate(m.auditWriter, *aa, AuthAuthorizeConst, a.KeysToString("id", aa.Id))
+	return nil
+}
+
+func (m *ManagerAuthAuthorize) Patch(aaIn AuthAuthorize) error {
+	aa := &AuthAuthorize{Id: aaIn.Id}
+	errGet := m.dataAuthAuthorize.Read(aa)
+	if errGet != nil {
+		return errGet
+	}
+	existingValues := make(map[string]interface{})
+	// ClientId
+	if aaIn.ClientId.Valid {
+		if aaIn.ClientId.Valid && len(aaIn.ClientId.ValueOrZero()) > 32 {
+			return ae.StringLengthError("ClientId", 32)
+		}
+		existingValues["client_id"] = aa.ClientId.String
+		aa.ClientId = aaIn.ClientId
+	}
+	// Verifier
+	if aaIn.Verifier.Valid {
+		existingValues["verifier"] = aa.Verifier.String
+		aa.Verifier = aaIn.Verifier
+	}
+	// VerifierEncodeMethod
+	if aaIn.VerifierEncodeMethod.Valid {
+		if aaIn.VerifierEncodeMethod.Valid && len(aaIn.VerifierEncodeMethod.ValueOrZero()) > 10 {
+			return ae.StringLengthError("VerifierEncodeMethod", 10)
+		}
+		existingValues["verifier_encode_method"] = aa.VerifierEncodeMethod.String
+		aa.VerifierEncodeMethod = aaIn.VerifierEncodeMethod
+	}
+	// State
+	if aaIn.State.Valid {
+		if aaIn.State.Valid && len(aaIn.State.ValueOrZero()) > 100 {
+			return ae.StringLengthError("State", 100)
+		}
+		existingValues["state"] = aa.State.String
+		aa.State = aaIn.State
+	}
+	// Scope
+	if aaIn.Scope.Valid {
+		if aaIn.Scope.Valid && len(aaIn.Scope.ValueOrZero()) > 256 {
+			return ae.StringLengthError("Scope", 256)
+		}
+		existingValues["scope"] = aa.Scope.String
+		aa.Scope = aaIn.Scope
+	}
+	// ConsentId
+	if aaIn.ConsentId.Valid {
+		if aaIn.ConsentId.Valid && len(aaIn.ConsentId.ValueOrZero()) > 32 {
+			return ae.StringLengthError("Scope", 32)
+		}
+		existingValues["scope"] = aa.Scope.String
+		aa.Scope = aaIn.Scope
+	}
+	// AuthorizedAt
+	if aaIn.AuthorizedAt.Valid {
+		existingValues["authorized_at"] = aa.AuthorizedAt.Time.Format(time.RFC3339)
+		aa.AuthorizedAt = aaIn.AuthorizedAt
+	}
+	// AuthCodeAt
+	if aaIn.AuthCodeAt.Valid {
+		existingValues["auth_code_at"] = aa.AuthCodeAt.Time.Format(time.RFC3339)
+		aa.AuthCodeAt = aaIn.AuthCodeAt
+	}
+	// AuthCode
+	if aaIn.AuthCode.Valid {
+		if aaIn.AuthCode.Valid && len(aaIn.AuthCode.ValueOrZero()) > 256 {
+			return ae.StringLengthError("AuthCode", 256)
+		}
+		existingValues["auth_code"] = aa.AuthCode.String
+		aa.AuthCode = aaIn.AuthCode
+	}
+	if err := m.dataAuthAuthorize.Update(*aa); err != nil {
+		return err
+	}
+	go a.AuditPatch(m.auditWriter, *aa, AuthAuthorizeConst, a.KeysToString("id", aa.Id), existingValues)
+	return nil
+}
+
+func (m *ManagerAuthAuthorize) Delete(aa *AuthAuthorize) error {
+
+	if err := m.dataAuthAuthorize.Delete(aa); err != nil {
+		return err
+	}
+	go a.AuditDelete(m.auditWriter, *aa, AuthAuthorizeConst, a.KeysToString("id", aa.Id))
+	return nil
+}
+
+func (m *ManagerAuthAuthorize) VerifyConsent(aa AuthAuthorize) error {
+
+	return m.dataAuthAuthorize.VerifyConsent(aa)
+}

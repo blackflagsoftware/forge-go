@@ -1,0 +1,124 @@
+package authclient
+
+import (
+	ae "{{.ProjectPath}}/internal/api_error"
+	a "{{.ProjectPath}}/internal/audit"
+	"{{.ProjectPath}}/internal/util"
+)
+
+//go:generate mockgen -source=manager.go -destination=mock.go -package=authclient
+type (
+	DataAuthClientAdapter interface {
+		Read(*AuthClient) error
+		ReadAll(*[]AuthClient, AuthClientParam) (int, error)
+		Create(*AuthClient) error
+		Update(AuthClient) error
+		Delete(*AuthClient) error
+	}
+
+	ManagerAuthClient struct {
+		dataAuthClient DataAuthClientAdapter
+		auditWriter    a.AuditAdapter
+	}
+)
+
+func NewManagerAuthClient(caut DataAuthClientAdapter) *ManagerAuthClient {
+	aw := a.AuditInit()
+	return &ManagerAuthClient{dataAuthClient: caut, auditWriter: aw}
+}
+
+func (m *ManagerAuthClient) Get(aut *AuthClient) error {
+
+	return m.dataAuthClient.Read(aut)
+}
+
+func (m *ManagerAuthClient) Search(aut *[]AuthClient, param AuthClientParam) (int, error) {
+	param.Param.CalculateParam("name", map[string]string{"name": "name", "description": "description", "homepage_url": "homepage_url", "callback_url": "callback_url"})
+
+	return m.dataAuthClient.ReadAll(aut, param)
+}
+
+func (m *ManagerAuthClient) Post(aut *AuthClient) error {
+	if !aut.Name.Valid {
+		return ae.MissingParamError("Name")
+	}
+	if aut.Name.Valid && len(aut.Name.ValueOrZero()) > 100 {
+		return ae.StringLengthError("Name", 100)
+	}
+	if aut.Description.Valid && len(aut.Description.ValueOrZero()) > 1000 {
+		return ae.StringLengthError("Description", 1000)
+	}
+	if !aut.HomepageUrl.Valid {
+		return ae.MissingParamError("HomepageUrl")
+	}
+	if aut.HomepageUrl.Valid && len(aut.HomepageUrl.ValueOrZero()) > 500 {
+		return ae.StringLengthError("HomepageUrl", 500)
+	}
+	if !aut.CallbackUrl.Valid {
+		return ae.MissingParamError("CallbackUrl")
+	}
+	if aut.CallbackUrl.Valid && len(aut.CallbackUrl.ValueOrZero()) > 500 {
+		return ae.StringLengthError("CallbackUrl", 500)
+	}
+	aut.Id = util.GenerateRandomString(32)
+	if err := m.dataAuthClient.Create(aut); err != nil {
+		return err
+	}
+	go a.AuditCreate(m.auditWriter, *aut, AuthClientConst, a.KeysToString("id", aut.Id))
+	return nil
+}
+
+func (m *ManagerAuthClient) Patch(autIn AuthClient) error {
+	aut := &AuthClient{Id: autIn.Id}
+	errGet := m.dataAuthClient.Read(aut)
+	if errGet != nil {
+		return errGet
+	}
+	existingValues := make(map[string]interface{})
+	// Name
+	if autIn.Name.Valid {
+		if autIn.Name.Valid && len(autIn.Name.ValueOrZero()) > 100 {
+			return ae.StringLengthError("Name", 100)
+		}
+		existingValues["name"] = aut.Name.String
+		aut.Name = autIn.Name
+	}
+	// Description
+	if autIn.Description.Valid {
+		if autIn.Description.Valid && len(autIn.Description.ValueOrZero()) > 1000 {
+			return ae.StringLengthError("Description", 1000)
+		}
+		existingValues["description"] = aut.Description.String
+		aut.Description = autIn.Description
+	}
+	// HomepageUrl
+	if autIn.HomepageUrl.Valid {
+		if autIn.HomepageUrl.Valid && len(autIn.HomepageUrl.ValueOrZero()) > 500 {
+			return ae.StringLengthError("HomepageUrl", 500)
+		}
+		existingValues["homepage_url"] = aut.HomepageUrl.String
+		aut.HomepageUrl = autIn.HomepageUrl
+	}
+	// CallbackUrl
+	if autIn.CallbackUrl.Valid {
+		if autIn.CallbackUrl.Valid && len(autIn.CallbackUrl.ValueOrZero()) > 500 {
+			return ae.StringLengthError("CallbackUrl", 500)
+		}
+		existingValues["callback_url"] = aut.CallbackUrl.String
+		aut.CallbackUrl = autIn.CallbackUrl
+	}
+	if err := m.dataAuthClient.Update(*aut); err != nil {
+		return err
+	}
+	go a.AuditPatch(m.auditWriter, *aut, AuthClientConst, a.KeysToString("id", aut.Id), existingValues)
+	return nil
+}
+
+func (m *ManagerAuthClient) Delete(aut *AuthClient) error {
+
+	if err := m.dataAuthClient.Delete(aut); err != nil {
+		return err
+	}
+	go a.AuditDelete(m.auditWriter, *aut, AuthClientConst, a.KeysToString("id", aut.Id))
+	return nil
+}

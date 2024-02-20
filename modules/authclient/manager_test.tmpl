@@ -1,0 +1,185 @@
+package authclient
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/guregu/null.v3"
+)
+
+func TestManagerAuthClient_Get(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthClient := NewMockDataAuthClientAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		aut     *AuthClient
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClient{dataAuthClient: mockDataAuthClient}
+			err := m.Get(tt.aut)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClient.Get().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClient.Get().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthClient_Post(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthClient := NewMockDataAuthClientAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		aut     *AuthClient
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			&AuthClient{Name: null.NewString("a", true), Description: null.NewString("a", true), HomepageUrl: null.NewString("a", true), CallbackUrl: null.NewString("a", true), Id: "a"},
+			false,
+			[]*gomock.Call{mockDataAuthClient.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+		},
+		{
+			"failed - id",
+			&AuthClient{Id: "", Name: null.NewString("a", true), Description: null.NewString("a", true), HomepageUrl: null.NewString("a", true), CallbackUrl: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length id",
+			&AuthClient{HomepageUrl: null.NewString("a", true), CallbackUrl: null.NewString("a", true), Id: "0123456789012345678901234567890123456789", Name: null.NewString("a", true), Description: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - name",
+			&AuthClient{Name: null.NewString("a", false), Description: null.NewString("a", true), HomepageUrl: null.NewString("a", true), CallbackUrl: null.NewString("a", true), Id: "a"},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length name",
+			&AuthClient{HomepageUrl: null.NewString("a", true), CallbackUrl: null.NewString("a", true), Id: "a", Name: null.NewString("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true), Description: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length description",
+			&AuthClient{Id: "a", Name: null.NewString("a", true), Description: null.NewString("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true), HomepageUrl: null.NewString("a", true), CallbackUrl: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - homepageUrl",
+			&AuthClient{Id: "a", Name: null.NewString("a", true), Description: null.NewString("a", true), HomepageUrl: null.NewString("a", false), CallbackUrl: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length homepageUrl",
+			&AuthClient{Id: "a", Name: null.NewString("a", true), Description: null.NewString("a", true), HomepageUrl: null.NewString("012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true), CallbackUrl: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - callbackUrl",
+			&AuthClient{Description: null.NewString("a", true), HomepageUrl: null.NewString("a", true), CallbackUrl: null.NewString("a", false), Id: "a", Name: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length callbackUrl",
+			&AuthClient{Description: null.NewString("a", true), HomepageUrl: null.NewString("a", true), CallbackUrl: null.NewString("012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true), Id: "a", Name: null.NewString("a", true)},
+			true,
+			[]*gomock.Call{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClient{dataAuthClient: mockDataAuthClient}
+			err := m.Post(tt.aut)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClient.Create().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClient.Create().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthClient_Patch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthClient := NewMockDataAuthClientAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		body    AuthClient
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			AuthClient{},
+			false,
+			[]*gomock.Call{
+				mockDataAuthClient.EXPECT().Read(gomock.Any()).Return(nil),
+				mockDataAuthClient.EXPECT().Update(gomock.Any()).Return(nil),
+			},
+		},
+		{
+			"invalid id",
+			AuthClient{},
+			true,
+			[]*gomock.Call{
+				mockDataAuthClient.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClient{dataAuthClient: mockDataAuthClient}
+			err := m.Patch(tt.body)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClient.Update().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClient.Update().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthClient_Delete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockDataAuthClient := NewMockDataAuthClientAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		aut     *AuthClient
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClient{dataAuthClient: mockDataAuthClient}
+			err := m.Delete(tt.aut)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClient.Delete().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClient.Delete().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}

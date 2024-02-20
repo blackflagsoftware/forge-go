@@ -1,0 +1,76 @@
+package authrefresh
+
+import (
+	"time"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	a "{{.ProjectPath}}/internal/audit"
+)
+
+//go:generate mockgen -source=manager.go -destination=mock.go -package=authrefresh
+type (
+	DataAuthRefreshAdapter interface {
+		Read(*AuthRefresh) error
+		ReadAll(*[]AuthRefresh, AuthRefreshParam) (int, error)
+		Create(*AuthRefresh) error
+		Update(AuthRefresh) error
+		Delete(*AuthRefresh) error
+	}
+
+	ManagerAuthRefresh struct {
+		dataAuthRefresh DataAuthRefreshAdapter
+		auditWriter     a.AuditAdapter
+	}
+)
+
+func NewManagerAuthRefresh(car DataAuthRefreshAdapter) *ManagerAuthRefresh {
+	aw := a.AuditInit()
+	return &ManagerAuthRefresh{dataAuthRefresh: car, auditWriter: aw}
+}
+
+func (m *ManagerAuthRefresh) Get(ar *AuthRefresh) error {
+
+	return m.dataAuthRefresh.Read(ar)
+}
+
+func (m *ManagerAuthRefresh) Search(ar *[]AuthRefresh, param AuthRefreshParam) (int, error) {
+	param.Param.CalculateParam("created_at", map[string]string{"created_at": "created_at"})
+
+	return m.dataAuthRefresh.ReadAll(ar, param)
+}
+
+func (m *ManagerAuthRefresh) Post(ar *AuthRefresh) error {
+	if !ar.CreatedAt.Valid {
+		return ae.MissingParamError("CreatedAt")
+	}
+	ar.CreatedAt.Scan(time.Now().UTC())
+	if err := m.dataAuthRefresh.Create(ar); err != nil {
+		return err
+	}
+	go a.AuditCreate(m.auditWriter, *ar, AuthRefreshConst, a.KeysToString("client_id", ar.ClientId, "token", ar.Token))
+	return nil
+}
+
+func (m *ManagerAuthRefresh) Patch(arIn AuthRefresh) error {
+	ar := &AuthRefresh{ClientId: arIn.ClientId, Token: arIn.Token}
+	errGet := m.dataAuthRefresh.Read(ar)
+	if errGet != nil {
+		return errGet
+	}
+	existingValues := make(map[string]interface{})
+
+	if err := m.dataAuthRefresh.Update(*ar); err != nil {
+		return err
+	}
+	go a.AuditPatch(m.auditWriter, *ar, AuthRefreshConst, a.KeysToString("client_id", ar.ClientId, "token", ar.Token), existingValues)
+	return nil
+}
+
+func (m *ManagerAuthRefresh) Delete(ar *AuthRefresh) error {
+
+	if err := m.dataAuthRefresh.Delete(ar); err != nil {
+		return err
+	}
+	go a.AuditDelete(m.auditWriter, *ar, AuthRefreshConst, a.KeysToString("client_id", ar.ClientId, "token", ar.Token))
+	return nil
+}
