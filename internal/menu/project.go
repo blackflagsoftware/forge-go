@@ -42,12 +42,14 @@ func InputMenu(p *m.Project) {
 	} else {
 		NonSqlMenu(p)
 	}
-	temp.StartTemplating(p)
-	printDebug(p)
-	p.Entities = []m.Entity{}
-	fmt.Println("")
-	fmt.Println("Entities have been processed, press 'enter' to continue")
-	util.ParseInput()
+	if len(p.Entities) > 0 {
+		temp.StartTemplating(p)
+		printDebug(p)
+		p.Entities = []m.Entity{}
+		fmt.Println("")
+		fmt.Println("Entities have been processed, press 'enter' to continue")
+		util.ParseInput()
+	}
 }
 
 func NonSqlMenu(p *m.Project) {
