@@ -68,10 +68,10 @@ func buildStorageTemplate(p *m.Project) {
 				// listOrder += ", "
 			}
 			foundOneKey = true
-			if !countNeeded {
+			if !countNeeded && !p.CurrentEntity.MultipleKeys {
 				// only set for int key that are type mongo or sqlite3
 				// this will provide a "auto increment" type functionality
-				if c.DBType == "int" {
+				if strings.ToLower(c.DBType) == "int" || strings.ToLower(c.DBType) == "integer" {
 					includeCount := false
 					if p.Storage == "m" {
 						countFuncNeeded = "MONGO"
@@ -147,7 +147,7 @@ func buildStorageTemplate(p *m.Project) {
 	}
 	if countNeeded {
 		p.StorageCountCall = fmt.Sprintf(con.STORAGE_COUNT_CALL, p.CurrentEntity.Abbr, countColCamel)
-		p.StorageCountFunc = fmt.Sprintf(con.STORAGE_COUNT_FUNC_SQL, p.CurrentEntity.Camel, countColLower, p.CurrentEntity.Camel)
+		p.StorageCountFunc = fmt.Sprintf(con.STORAGE_COUNT_FUNC_SQL, p.CurrentEntity.Camel, countColLower, p.Camel)
 		if countFuncNeeded == "MONGO" {
 			p.StorageCountFunc = fmt.Sprintf(con.STORAGE_COUNT_FUNC_MONGO, p.CurrentEntity.Camel, p.CurrentEntity.Lower, p.CurrentEntity.Abbr, countColLower, p.CurrentEntity.Camel, p.CurrentEntity.Abbr, p.CurrentEntity.Camel, p.CurrentEntity.Abbr, p.CurrentEntity.Camel, p.CurrentEntity.Abbr, countColCamel)
 			p.StorageCountImport = "\n\t\"go.mongodb.org/mongo-driver/mongo/options\""

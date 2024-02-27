@@ -169,7 +169,7 @@ func (h *RestLogin) ResetRequest(c echo.Context) error {
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
 	resetRequestData := ResetRequestData{Data: *resetRequest}
-	return c.JSON(http.StatusOK, util.NewOutput(c, resetRequestData, nil, nil))
+	return c.NoContent(http.StatusOK)
 }
 
 func (h *RestLogin) SignIn(c echo.Context) error {
