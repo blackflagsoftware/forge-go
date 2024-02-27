@@ -29,7 +29,7 @@ func (s *Sqlite) CheckDB(db *sqlx.DB, c Connection) error {
 	return nil
 }
 
-func (s *Sqlite) CheckTable(db *sqlx.DB) error {
+func (s *Sqlite) CheckTable(db *sqlx.DB, c Connection) error {
 	createSql := "CREATE TABLE IF NOT EXISTS migration (id integer primary key autoincrement, file_name varchar(100) NOT NULL)"
 	if _, err := db.Exec(createSql); err != nil {
 		return fmt.Errorf("CheckTable[sqlite]: unable to create table; %s", err)

@@ -81,7 +81,7 @@ func (p *Postgres) CheckDB(db *sqlx.DB, c Connection) error {
 	return nil
 }
 
-func (p *Postgres) CheckTable(db *sqlx.DB) error {
+func (p *Postgres) CheckTable(db *sqlx.DB, c Connection) error {
 	checkSql := "SELECT EXISTS(SELECT table_name FROM information_schema.tables WHERE table_name = 'migration')"
 	exists := false
 	err := db.Get(&exists, checkSql)

@@ -38,7 +38,7 @@ func (m *Mysql) ConnectDB(c Connection, rootDB bool) (*sqlx.DB, error) {
 }
 
 func (m *Mysql) CheckUser(db *sqlx.DB, c Connection) error {
-	checkSql := "SELECT EXISTS(SELECT user FROM information_schema.user_attributes WHERE user = $1)"
+	checkSql := "SELECT EXISTS(SELECT user FROM information_schema.user_attributes WHERE user = ?)"
 	exists := false
 	err := db.Get(&exists, checkSql, c.User)
 	if err != nil {
@@ -73,10 +73,10 @@ func (m *Mysql) CheckDB(db *sqlx.DB, c Connection) error {
 	return nil
 }
 
-func (m *Mysql) CheckTable(db *sqlx.DB) error {
-	checkSql := "SELECT EXISTS(SELECT table_name FROM information_schema.tables WHERE table_name = 'migration')"
+func (m *Mysql) CheckTable(db *sqlx.DB, c Connection) error {
+	checkSql := "SELECT EXISTS(SELECT table_name FROM information_schema.tables WHERE table_name = 'migration' AND table_schema = ?)"
 	exists := false
-	err := db.Get(&exists, checkSql)
+	err := db.Get(&exists, checkSql, c.DB)
 	if err != nil {
 		return fmt.Errorf("CheckTable[mysql]: unable to check for existing table; %s", err)
 	}

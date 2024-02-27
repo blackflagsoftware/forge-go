@@ -21,7 +21,7 @@ type (
 		ConnectDB(Connection, bool) (*sqlx.DB, error) // the second argument is to tell the function to use admin user/pwd and connect to root DB
 		CheckUser(*sqlx.DB, Connection) error
 		CheckDB(*sqlx.DB, Connection) error
-		CheckTable(*sqlx.DB) error
+		CheckTable(*sqlx.DB, Connection) error
 		LockTable(*sqlx.DB) bool
 		UnlockTable(*sqlx.DB) error
 	}
@@ -123,7 +123,7 @@ func InitializeMigrationTable(ea EngineAdapter, c Connection) (*sqlx.DB, error) 
 	if err != nil {
 		return db, err
 	}
-	err = ea.CheckTable(db)
+	err = ea.CheckTable(db, c)
 	return db, err
 }
 

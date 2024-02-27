@@ -26,7 +26,7 @@ func (m *Mock) CheckDB(db *sqlx.DB, c Connection) error {
 	return nil
 }
 
-func (m *Mock) CheckTable(db *sqlx.DB) error {
+func (m *Mock) CheckTable(db *sqlx.DB, c Connection) error {
 	fmt.Println("Warning: using mock...")
 	return nil
 }
