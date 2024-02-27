@@ -103,7 +103,11 @@ func buildStorageTemplate(p *m.Project) {
 				if p.StorageImport == "" {
 					p.StorageImport = "\"strings\""
 				}
-				values += fmt.Sprintf("strings.ToLower(%s.%s)", p.CurrentEntity.Abbr, c.ColumnName.Camel)
+				columnName := c.ColumnName.Camel
+				if p.CurrentEntity.MultipleKeys {
+					columnName = c.ColumnName.Camel + ".String"
+				}
+				values += fmt.Sprintf("strings.ToLower(%s.%s)", p.CurrentEntity.Abbr, columnName)
 			} else {
 				values += fmt.Sprintf("%s.%s", p.CurrentEntity.Abbr, c.ColumnName.Camel)
 			}

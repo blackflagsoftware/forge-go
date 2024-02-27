@@ -78,7 +78,7 @@ func buildPost(p *m.Project) {
 		if c.ColumnName.Lower == "created_at" {
 			setCreatedAt = true
 		}
-		if c.DBType == "uuid" && c.PrimaryKey {
+		if c.DBType == "uuid" && c.PrimaryKey && !p.CurrentEntity.MultipleKeys {
 			uuidColumn = c.ColumnName.Camel
 		}
 		if c.DBType == "varchar" && c.PrimaryKey && !p.CurrentEntity.MultipleKeys {
