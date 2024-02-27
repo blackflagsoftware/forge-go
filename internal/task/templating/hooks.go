@@ -166,14 +166,20 @@ func buildAPIHooks(p *m.Project) {
 	if _, err := os.Stat(auditFile); os.IsNotExist(err) {
 		fmt.Printf("%s is missing unable to write in hooks\n", auditFile)
 	} else {
-		onceReplace := fmt.Sprintf(`stor "%s\/internal\/storage"`, p.ProjectPathEncoded)
+		onceReplace := ""
+		if p.SQLProvider != "" {
+			onceReplace = fmt.Sprintf(`stor "%s\/internal\/storage"`, p.ProjectPathEncoded)
+		}
 		auditOnce := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace storage once text - do not remove ---/%s/g' %s`, onceReplace, auditFile)
 		execServerOnce := exec.Command("bash", "-c", auditOnce)
 		errServerOnceCmd := execServerOnce.Run()
 		if errServerOnceCmd != nil {
 			fmt.Printf("%s: error in replace for audit once [%s]\n", auditFile, errServerOnceCmd)
 		}
-		onceReference := fmt.Sprintf("DB: stor.%sInit(),", p.SQLProvider)
+		onceReference := ""
+		if p.SQLProvider != "" {
+			onceReference = fmt.Sprintf("DB: stor.%sInit(),", p.SQLProvider)
+		}
 		auditOnceReference := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace storage reference once text - do not remove ---/%s/g' %s`, onceReference, auditFile)
 		execServerOnce = exec.Command("bash", "-c", auditOnceReference)
 		errServerOnceCmd = execServerOnce.Run()
@@ -221,9 +227,9 @@ func PopulateConfig(projectFile *m.ProjectFile) {
 		case "f":
 			configVarLines = append(configVarLines, "StorageFile = true")
 			configVarLines = append(configVarLines, "StorageFileDir string")
-			configInitLines = append(configInitLines, "StorageFileDir = GetEnvOrDefault(\"{{.Name.EnvVar}}_STORAGE_FILE_DIR\", \"/tmp/{{.Name.Lower}}.db\")")
+			configInitLines = append(configInitLines, `StorageFileDir = GetEnvOrDefault("{{.Name.EnvVar}}_STORAGE_FILE_DIR", "\/tmp")`)
 		case "m":
-			configInitLines = append(configInitLines, "StorageMongo = true")
+			configVarLines = append(configVarLines, "StorageMongo = true")
 			configVarLines = append(configVarLines, "MongoHost string")
 			configInitLines = append(configInitLines, "MongoHost = GetEnvOrDefault(\"{{.Name.EnvVar}}_MONGO_HOST\", \"localhost\")")
 			configVarLines = append(configVarLines, "MongoPort string")
@@ -246,7 +252,7 @@ func PopulateConfig(projectFile *m.ProjectFile) {
 			execConfig := exec.Command("bash", "-c", cmdConfig)
 			errConfigCmd := execConfig.Run()
 			if errConfigCmd != nil {
-				fmt.Printf("%s: error in replace for config text [%s]\n", configFile, errConfigCmd)
+				fmt.Printf("%s: error in replace for config var text [%s]\n", configFile, errConfigCmd)
 			}
 		}
 		// config init lines
@@ -259,7 +265,7 @@ func PopulateConfig(projectFile *m.ProjectFile) {
 			execConfig := exec.Command("bash", "-c", cmdConfig)
 			errConfigCmd := execConfig.Run()
 			if errConfigCmd != nil {
-				fmt.Printf("%s: error in replace for config text [%s]\n", configFile, errConfigCmd)
+				fmt.Printf("%s: error in replace for config init text [%s]\n", configFile, errConfigCmd)
 			}
 		}
 		projectFile.LoadedConfig = true

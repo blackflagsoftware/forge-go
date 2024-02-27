@@ -9,6 +9,9 @@ import (
 )
 
 func buildGrpc(p *m.Project) {
+	if p.CurrentEntity.MultipleKeys {
+		p.GrpcImport = "\n\t\"gopkg.in/guregu/null.v3\""
+	}
 	if p.CurrentEntity.ModuleName != "" {
 		// let the module fill in the grpc
 		return
@@ -29,9 +32,17 @@ func buildGrpc(p *m.Project) {
 		if column.PrimaryKey {
 			switch column.DBType {
 			case "int", "autoincrement", "integer":
-				argsInit = append(argsInit, fmt.Sprintf("%s: int(in.%s)", column.ColumnName.Camel, column.ColumnName.Camel))
+				columnName := fmt.Sprintf("int(in.%s)", column.ColumnName.Camel)
+				if p.CurrentEntity.MultipleKeys {
+					columnName = fmt.Sprintf("null.IntFrom(in.%s)", column.ColumnName.Camel)
+				}
+				argsInit = append(argsInit, fmt.Sprintf("%s: %s", column.ColumnName.Camel, columnName))
 			default:
-				argsInit = append(argsInit, fmt.Sprintf("%s: in.%s", column.ColumnName.Camel, column.ColumnName.Camel))
+				columnName := fmt.Sprintf("in.%s", column.ColumnName.Camel)
+				if p.CurrentEntity.MultipleKeys {
+					columnName = fmt.Sprintf("null.StringFrom(in.%s)", column.ColumnName.Camel)
+				}
+				argsInit = append(argsInit, fmt.Sprintf("%s: %s", column.ColumnName.Camel, columnName))
 			}
 			idx := len(keys) + 1
 			keys = append(keys, fmt.Sprintf("\t%s %s = %d;", translateGoToProtoType(column.GoTypeNonSql), column.ColumnName.Camel, idx))
@@ -60,11 +71,19 @@ func buildGrpc(p *m.Project) {
 			typeValue = "int32"
 			outLine = fmt.Sprintf("\tproto%s.%s = int32(%s.%s)", p.CurrentEntity.Camel, column.ColumnName.Camel, p.CurrentEntity.Abbr, column.ColumnName.Camel)
 			inLine = fmt.Sprintf("\t%s.%s = in.%s", p.CurrentEntity.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
+			if p.CurrentEntity.MultipleKeys {
+				outLine = fmt.Sprintf("\tproto%s.%s = int32(%s.%s.Int64)", p.CurrentEntity.Camel, column.ColumnName.Camel, p.CurrentEntity.Abbr, column.ColumnName.Camel)
+				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", p.CurrentEntity.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
+			}
 		case "int64", "int", "null.Int":
 			typeValue = "int64"
 			outLine = fmt.Sprintf("\tproto%s.%s = int64(%s.%s)", p.CurrentEntity.Camel, column.ColumnName.Camel, p.CurrentEntity.Abbr, column.ColumnName.Camel)
 			inLine = fmt.Sprintf("\t%s.%s = int(in.%s)", p.CurrentEntity.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			if columnType == "null.Int" {
+				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.Int64", p.CurrentEntity.Camel, column.ColumnName.Camel, p.CurrentEntity.Abbr, column.ColumnName.Camel)
+				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", p.CurrentEntity.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
+			}
+			if p.CurrentEntity.MultipleKeys {
 				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.Int64", p.CurrentEntity.Camel, column.ColumnName.Camel, p.CurrentEntity.Abbr, column.ColumnName.Camel)
 				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", p.CurrentEntity.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			}
@@ -104,6 +123,10 @@ func buildGrpc(p *m.Project) {
 				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.Time.Format(time.RFC3339)", p.CurrentEntity.Camel, column.ColumnName.Camel, p.CurrentEntity.Abbr, column.ColumnName.Camel)
 			}
 			if columnType == "null.Time" {
+				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", p.CurrentEntity.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
+			}
+			if p.CurrentEntity.MultipleKeys {
+				outLine = fmt.Sprintf("\tproto%s.%s = %s.%s.String", p.CurrentEntity.Camel, column.ColumnName.Camel, p.CurrentEntity.Abbr, column.ColumnName.Camel)
 				inLine = fmt.Sprintf("\t%s.%s.Scan(in.%s)", p.CurrentEntity.Abbr, column.ColumnName.Camel, column.ColumnName.Camel)
 			}
 		}

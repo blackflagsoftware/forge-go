@@ -2,8 +2,8 @@ package menu
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -43,6 +43,7 @@ func InputMenu(p *m.Project) {
 		NonSqlMenu(p)
 	}
 	temp.StartTemplating(p)
+	printDebug(p)
 	p.Entities = []m.Entity{}
 	fmt.Println("")
 	fmt.Println("Entities have been processed, press 'enter' to continue")
@@ -83,17 +84,29 @@ OuterLoop:
 			switch selection {
 			case "1":
 				column.GoType = "null.String"
+				column.DBType = "string"
+				column.GoTypeNonSql = "string"
 			case "2":
 				column.GoType = "null.Int"
-				column.DBType = "int" // need this in grpc_template.go
+				column.DBType = "int"
+				column.GoTypeNonSql = "int"
 			case "3":
 				column.GoType = "null.Float"
+				column.DBType = "float"
+				column.GoTypeNonSql = "float"
 			case "4":
 				column.GoType = "null.Time"
+				column.DBType = "time"
+				column.GoTypeNonSql = "string"
+				entity.GrpcImport = "\"time\""
 			case "5":
 				column.GoType = "null.Bool"
+				column.DBType = "boolean"
+				column.GoTypeNonSql = "boolean"
 			case "6":
 				column.GoType = "string"
+				column.DBType = "string"
+				column.GoTypeNonSql = "string"
 			case "e", "E":
 				break OuterLoop
 			}
@@ -196,6 +209,7 @@ PasteLoop:
 		if sqlEntity.ColExistence.TimeColumn {
 			entity.GrpcImport = "\"time\""
 		}
+		entity.MultipleKeys = searchForMultipleKeys(entity.Columns)
 		p.Entities = append(p.Entities, entity)
 		cont := util.AskYesOrNo("Paste another table sql schema")
 		if !cont {
@@ -480,7 +494,7 @@ func buildSqlColumn(col m.Column) string {
 }
 
 func processFile(p *m.Project, filePath string) (entities []m.Entity) {
-	bContent, errRead := ioutil.ReadFile(filePath)
+	bContent, errRead := os.ReadFile(filePath)
 	if errRead != nil {
 		fmt.Println("processFile - error:", errRead)
 		return
@@ -623,4 +637,22 @@ func ModuleAddLogin(p *m.Project) {
 	fmt.Println("")
 	fmt.Println("'Login' module has been added, press 'enter' to continue")
 	util.ParseInput()
+}
+
+func searchForMultipleKeys(cols []m.Column) bool {
+	count := 0
+	for _, c := range cols {
+		if c.PrimaryKey {
+			count++
+		}
+	}
+	if count > 1 {
+		return true
+	}
+	return false
+}
+
+func printDebug(p *m.Project) {
+	pByte, _ := json.MarshalIndent(p, "", "  ")
+	os.WriteFile("./.forge-debug", pByte, 0644)
 }

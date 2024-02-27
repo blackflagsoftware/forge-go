@@ -13,25 +13,35 @@ const (
 	if err != nil {
 		bindErr := ae.ParseError("Invalid param value, not a number")
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
-	}`  // Lower, Lower, Lower, Lower
-	REST_PRIMARY_STR     = `	%s := c.Param("%s")`                         // Lower, Lower
-	REST_GET_DELETE      = `	%s := &%s{%s}`                               // CamelLower, Camel, RestArgSet
-	SQL_POST_QUERY       = `_, errDB := d.DB.NamedExec(sqlPost, %s)`      // Abbr
-	SQL_POST_QUERY_MYSQL = `result, errDB := d.DB.NamedExec(sqlPost, %s)` // Abbr
-	SQL_LAST_ID_MYSQL    = `lastId, err := result.LastInsertId()
+	}` // Lower, Lower, Lower, Lower
+	REST_PRIMARY_STR = `	%s := c.Param("%s")` // Lower, Lower
+	REST_GET_DELETE  = `	%s := &%s{%s}`       // CamelLower, Camel, RestArgSet
+
+	// Abbr
+	SQL_POST_QUERY = `_, errDB := d.DB.NamedExec(sqlPost, %s)`
+
+	// Abbr
+	SQL_POST_QUERY_MYSQL = `result, errDB := d.DB.NamedExec(sqlPost, %s)`
+
+	// Camel, Abbr, ColCamel
+	SQL_LAST_ID_MYSQL = `lastId, err := result.LastInsertId()
 	if err != nil {
 		return ae.DBError("%s Create: unable to get lastid.", err)
 	}
 	%s.%s = int(lastId)
-	`  // Camel, Abbr, ColCamel
-	SQL_POST_QUERY_POSTGRES = `rows, errDB := d.DB.NamedQuery(sqlPost, %s)` // Abbr
-	SQL_LAST_ID_POSTGRES    = `defer rows.Close()
+	`
+
+	// Abbr
+	SQL_POST_QUERY_POSTGRES = `rows, errDB := d.DB.NamedQuery(sqlPost, %s)`
+
+	// Abbr, ColCamel
+	SQL_LAST_ID_POSTGRES = `defer rows.Close()
 	var lastId int64
 	if rows.Next() {
 		rows.Scan(&lastId)
 	}
 	%s.%s = int(lastId)
-	`  // Abbr, ColCamel
+	`
 
 	// TESTS
 	REST_TEST_INT_FAILURE = `
@@ -54,7 +64,7 @@ const (
 	
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 		assert.Equal(t, "Invalid param value, not a number", be.Detail)
-	}`  // camel, get_delete_url, col_lower, camel, camel
+	}` // camel, get_delete_url, col_lower, camel, camel
 	REST_TEST_INT_ZERO = `
 	func Test%sRestGetFailureZeroInt(t *testing.T) {
 		e := echo.New()
@@ -75,7 +85,7 @@ const (
 	
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 		assert.Equal(t, "zero value", be.Detail)
-	}`  // camel, get_delete_url, col_lower, camel, camel
+	}` // camel, get_delete_url, col_lower, camel, camel
 
 	MAIN_COMMON_PATH = `"{{.ProjectFile.ProjectPathEncoded}}\/internal\/{{.ProjectFile.SubPackage}}\/{{.CurrentEntity.AllLower}}"
 	\/\/ --- replace main header text - do not remove ---
@@ -254,5 +264,49 @@ func Setup{{.Camel}}(eg *echo.Group) {
 			Pwd:            config.DBPass,
 			AdminUser:      config.AdminDBUser,
 			AdminPwd:       config.AdminDBPass,
+	`
+
+	// abbr, column.Camel
+	STORAGE_COUNT_CALL = `
+	count, errCount := d.count()
+	if errCount != nil {
+		return errCount
+	}
+	%s.%s = count`
+
+	// pascal, lower, pascal
+	STORAGE_COUNT_FUNC_SQL = `
+	func (d *SQL%s) count() (int, error) {
+		count := 0
+		if errDB := d.DB.Get(&count, "SELECT COALESCE(MAX(id), 0) FROM %s"); errDB != nil {
+			return 0, ae.DBError("%s count: unable to get count.", errDB)
+		}
+		return count + 1, nil
+	}`
+
+	// camel, lower, abbr, column.Lower, camel, abbr, camel, abbr, camel, abbr, column.camel
+	STORAGE_COUNT_FUNC_MONGO = `
+	func (d *Mongo%s) count() (int, error) {
+		collection := d.DB.Database("%s").Collection("%s")
+		filter := bson.D{}
+		opts := options.Find()
+		opts.SetSort(bson.D{{"%s", -1}})
+		opts.SetLimit(1)
+		cur, err := collection.Find(context.TODO(), filter, opts)
+		if err != nil {
+			return 0, ae.DBError("%s count: unable to get count.", err)
+		}
+		defer cur.Close(context.TODO())
+		%s := %s{}
+		count := 0
+		for cur.Next(context.TODO()) {
+			err := cur.Decode(&%s)
+			if err != nil {
+				return 0, ae.DBError("%s count: unable to decode record.", err)
+			}
+			count = %s.%s
+		}
+		return count + 1, nil
+	}
 	`
 )

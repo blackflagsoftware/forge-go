@@ -36,6 +36,10 @@ func buildStorageTemplate(p *m.Project) {
 	filePostIncrInit := []string{}
 	filePostIncrCheck := []string{}
 	filePostIncr := []string{}
+	countNeeded := false
+	countColLower := ""
+	countColCamel := ""
+	countFuncNeeded := ""
 	for i, c := range p.CurrentEntity.Columns {
 		fileGetColumn = append(fileGetColumn, fmt.Sprintf("%s.%s = %sObj.%s", p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 		if c.DBType == "autoincrement" {
@@ -64,6 +68,26 @@ func buildStorageTemplate(p *m.Project) {
 				// listOrder += ", "
 			}
 			foundOneKey = true
+			if !countNeeded {
+				// only set for int key that are type mongo or sqlite3
+				// this will provide a "auto increment" type functionality
+				if c.DBType == "int" {
+					includeCount := false
+					if p.Storage == "m" {
+						countFuncNeeded = "MONGO"
+						includeCount = true
+					}
+					if p.Storage == "s" && p.SQLProvider == con.SQLITE3 {
+						countFuncNeeded = "SQL"
+						includeCount = true
+					}
+					if includeCount {
+						countNeeded = true
+						countColLower = c.ColumnName.Lower
+						countColCamel = c.ColumnName.Camel
+					}
+				}
+			}
 			if p.SQLProvider == con.MYSQL {
 				keys += fmt.Sprintf("%s = ?", c.ColumnName.Lower)
 			} else {
@@ -115,6 +139,14 @@ func buildStorageTemplate(p *m.Project) {
 			p.StoragePostReturning = fmt.Sprintf(" returning %s", foundSerialDB)
 			p.StoragePostQuery = fmt.Sprintf(con.SQL_POST_QUERY_POSTGRES, p.CurrentEntity.Abbr)
 			p.StoragePostLastId = fmt.Sprintf(con.SQL_LAST_ID_POSTGRES, p.CurrentEntity.Abbr, foundSerial)
+		}
+	}
+	if countNeeded {
+		p.StorageCountCall = fmt.Sprintf(con.STORAGE_COUNT_CALL, p.CurrentEntity.Abbr, countColCamel)
+		p.StorageCountFunc = fmt.Sprintf(con.STORAGE_COUNT_FUNC_SQL, p.CurrentEntity.Camel, countColLower, p.CurrentEntity.Camel)
+		if countFuncNeeded == "MONGO" {
+			p.StorageCountFunc = fmt.Sprintf(con.STORAGE_COUNT_FUNC_MONGO, p.CurrentEntity.Camel, p.CurrentEntity.Lower, p.CurrentEntity.Abbr, countColLower, p.CurrentEntity.Camel, p.CurrentEntity.Abbr, p.CurrentEntity.Camel, p.CurrentEntity.Abbr, p.CurrentEntity.Camel, p.CurrentEntity.Abbr, countColCamel)
+			p.StorageCountImport = "\n\t\"go.mongodb.org/mongo-driver/mongo/options\""
 		}
 	}
 	p.FileKeys = strings.Join(fileKey, " && ")

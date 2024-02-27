@@ -57,7 +57,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.Curr
 	return count, nil
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error { {{.StorageCountCall}}
 	sqlPost := {{.StorageTablePrefix}}`
 		INSERT INTO {{.StorageTable}} (
 			{{.StoragePostColumns}}
@@ -91,3 +91,4 @@ func (d *SQL{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.Current
 	}
 	return nil
 }
+{{.StorageCountFunc}}

@@ -41,8 +41,7 @@ func StartTemplating(project *m.Project) {
 		buildAPIHooks(project)
 		processTemplateFiles(*project, savePath)
 		buildScriptFiles(*project, project.Entities[i])
-
-		project.CurrentEntity = m.Entity{} // blank it out
+		blankProjectEntityFields(project)
 	}
 	UpdateModFiles(project.ProjectFile.AppName)
 	// in case you a entity is marked as 'blank'
@@ -245,4 +244,15 @@ func normalizeName(fileName string) (normalizedName string) {
 		normalizedName = normalizedName[:85]
 	}
 	return
+}
+
+func blankProjectEntityFields(p *m.Project) {
+	p.CurrentEntity = m.Entity{} // blank it out
+	p.FileTemplate = m.FileTemplate{}
+	p.GrpcTemplate = m.GrpcTemplate{}
+	p.ManagerTemplate = m.ManagerTemplate{}
+	p.ModelTemplate = m.ModelTemplate{}
+	p.RestTemplate = m.RestTemplate{}
+	p.StorageTemplate = m.StorageTemplate{}
+	p.MigrationVars = m.MigrationVars{}
 }

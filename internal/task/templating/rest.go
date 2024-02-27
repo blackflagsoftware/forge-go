@@ -8,6 +8,9 @@ import (
 )
 
 func buildRestTemplate(p *m.Project) {
+	if p.CurrentEntity.MultipleKeys {
+		p.RestImport = "\n\t\"gopkg.in/guregu/null.v3\""
+	}
 	// build get/delete url
 	getDeleteUrl := ""
 	foundOne := false
@@ -28,22 +31,30 @@ func buildRestTemplate(p *m.Project) {
 	foundOne = false
 	for _, c := range p.CurrentEntity.Columns {
 		if c.PrimaryKey {
-			if c.GoType == "string" {
+			if c.GoType == "string" || c.GoTypeNonSql == "string" {
 				if foundOne {
 					getDeleteAssign += "\n"
 					setArgs += ", "
 				}
 				getDeleteAssign += fmt.Sprintf(con.REST_PRIMARY_STR, c.ColumnName.Lower, c.ColumnName.Lower)
-				setArgs += fmt.Sprintf("%s: %s", c.ColumnName.Camel, c.ColumnName.Lower)
+				columnName := c.ColumnName.Lower
+				if p.CurrentEntity.MultipleKeys {
+					columnName = fmt.Sprintf("null.StringFrom(%s)", c.ColumnName.Lower)
+				}
+				setArgs += fmt.Sprintf("%s: %s", c.ColumnName.Camel, columnName)
 				foundOne = true
 			}
-			if c.GoType == "int" {
+			if c.GoType == "int" || c.GoTypeNonSql == "int" {
 				if foundOne {
 					getDeleteAssign += "\n"
 					setArgs += ", "
 				}
 				getDeleteAssign += fmt.Sprintf(con.REST_PRIMARY_INT, c.ColumnName.Lower, c.ColumnName.Lower, c.ColumnName.Lower, c.ColumnName.Lower)
-				setArgs += fmt.Sprintf("%s: int(%s)", c.ColumnName.Camel, c.ColumnName.Lower)
+				columnName := fmt.Sprintf("int(%s)", c.ColumnName.Lower)
+				if p.CurrentEntity.MultipleKeys {
+					columnName = fmt.Sprintf("null.IntFrom(%s)", c.ColumnName.Lower)
+				}
+				setArgs += fmt.Sprintf("%s: %s", c.ColumnName.Camel, columnName)
 				foundOne = true
 				p.RestStrConv = "\n\t\"strconv\""
 			}

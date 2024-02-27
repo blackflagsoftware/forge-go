@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/blackflagsoftware/forge-go/base/config"
-	// --- replace storage once text - do not remove ---
 	"github.com/jmoiron/sqlx"
+	// --- replace storage once text - do not remove ---
 )
 
 type (

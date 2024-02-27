@@ -47,6 +47,7 @@ type (
 		GrpcArgsInit     string
 		GrpcTranslateIn  string
 		GrpcTranslateOut string
+		GrpcImport       string
 	}
 
 	StorageVars struct {
@@ -69,6 +70,7 @@ type (
 		SortColumns   string
 		ModuleName    string
 		GrpcImport    string
+		MultipleKeys  bool
 		Name
 		ColumnExistence
 	}
@@ -89,6 +91,7 @@ type (
 		ManagerGetRows       string
 		ManagerPostRows      string
 		ManagerPatchInitArgs string
+		ManagerInitArgsMongo string
 		ManagerPatchRows     string
 		ManagerAuditKey      string
 	}
@@ -98,6 +101,7 @@ type (
 		RestGetDeleteUrl    string
 		RestGetDeleteAssign string
 		RestArgSet          string
+		RestImport          string
 	}
 
 	StorageTemplate struct {
@@ -117,6 +121,9 @@ type (
 		StoragePatchWhere       string
 		StoragePatchWhereValues string
 		StorageImport           string
+		StorageCountCall        string
+		StorageCountFunc        string
+		StorageCountImport      string
 	}
 
 	PostPutTest struct {
@@ -450,6 +457,15 @@ func (e *Entity) HasJsonColumn() bool {
 func (e *Entity) HasPrimaryUUIDColumn() bool {
 	for _, c := range e.Columns {
 		if c.DBType == "uuid" && c.PrimaryKey {
+			return true
+		}
+	}
+	return false
+}
+
+func (e *Entity) HasPrimaryKeyString() bool {
+	for _, c := range e.Columns {
+		if c.DBType == "varchar" && c.PrimaryKey && !e.MultipleKeys {
 			return true
 		}
 	}

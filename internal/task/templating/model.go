@@ -17,7 +17,7 @@ func buildModelTemplate(p *m.Project) {
 	for _, c := range p.CurrentEntity.Columns {
 		tagFormat := m.BuildAltName(c.ColumnName.RawName, p.TagFormat)
 		colType := c.GoType
-		if c.PrimaryKey {
+		if c.PrimaryKey && !p.CurrentEntity.MultipleKeys {
 			colType = c.GoTypeNonSql
 		}
 		cArray = append(cArray, fmt.Sprintf(COLUMN_WO_GORM, c.ColumnName.Camel, colType, c.ColumnName.Lower, tagFormat))
@@ -31,7 +31,7 @@ func buildModelTemplate(p *m.Project) {
 	case "s":
 		p.ModelInitStorage = "\tif config.StorageSQL {\n\t\treturn InitSQL()\n\t}"
 	case "f":
-		p.ModelInitStorage = fmt.Sprintf("\tif config.StorageFile {\n\t\treturn &File%s{}\n\t}", p.Camel)
+		p.ModelInitStorage = fmt.Sprintf("\tif config.StorageFile {\n\t\treturn &File%s{}\n\t}", p.CurrentEntity.Camel)
 	case "m":
 		p.ModelInitStorage = fmt.Sprintf("\tif config.StorageMongo {\n\t\treturn InitMongo()\n\t}")
 	}

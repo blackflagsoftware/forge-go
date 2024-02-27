@@ -21,9 +21,6 @@ func buildManagerTemplate(p *m.Project) {
 	buildTest(p)
 	// build import
 	importLines := []string{}
-	if p.CurrentEntity.HasJsonColumn() {
-		importLines = append(importLines, "\"encoding/json\"\n")
-	}
 	if p.CurrentEntity.HasTimeColumn() {
 		importLines = append(importLines, "\"time\"\n")
 	}
@@ -31,7 +28,7 @@ func buildManagerTemplate(p *m.Project) {
 		importLines = append(importLines, fmt.Sprintf("ae \"%s/internal/api_error\"", p.ProjectPath))
 	}
 	importLines = append(importLines, fmt.Sprintf("a \"%s/internal/audit\"", p.ProjectFile.ProjectPath))
-	if p.CurrentEntity.HasPrimaryUUIDColumn() {
+	if p.CurrentEntity.HasPrimaryUUIDColumn() || p.CurrentEntity.HasJsonColumn() || p.CurrentEntity.HasPrimaryKeyString() {
 		importLines = append(importLines, fmt.Sprintf("\"%s/internal/util\"", p.ProjectPath))
 	}
 	// if p.HasNullColumn() {
@@ -74,6 +71,8 @@ func buildGetDelete(p *m.Project) {
 func buildPost(p *m.Project) {
 	rows := []string{}
 	uuidColumn := ""
+	stringIdColumn := ""
+	stringIdColumnLen := 0
 	setCreatedAt := false
 	for _, c := range p.CurrentEntity.Columns {
 		if c.ColumnName.Lower == "created_at" {
@@ -81,6 +80,17 @@ func buildPost(p *m.Project) {
 		}
 		if c.DBType == "uuid" && c.PrimaryKey {
 			uuidColumn = c.ColumnName.Camel
+		}
+		if c.DBType == "varchar" && c.PrimaryKey && !p.CurrentEntity.MultipleKeys {
+			stringIdColumn = c.ColumnName.Camel
+			stringIdColumnLen = int(c.Length)
+		}
+		if c.PrimaryKey && p.CurrentEntity.MultipleKeys {
+			rows = append(rows, fmt.Sprintf(POST_NULL, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+			if c.GoType == "null.String" && c.Length > 0 {
+				rows = append(rows, fmt.Sprintf(POST_NULL_LEN, p.CurrentEntity.Abbr, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.Length, c.ColumnName.Camel, c.Length))
+			}
+			continue
 		}
 		if c.PrimaryKey {
 			continue
@@ -113,17 +123,22 @@ func buildPost(p *m.Project) {
 	if uuidColumn != "" {
 		rows = append(rows, fmt.Sprintf("%s.%s = util.GenerateUUID()", p.CurrentEntity.Abbr, uuidColumn))
 	}
+	if stringIdColumn != "" {
+		rows = append(rows, fmt.Sprintf("%s.%s = util.GenerateRandomString(%d)", p.CurrentEntity.Abbr, stringIdColumn, stringIdColumnLen))
+	}
 	p.ManagerPostRows = strings.Join(rows, "\n\t")
 }
 
 func buildPatch(p *m.Project) {
 	rows := []string{}
 	patchInit := []string{}
+	patchInitMongo := []string{}
 	auditKey := []string{}
 	setUpdatedAt := false
 	for _, c := range p.CurrentEntity.Columns {
 		if c.PrimaryKey {
 			patchInit = append(patchInit, fmt.Sprintf("%s: %sIn.%s", c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel))
+			patchInitMongo = append(patchInitMongo, fmt.Sprintf("\"%s\": %s.%s", c.ColumnName.Lower, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 			auditKey = append(auditKey, fmt.Sprintf("\"%s\", %s.%s", c.ColumnName.Lower, p.CurrentEntity.Abbr, c.ColumnName.Camel))
 			continue
 		}
@@ -155,6 +170,7 @@ func buildPatch(p *m.Project) {
 	}
 	p.ManagerPatchRows = strings.Join(rows, "\n\t")
 	p.ManagerPatchInitArgs = strings.Join(patchInit, ", ")
+	p.ManagerInitArgsMongo = strings.Join(patchInitMongo, ", ")
 	p.ManagerAuditKey = strings.Join(auditKey, ", ")
 }
 
@@ -206,13 +222,18 @@ func buildTest(p *m.Project) {
 				}
 			}
 		} else {
+			if c.PrimaryKey && p.CurrentEntity.MultipleKeys {
+				AppendColumnTest(c.ColumnName.Camel, c.GoType, c.DBType, false)
+				postTests = append(postTests, m.PostPutTest{Name: fmt.Sprintf("failed - %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel})
+				columnTestStrAdded = true
+			}
 			if !c.Null && !c.PrimaryKey {
 				AppendColumnTest(c.ColumnName.Camel, c.GoType, c.DBType, false)
 				postTests = append(postTests, m.PostPutTest{Name: fmt.Sprintf("failed - %s", c.ColumnName.LowerCamel), Failure: true, ForColumn: c.ColumnName.Camel})
 				columnTestStrAdded = true
 			}
 		}
-		if !c.PrimaryKey {
+		if !c.PrimaryKey || p.CurrentEntity.MultipleKeys {
 			if p.CurrentEntity.DefaultColumn == "" {
 				p.CurrentEntity.DefaultColumn = c.ColumnName.RawName
 			}

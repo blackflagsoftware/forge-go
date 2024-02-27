@@ -67,7 +67,10 @@ func columnsParse(columnPart string) (columns []m.Column, err error) {
 		col.ColumnName.BuildName(rawName, []string{})
 		col.DBType = matches[fieldTypeIdx]
 		theRest := strings.TrimSpace(matches[theRestIdx])
-		theRestParse(&col, theRest) // TODO: this could have PRIMARY KEY
+		primaryKey := theRestParse(&col, theRest) // TODO: this could have PRIMARY KEY
+		if len(primaryKey) > 0 {
+			keys = append(keys, primaryKey...)
+		}
 		setGoType(&col)
 		columns = append(columns, col)
 	}
@@ -103,22 +106,36 @@ func parsePrimaryKey(columnPart string) (newColumnPart string, keyNames []string
 }
 
 func markPrimary(columns *[]m.Column, keys []string) {
+	multipleKeys := false
+	if len(keys) > 1 {
+		multipleKeys = true
+	}
 	for _, key := range keys {
 		for i := range *columns {
 			if key == (*columns)[i].ColumnName.RawName {
 				(*columns)[i].PrimaryKey = true
+				if (*columns)[i].DBType == "int" && !multipleKeys {
+					(*columns)[i].GoType = "int"
+				}
+				if (*columns)[i].DBType == "varchar" && !multipleKeys {
+					(*columns)[i].GoType = "string"
+				}
+				if (*columns)[i].DBType == "uuid" && !multipleKeys {
+					(*columns)[i].GoType = "string"
+				}
 			}
 		}
 	}
 }
 
-func theRestParse(col *m.Column, theRest string) {
+func theRestParse(col *m.Column, theRest string) []string {
+	keys := []string{}
 	// parsing for primary, auto_increment, etc
 	if strings.Contains(theRest, "auto_increment") || strings.Contains(theRest, "autoincrement") {
 		col.DBType = "autoincrement"
 	}
 	if strings.Contains(theRest, "primary") {
-		col.PrimaryKey = true
+		keys = append(keys, col.ColumnName.RawName)
 	}
 	if !(strings.Contains(theRest, "not null") && strings.Contains(theRest, "null")) {
 		col.Null = true
@@ -135,6 +152,7 @@ func theRestParse(col *m.Column, theRest string) {
 			col.DefaultValue = defaultCheck
 		}
 	}
+	return keys
 }
 
 func setGoType(col *m.Column) {
@@ -186,11 +204,8 @@ func setGoType(col *m.Column) {
 		col.GoType = "null.Time"
 		col.GoTypeNonSql = "time.Time"
 	case col.DBType == "uuid":
-		col.GoType = "string"
+		col.GoType = "null.String"
 		col.GoTypeNonSql = "string"
-		if !col.PrimaryKey {
-			col.GoType = "null.String"
-		}
 	case col.DBType == "autoincrement":
 		col.GoType = "int"
 		col.GoTypeNonSql = "int"
