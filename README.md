@@ -2,7 +2,7 @@
 Clone, build and deploy an API written in Golang, quick and easy.  A base framework to add entities to create standard CRUD endpoints based on a SQL create table statement.  From there, customize as needed.
 
 ### Go Versions
-Built with Go 1.17+, verified 1.18
+Built with Go 1.17+, verified 1.21
 
 ### Install
 ```
@@ -29,7 +29,7 @@ From the root directory of the new project, run this in terminal or console
 forge
 ```
 Through a console CLI program `forge` will ask a few starter questions:
-- correct path to start the project
+- correct path to start the project?
 - which storage type to create code?
 	- SQL
 	- File
@@ -45,23 +45,26 @@ Once this is completed then a `.forge` file is saved in the project's root direc
 The normal flow when starting this CLI application within your project's root directory will ask questions to add a new endpoint based on SQL syntax.
 
 How to add your *object* to the project.  The next menu asks this:
+- Input Entity
+- Admin
+
+Selecting `Input Entity` will go into the next screen where you be prompted with:
 - File as input
 - Paste as input
 - Prompt as input
 - Blank Structure
-- Admin
 
-`File as input` as suggested, it will prompt for a file to load, this can be a file of multiple SQL create table statements, `forge` will create CRUD for each of the tables
+`File as input` as suggested, it will prompt for a file to load, this can be a file of multiple SQL create table statements, `forge` will create CRUD for each of the tables, make sure each statement ends with a `;`
 
-`Paste as input` as suggested, this will prompt to paste in the SQL create table statement.  It prompts for multiple statements if needed. **NOTE** when pasting in a `create table` statement be aware NOT to have any blank lines between any of the other lines.  This will cause the prompt parser not to get the whole statement, and the process will not create the boilerplate code.
+`Paste as input` as suggested, this will prompt to paste in the SQL create table statement.  It prompts for multiple statements if needed. **NOTE** when pasting in a `create table` statement be aware NOT to have any blank lines between any of the other lines or a blank line before.  This will cause the prompt parser not to get the whole statement, and the process will not create the boilerplate code.
 
-`Prompt as input`, this will prompt for entity name and then add as many fields as you need.  It will prompt for column type, is it null, etc.  When finished it will save the SQL to `./prompt_schema` for your reference.
+`Prompt as input`, this will prompt for entity name and then add as many fields as you need.  It will prompt for column type, if is it null, etc.  When finished it will save the SQL to `./prompt_schema` for your reference.
 
 `Blank Structure`, this will create all the files as if it was creating the CRUD, used only if you want to keep the same file flow, see `Boilerplate code`
 
 The table name will become the name of the struct and the endpoint's grouping name.  For each group/endpoint it will create:
 - GET - read by primary key
-- GET - search all records
+- POST - search all records (filter and pagination accepted)
 - POST - create new record
 - PATCH - update increment
 - DELETE - delete by primary key
@@ -81,7 +84,7 @@ This screen gives the ability to change the project values when setting up the p
 
 The 3rd option is adding a module, see `Login Module` for more details.
 
-The last option is if your `Storage Type` is SQL, then you can use an ORM, GORM in particular.  I'm not a fan of ORM's so this option has no guarantee it working out of the box but I do create the CRUD data layer with GORM vs SQL statements when this option is turned on.
+The last option is if your `Storage Type` is SQL, then you can use an ORM, GORM in particular.  I'm not a fan of ORM's so this option has no guarantee it working out of the box but `forge` does create the CRUD data layer with GORM vs SQL statements when this option is turned on.
 
 ### Login Module
 This module will insert an entity called `Login`, it will follow the same format as any other entity you may add.  This entity provides some extra functionality around creating password, resetting of passwords and signing in and providing a JWT token for authentication.
@@ -116,7 +119,7 @@ Walkthrough :
 - Build and run the `rest` server. If migration is enabled this will create the tables and run the admin binary, or if ran manually, a user will be created with the email from `FORGE_BASE_GO_ADMIN_EMAIL` and a reset token will be created in the `login_reset` table.
 - An email will be sent (if set up correctly), that will use the `FORGE_GO_BASE_EMAIL_*` env vars to do this.
 - If you have a web site that points to `FORGE_GO_BASE_EMAIL_RESET_URL`, then use that to enter in new password (and confirm password), else you can just call the `/login/reset/pwd` with the payload needed, the token is found in the email or get it from the `login_reset` table.  This will ensure the admin's password is encrypted correctly into the storage (DB, mongo, etc).
-- Once the admin user is set and a password, than those credentials can be used to add, through the POST endpoint, new users.
+- Once the admin user, with password, than those credentials can be used to add new user through the POST endpoint.
 
 Note: `forge` is designed to only allow this module to be added once, unless you remove it from `.forge`, bad things may happen.  You have been warned.
 
@@ -142,7 +145,7 @@ CREATE TABLE IF NOT EXISTS audit (
 );
 -- change according to your sql engine and it's correct syntax
 ```
-in order for the audit functionality to work correctly, see `internal/audit/audit.go` for more info.
+in order for the audit functionality to work correctly, see `internal/audit/audit.go` for more info. At the moment, there is no support for MongoDB to store audits.
 
 ##### Metrics
 By default the rest server will create Prometheus metrics for each endpoint.  Set `FORGE_GO_BASE_ENABLE_METRICS` to `false` to turn off because it is set to `true` by default.
@@ -154,13 +157,17 @@ Why I stuck with using singular nouns: https://stackoverflow.com/questions/68457
 
 If `Blank Structure` is chosen, just know most of the boilerplate code will not be include but each file or layer is created and, at least, should compile.  It is up to you then, to add the logic for each layer.
 
-I've don't have all sql types represented and they may very from engine to engine on the effectiveness.  So this code generation is gives you is an *as-is* end product, but it is *go* and you can change it how you need/want.
+I've don't have all sql types represented and they may very from engine to engine on the effectiveness.  So this code generation it gives you is an *as-is* end product, but it is *go* and you can change it how you need/want.
 
 As of this writing, I have written but not tested multi-key functionality, so I can't say it works 100%.
 
 There are a lot of TODO comments, regarding feed-back loops or reporting.  My thinking was, in the case of `login`, that there are times where the user may only need a success but a feed-back loop should go to the developer, admin or owner of the service to know when something has gone wrong.  I will leave that up to you, you maybe be happy using STDOUT and looking at the logs or another type of service would be good here.
 
 All the helper scripts and internal code uses `bash`, unless you install `bash` for Windows, sorry, at this time it will probably not work.  I will put it on my TODO list, or come up with a solution and provide a PR.
+
+This is an edge case but if your table it a many-many table, you may want to remove the `PATCH` endpoint, it is kind of useless for that situation.
+
+I've done quite a bit of testing on the different SQL engines and combinations of column types, multikey usage, etc.  If there are any issues, you can fix the code yourself.  Please give feedback where needed.  I would appreciate it!
 
 ##### TODO
 - `bash` scripts to os appropriate scripting mechanism

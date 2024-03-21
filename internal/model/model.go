@@ -170,6 +170,7 @@ type (
 		DefaultValue string
 		Length       int64
 		PrimaryKey   bool
+		IsNoSQLUUID  bool
 	}
 
 	ColumnExistence struct {

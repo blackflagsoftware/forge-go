@@ -46,7 +46,7 @@ func columnsParse(columnPart string) (columns []m.Column, err error) {
 	// parse primary key () line
 	columnPart, keys := parsePrimaryKey(columnPart)
 	columnPart = replaceNumericPart(columnPart)
-	reg := regexp.MustCompile(`(?P<field_name>[a-zA-Z_]+) (?P<field_type>[a-zA-Z0-9\(\)_]+)(?P<the_rest>.+)?`)
+	reg := regexp.MustCompile(`(?P<field_name>[a-zA-Z0-9_]+) (?P<field_type>[a-zA-Z0-9\(\)_]+)(?P<the_rest>.+)?`)
 	// split columns and go through each column
 	lines := strings.Split(columnPart, ",")
 	for i := range lines {
@@ -56,7 +56,7 @@ func columnsParse(columnPart string) (columns []m.Column, err error) {
 		}
 		matches := reg.FindStringSubmatch(line)
 		if len(matches) < 2 {
-			err = fmt.Errorf("columnsParse: sql parse invalid, '<column name> <column type>...' not in correct format, skipping column")
+			err = fmt.Errorf("columnsParse: sql parse invalid, '<column name> <column type>...' not in correct format, skipping column; line => %s", line)
 			continue
 		}
 		fieldNameIdx := reg.SubexpIndex("field_name")

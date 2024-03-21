@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -83,7 +84,9 @@ func BasicPrompt(mainMessage []string, prompts []string, acceptablePrompts []str
 		if !found {
 			fmt.Print("Invalid selection, try again, press 'enter' to continue:")
 			ParseInput()
-			f() // this can be ClearScreen or any simple function as pre-
+			if f != nil {
+				f() // this can be ClearScreen or any simple function as pre-
+			}
 			continue
 		}
 		return strings.ToLower(selection)
@@ -180,4 +183,45 @@ func CopyFile(src, dest string) {
 
 func GenerateUUID() string {
 	return uuid.New().String()
+}
+
+func ParseInputStringWithMessageCompare(msg string, compare string) string {
+	fmt.Print(msg)
+	str := ParseInput()
+	if str == "" {
+		return compare
+	}
+	return str
+}
+
+func ParseInputIntWithMessageCompare(msg string, compare int) int {
+	for {
+		fmt.Print(msg)
+		intStr := ParseInput()
+		if intStr == "" {
+			return compare
+		}
+		intInt, err := strconv.Atoi(intStr)
+		if err == nil {
+			return intInt
+		}
+		fmt.Println("Not a valid integer, try again")
+	}
+}
+
+func ParseInputBoolWithMessageCompare(msg string, compare bool) bool {
+	for {
+		fmt.Print(msg)
+		boolStr := ParseInput()
+		if boolStr == "" {
+			return compare
+		}
+		if strings.ToLower(boolStr) == "true" {
+			return true
+		}
+		if strings.ToLower(boolStr) == "false" {
+			return false
+		}
+		fmt.Println("true | false, try again")
+	}
 }

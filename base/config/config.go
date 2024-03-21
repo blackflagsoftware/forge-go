@@ -78,11 +78,13 @@ func loadEnvVarsFromFile(fileName string) {
 	}
 	lines := bytes.Split(fileContent, []byte("\n"))
 	for _, line := range lines {
-		if line[0] != byte('#') {
-			// not a comment
-			split := bytes.Split(line, []byte("="))
-			if len(split) == 2 {
-				os.Setenv(string(split[0]), string(split[1]))
+		if len(line) > 0 {
+			if line[0] != byte('#') {
+				// not a comment
+				split := bytes.Split(line, []byte("="))
+				if len(split) == 2 {
+					os.Setenv(string(split[0]), string(split[1]))
+				}
 			}
 		}
 	}
