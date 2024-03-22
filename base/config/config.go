@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"path"
 
@@ -11,7 +12,7 @@ import (
 )
 
 var (
-	RootDir           = "full-path-here" // this is good for local dev but it used below to read the .env files so setting it for production is vital
+	RootDir           = ""
 	AppName           = "forge-go-base"
 	AppVersion        string
 	RestPort          string
@@ -33,12 +34,15 @@ var (
 
 func init() {
 	ExecDir, _ = osext.ExecutableFolder()
+	RootDir = GetEnvOrDefault("FORGE_GO_BASE_ROOT_DIR", "")
+	if RootDir == "" {
+		log.Fatalln("FORGE_GO_BASE_ROOT_DIR needs to be set; for development, should be the project's root directory")
+	}
 	loadEnvFiles()
 	loadEnvVars()
 }
 
 func loadEnvVars() {
-	RootDir = GetEnvOrDefault("FORGE_GO_BASE_ROOT_DIR", "")
 	AppVersion = GetEnvOrDefault("FORGE_GO_BASE_APP_VERSION", "1.0.0")
 	RestPort = GetEnvOrDefault("FORGE_GO_BASE_REST_PORT", "12580")
 	GrpcPort = GetEnvOrDefault("FORGE_GO_BASE_GRPC_PORT", "12581")

@@ -26,9 +26,9 @@ func PostgresInit() *sqlx.DB {
 }
 
 func GetPostgresConnection() string {
-	postgresConnection = fmt.Sprintf("user=%s password=%s dbname=%s host=%s sslmode=disable", config.DBUser, config.DBPass, config.DBDB, config.DBHost)
+	postgresConnection = fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable", config.DBUser, config.DBPass, config.DBDB, config.DBHost, config.DBPort)
 	if config.DBPass == "" {
-		postgresConnection = fmt.Sprintf("user=%s dbname=%s host=%s sslmode=disable", config.DBUser, config.DBDB, config.DBHost)
+		postgresConnection = fmt.Sprintf("user=%s dbname=%s host=%s port=%s sslmode=disable", config.DBUser, config.DBDB, config.DBHost, config.DBPort)
 	}
 	return postgresConnection
 }

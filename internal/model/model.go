@@ -421,7 +421,7 @@ func TagFormatToProper(tag string) string {
 
 func (e *Entity) HasNullColumn() bool {
 	for _, c := range e.Columns {
-		if strings.Contains(c.GoType, "null") {
+		if c.Null {
 			return true
 		}
 	}

@@ -24,7 +24,7 @@ func buildManagerTemplate(p *m.Project) {
 	if p.CurrentEntity.HasTimeColumn() {
 		importLines = append(importLines, "\"time\"\n")
 	}
-	if p.ManagerPostRows != "" || p.ManagerGetRows != "" {
+	if strings.Contains(p.ManagerPostRows, "ae.") || strings.Contains(p.ManagerGetRows, "ae.") {
 		importLines = append(importLines, fmt.Sprintf("ae \"%s/internal/api_error\"", p.ProjectPath))
 	}
 	importLines = append(importLines, fmt.Sprintf("a \"%s/internal/audit\"", p.ProjectFile.ProjectPath))
@@ -113,7 +113,11 @@ func buildPost(p *m.Project) {
 				continue
 			}
 			if !c.Null {
-				rows = append(rows, fmt.Sprintf(POST_NULL, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+				if c.DBType == "json" {
+					rows = append(rows, fmt.Sprintf(POST_JSON_NULL, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+				} else {
+					rows = append(rows, fmt.Sprintf(POST_NULL, p.CurrentEntity.Abbr, c.ColumnName.Camel, c.ColumnName.Camel))
+				}
 			}
 		}
 	}
@@ -372,6 +376,13 @@ const (
 	POST_STRING_LEN = `if len(%s.%s) > %d {
 		return ae.StringLengthError("%s", %d)
 	}` // Abbr, ColumnCamel, ColumnLength, ColumnCamel, ColumnLength
+	// Abbr, columnCamel, ColumnCamel, Abbr, ColumnCamel, ColumnCamel
+	POST_JSON_NULL = `if %s.%s == nil {
+		return ae.MissingParamError("%s")
+	}
+	if !util.ValidJson(*%s.%s) {
+		return ae.ParseError("Invalid JSON syntax for %s")
+	}`
 
 	PATCH_STRING_ASSIGN = `// %s
 	if %sIn.%s != "" {

@@ -70,7 +70,7 @@ func (a *{{.CurrentEntity.Camel}}Grpc) Create{{.CurrentEntity.Camel}}(ctx contex
 	}
 	var errTranslate error
 	response.{{.CurrentEntity.Camel}}, errTranslate = translateOut({{.CurrentEntity.Abbr}})
-	if err != nil {
+	if errTranslate != nil {
 		return response, errTranslate
 	}
 	response.Result.Success = true

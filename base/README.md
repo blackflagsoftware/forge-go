@@ -23,6 +23,10 @@ go run main.go
 ```
 
 ### Env Vars
+`FORGE_GO_BASE_ROOT_DIR` needs to set, if not, the application will panic.  For production like environments, this should point to the directory where the binary will reside.  For development this should be the project's root directory.  This can be used for a few things:
+- the main one, during development, you can supply .env.* files in the root directory and code within `config.go`, will load this up and set env vars.
+- setting the root directory to serve up static files.
+
 See config/config.go for the complete list of `env vars`, most are self-explanatory. Some additional explanation will follow in this document.
 
 ### Features

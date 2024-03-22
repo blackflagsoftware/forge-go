@@ -216,6 +216,12 @@ func PopulateConfig(projectFile *m.ProjectFile) {
 				configInitLines = append(configInitLines, "DBUser = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_USER\",\"\")")
 				configVarLines = append(configVarLines, "DBPass string")
 				configInitLines = append(configInitLines, "DBPass = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_PASS\", \"\")")
+				port := "3306" // default to mysql
+				if projectFile.SqlStorage == "p" {
+					port = "5432"
+				}
+				configVarLines = append(configVarLines, "DBPort string")
+				configInitLines = append(configInitLines, fmt.Sprintf("DBPort = GetEnvOrDefault(\"{{.Name.EnvVar}}_DB_PORT\", \"%s\")", port))
 				configVarLines = append(configVarLines, "AdminDBUser string")
 				configInitLines = append(configInitLines, "AdminDBUser = GetEnvOrDefault(\"{{.Name.EnvVar}}_ADMIN_DB_USER\",\"\")")
 				configVarLines = append(configVarLines, "AdminDBPass string")

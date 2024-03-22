@@ -26,9 +26,9 @@ func MySqlInit() *sqlx.DB {
 }
 
 func GetMySqlConnection() string {
-	mySqlConnection = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True", config.DBUser, config.DBPass, config.DBHost, config.DBDB)
+	mySqlConnection = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True", config.DBUser, config.DBPass, config.DBHost, config.DBPort, config.DBDB)
 	if config.DBPass == "" {
-		mySqlConnection = fmt.Sprintf("%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True", config.DBUser, config.DBHost, config.DBDB)
+		mySqlConnection = fmt.Sprintf("%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True", config.DBUser, config.DBHost, config.DBPort, config.DBDB)
 	}
 	return mySqlConnection
 }
