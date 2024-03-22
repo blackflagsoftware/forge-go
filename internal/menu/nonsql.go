@@ -126,7 +126,7 @@ func editField(entity *m.Entity) {
 		if idx == -1 {
 			break
 		}
-		// make new column and do a deep copy later
+		// make new column and do a replacement later
 		newColumn := m.Column{}
 		fmt.Println("")
 		fmt.Println("Defaults in '[]', press 'enter' accept default")

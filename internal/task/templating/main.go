@@ -42,6 +42,8 @@ func StartTemplating(project *m.Project) {
 		processTemplateFiles(*project, savePath)
 		buildScriptFiles(*project, project.Entities[i])
 		blankProjectEntityFields(project)
+		// pause to allow the script time to be different if multiple entities
+		time.Sleep(time.Second)
 	}
 	UpdateModFiles(project.ProjectFile.AppName)
 	// in case you a entity is marked as 'blank'

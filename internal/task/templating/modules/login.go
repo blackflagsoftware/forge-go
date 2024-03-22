@@ -14,6 +14,13 @@ import (
 	"github.com/blackflagsoftware/forge-go/internal/util"
 )
 
+type (
+	ScriptFile struct {
+		FileName string
+		Script   string
+	}
+)
+
 func AddLogin(p *m.Project) {
 	Config(*p)
 	Errors(*p)
@@ -472,26 +479,26 @@ func MigrationScripts(p m.Project) {
 		fmt.Println("Creating scripts/migrations dir", err)
 		return
 	}
-	scripts := map[string]string{
-		"%s/%s-create-table-login.sql":              loginScript,
-		"%s/%s-create-table-reset-login.sql":        resetScript,
-		"%s/%s-create-table-role.sql":               roleScript,
-		"%s/%s-create-table-login-role.sql":         loginRoleScript,
-		"%s/%s-insert-role.sql":                     roleInsert,
-		"%s/%s-create-table-auth-authorize.sql":     authAuthorizeScript,
-		"%s/%s-create-table-auth-client.sql":        authClientScript,
-		"%s/%s-create-table-auth-client-secret.sql": authClientSecretScript,
-		"%s/%s-create-table-auth-refresh.sql":       authRefreshScript,
+	scripts := []ScriptFile{
+		{"%s/%s-create-table-login.sql", loginScript},
+		{"%s/%s-create-table-reset-login.sql", resetScript},
+		{"%s/%s-create-table-role.sql", roleScript},
+		{"%s/%s-create-table-login-role.sql", loginRoleScript},
+		{"%s/%s-insert-role.sql", roleInsert},
+		{"%s/%s-create-table-auth-authorize.sql", authAuthorizeScript},
+		{"%s/%s-create-table-auth-client.sql", authClientScript},
+		{"%s/%s-create-table-auth-client-secret.sql", authClientSecretScript},
+		{"%s/%s-create-table-auth-refresh.sql", authRefreshScript},
 	}
-	for fileName, script := range scripts {
+	for _, script := range scripts {
 		now := time.Now().Format("20060102150405")
-		loginName := fmt.Sprintf(fileName, scriptDir, now)
+		loginName := fmt.Sprintf(script.FileName, scriptDir, now)
 		f, err := os.Create(loginName)
 		if err != nil {
 			fmt.Printf("Unable to creating %s file: %s\n", loginName, err)
 			return
 		}
-		f.WriteString(script)
+		f.WriteString(script.Script)
 		f.Close()
 		time.Sleep(time.Second) // let's make sure a second has passed
 	}
