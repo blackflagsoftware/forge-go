@@ -13,13 +13,14 @@ import (
 
 // a simplified http client to call external http servers, it is designed to fail if the status code is not in the 200's
 // inputs:
-//		method: standard http method, i.e.: POST, GET, PATCH, etc
-//		url: the full http url
-//		bodyIn: map or struct, this function will json.Marshal it for the body payload, pass in 'nil' if not needed
-//		bodyOut: map or *struct, this function will json.Unmarshal the response.Body to this variable
-//		headers: map[string]string of headers to add to the request
+//
+//	method: standard http method, i.e.: POST, GET, PATCH, etc
+//	url: the full http url
+//	bodyIn: map or struct, this function will json.Marshal it for the body payload, pass in 'nil' if not needed
+//	bodyOut: map or *struct, this function will json.Unmarshal the response.Body to this variable
+//	headers: map[string]string of headers to add to the request
 func HTTPRequest(method, url string, bodyIn, bodyOut interface{}, header map[string]string) (err error) {
-	var bodyInReader *bytes.Reader
+	var bodyInReader io.Reader
 	if bodyIn != nil {
 		// take the data structure and create a body (io.Reader)
 		bodyInBytes, err := json.Marshal(bodyIn)
