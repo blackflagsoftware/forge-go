@@ -69,7 +69,7 @@ func (a *RoleGrpc) CreateRole(ctx context.Context, in *p.Role) (*p.RoleResponse,
 	}
 	var errTranslate error
 	response.Role, errTranslate = translateOut(rol)
-	if err != nil {
+	if errTranslate != nil {
 		return response, errTranslate
 	}
 	response.Result.Success = true

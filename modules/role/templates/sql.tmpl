@@ -34,7 +34,7 @@ func (d *SQLRole) Read(rol *Role) error {
 }
 
 func (d *SQLRole) ReadAll(rol *[]Role, param RoleParam) (int, error) {
-	searchStmt, args := util.BuildSearchString(param.Search)
+	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
 			id,
@@ -42,7 +42,7 @@ func (d *SQLRole) ReadAll(rol *[]Role, param RoleParam) (int, error) {
 			description
 		FROM role
 		%s
-		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+		ORDER BY %s %s`, searchStmt, param.Sort, param.PaginationString)
 	sqlSearch = d.DB.Rebind(sqlSearch)
 	if errDB := d.DB.Select(rol, sqlSearch, args...); errDB != nil {
 		return 0, ae.DBError("Role Search: unable to select records.", errDB)

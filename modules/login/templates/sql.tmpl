@@ -38,7 +38,7 @@ func (d *SQLLogin) Read(login *Login) error {
 }
 
 func (d *SQLLogin) ReadAll(login *[]Login, param LoginParam) (int, error) {
-	searchStmt, args := util.BuildSearchString(param.Search)
+	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
 			id,
@@ -49,7 +49,7 @@ func (d *SQLLogin) ReadAll(login *[]Login, param LoginParam) (int, error) {
 			updated_at
 		FROM login
 		%s
-		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+		ORDER BY %s %s`, searchStmt, param.Sort, param.PaginationString)
 	sqlSearch = d.DB.Rebind(sqlSearch)
 	if errDB := d.DB.Select(login, sqlSearch, args...); errDB != nil {
 		return 0, ae.DBError("Login Search: unable to select records.", errDB)

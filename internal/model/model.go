@@ -71,6 +71,7 @@ type (
 		ModuleName    string
 		GrpcImport    string
 		MultipleKeys  bool
+		SkipGrpc      bool
 		Name
 		ColumnExistence
 	}

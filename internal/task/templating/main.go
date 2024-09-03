@@ -130,6 +130,10 @@ func processTemplateFiles(project m.Project, savePath string) {
 		if project.CurrentEntity.ModuleName != "" {
 			tmplPath = fmt.Sprintf("%s/modules/%s/templates/%s.tmpl", os.Getenv("FORGE_PATH"), project.CurrentEntity.ModuleName, tmpl)
 		}
+		if _, err := os.Stat(tmplPath); os.IsNotExist(err) {
+			// may not have this particular file, skip
+			continue
+		}
 		t, errParse := template.ParseFiles(tmplPath)
 		if errParse != nil {
 			fmt.Printf("Template could not parse file: %s; %s", tmplPath, errParse)

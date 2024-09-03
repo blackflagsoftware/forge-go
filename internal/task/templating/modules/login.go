@@ -21,12 +21,37 @@ type (
 	}
 )
 
-func AddLogin(p *m.Project) {
+func AddAuth(p *m.Project) {
 	Config(*p)
 	Errors(*p)
 	ProtoFile(*p)
 	TemplateFiles(*p)
 	Readme(*p)
+	// auth entry
+	authEntity := m.Entity{ModuleName: "auth", SkipGrpc: true}
+	authName := authEntity.Name.BuildName("auth", p.ProjectFile.KnownAliases)
+	p.KnownAliases = append(p.KnownAliases, authName)
+	p.Entities = append(p.Entities, authEntity)
+	// authauthorize
+	authAuthEntity := m.Entity{ModuleName: "authauthorize", SkipGrpc: true}
+	authAuthName := authAuthEntity.Name.BuildName("auth_authorize", p.ProjectFile.KnownAliases)
+	p.KnownAliases = append(p.KnownAliases, authAuthName)
+	p.Entities = append(p.Entities, authAuthEntity)
+	// authclient
+	authClientEntity := m.Entity{ModuleName: "authclient", SkipGrpc: true}
+	authClientName := authClientEntity.Name.BuildName("auth_client", p.ProjectFile.KnownAliases)
+	p.KnownAliases = append(p.KnownAliases, authClientName)
+	p.Entities = append(p.Entities, authClientEntity)
+	// authclientsecret
+	authClientSecretEntity := m.Entity{ModuleName: "authclientsecret", SkipGrpc: true}
+	authClientSecretName := authClientSecretEntity.Name.BuildName("auth_client_secret", p.ProjectFile.KnownAliases)
+	p.KnownAliases = append(p.KnownAliases, authClientSecretName)
+	p.Entities = append(p.Entities, authClientSecretEntity)
+	// authrefresh
+	authRefreshEntity := m.Entity{ModuleName: "authrefresh", SkipGrpc: true}
+	authRefreshName := authRefreshEntity.Name.BuildName("auth_refresh", p.ProjectFile.KnownAliases)
+	p.KnownAliases = append(p.KnownAliases, authRefreshName)
+	p.Entities = append(p.Entities, authRefreshEntity)
 	// login entry
 	loginEntity := m.Entity{ModuleName: "login"}
 	loginName := loginEntity.Name.BuildName("login", p.ProjectFile.KnownAliases)
@@ -362,7 +387,7 @@ func TemplateFiles(p m.Project) {
 	for _, f := range files {
 		t, errParse := template.ParseFiles(f.Src)
 		if errParse != nil {
-			fmt.Printf("Template could not parse login file: %s; %s\n", f.Src, errParse)
+			fmt.Printf("Template could not parse auth file: %s; %s\n", f.Src, errParse)
 			return
 		}
 		if f.Mkdir {
@@ -604,7 +629,7 @@ func buildRoleEntities(project *m.Project) {
 
 func Readme(p m.Project) {
 	readmeLines := `
-**Login**: provides the ` + "`rest`" + ` service to authenticate via JWT token.
+**Auth**: provides the ` + "`rest`" + ` service to authenticate via JWT token.
 
 Additional features:
 - ` + "`login`" + `, ` + "`role`" + ` and ` + "`login-role`" + ` endpoints for CRUD
@@ -613,7 +638,7 @@ Additional features:
 - ` + "`login`" + `: sign-in and forget-password with send email logic
 - initialize admin user tool
 
-The following env vars are needed to be supplied for the **login** feature
+The following env vars are needed to be supplied for the **auth** feature
 ` + "`{{.ProjectNameEnv}}_LOGIN_PWD_COST`" + `: [int] the cost the encryption algorithm needs, 
 ` + "`{{.ProjectNameEnv}}_LOGIN_RESET_DURATION`" + `: [int] the value in days after the reset record will expire
 ` + "`{{.ProjectNameEnv}}_LOGIN_EXPIRES_AT_DURATION`" + `: [int] the value when the JWT will expire

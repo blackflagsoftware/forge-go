@@ -36,7 +36,7 @@ func (d *SQLAuthClient) Read(aut *AuthClient) error {
 }
 
 func (d *SQLAuthClient) ReadAll(aut *[]AuthClient, param AuthClientParam) (int, error) {
-	searchStmt, args := util.BuildSearchString(param.Search)
+	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
 			id,
@@ -46,7 +46,7 @@ func (d *SQLAuthClient) ReadAll(aut *[]AuthClient, param AuthClientParam) (int, 
 			callback_url
 		FROM auth_client
 		%s
-		ORDER BY %s %s`, searchStmt, param.Sort, param.Limit)
+		ORDER BY %s %s`, searchStmt, param.Sort, param.PaginationString)
 	sqlSearch = d.DB.Rebind(sqlSearch)
 	if errDB := d.DB.Select(aut, sqlSearch, args...); errDB != nil {
 		return 0, ae.DBError("AuthClient Search: unable to select records.", errDB)

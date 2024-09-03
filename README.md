@@ -82,12 +82,12 @@ Inspect `config/config.go` for the names of the env vars that will need to be se
 ### Admin Screen
 This screen gives the ability to change the project values when setting up the project at the start.  You can change the `Storage Type` and `TagFormat`.
 
-The 3rd option is adding a module, see `Login Module` for more details.
+The 3rd option is adding a module, see `Auth Module` for more details.
 
 The last option is if your `Storage Type` is SQL, then you can use an ORM, GORM in particular.  I'm not a fan of ORM's so this option has no guarantee it working out of the box but `forge` does create the CRUD data layer with GORM vs SQL statements when this option is turned on.
 
-### Login Module
-This module will insert an entity called `Login`, it will follow the same format as any other entity you may add.  This entity provides some extra functionality around creating password, resetting of passwords and signing in and providing a JWT token for authentication.
+### Auth Module
+This module will insert an entity called `Auth`, it will follow the same format as any other entity you may add.  This entity provides some extra functionality around creating password, resetting of passwords and signing in and providing a JWT token for authentication.  Logic for a OAuth server is also provided.
 
 The reset password functionality also includes the ability to email a "reset password" email, this will just point to a web page to take the email address and reset token, add provide the user the ability to enter in a new password (and confirm password) then send those pieces of data to the API endpoint to reset the user's password.
 
@@ -115,8 +115,9 @@ The prefix of the above env vars should change to the name of new project.
 Walkthrough :
 - Setup the above env var(s)
 - If using SQL, enable `FORGE_GO_BASE_MIGRATION_ENABLED` and use the provided migration scripts (see `tools/migration/README.md`) or run the table create statements manually for `login` and `login_reset`.  Scripts are provided for you in the `scripts/migrations` folder.
-- The `tools/admin` is saved as a `.bin` file for to run under `migration`, if not, run the `tools/admin` manually by doing `go run tools/admin/main.go`.
-- Build and run the `rest` server. If migration is enabled this will create the tables and run the admin binary, or if ran manually, a user will be created with the email from `FORGE_BASE_GO_ADMIN_EMAIL` and a reset token will be created in the `login_reset` table.
+- The `tools/admin` is saved as a `.bin` file for to run under `migration`, if not, run the `tools/admin` manually by doing `go run tools/admin/main.go`.  You will need to move this file manually over into `scripts/migrations`.  Make sure you *normalize* the name, see the `Migration` README for more info.
+- Before you start the service or any debugging, provide the env var: `FORGE_BASE_GO_ADMIN_EMAIL`.  If migration is enabled this will create the tables and run the admin binary, or if ran manually, a user will be created with the email from `FORGE_BASE_GO_ADMIN_EMAIL` and a reset token will be created in the `login_reset` table.
+- Build and run the `rest` server.
 - An email will be sent (if set up correctly), that will use the `FORGE_GO_BASE_EMAIL_*` env vars to do this.
 - If you have a web site that points to `FORGE_GO_BASE_EMAIL_RESET_URL`, then use that to enter in new password (and confirm password), else you can just call the `/login/reset/pwd` with the payload needed, the token is found in the email or get it from the `login_reset` table.  This will ensure the admin's password is encrypted correctly into the storage (DB, mongo, etc).
 - Once the admin user, with password, than those credentials can be used to add new user through the POST endpoint.
@@ -157,11 +158,11 @@ Why I stuck with using singular nouns: https://stackoverflow.com/questions/68457
 
 If `Blank Structure` is chosen, just know most of the boilerplate code will not be include but each file or layer is created and, at least, should compile.  It is up to you then, to add the logic for each layer.
 
-I've don't have all sql types represented and they may very from engine to engine on the effectiveness.  So this code generation it gives you is an *as-is* end product, but it is *go* and you can change it how you need/want.
+I've don't have all sql types represented and they may very from engine to engine on the effectiveness.  So this code generation it gives you is an *as-is* end product, but it is *golang* and you can change it how you need/want.
 
 As of this writing, I have written but not tested multi-key functionality, so I can't say it works 100%.
 
-There are a lot of TODO comments, regarding feed-back loops or reporting.  My thinking was, in the case of `login`, that there are times where the user may only need a success but a feed-back loop should go to the developer, admin or owner of the service to know when something has gone wrong.  I will leave that up to you, you maybe be happy using STDOUT and looking at the logs or another type of service would be good here.
+There are a lot of TODO comments, regarding feed-back loops or reporting.  My thinking was, in the case of `auth`, that there are times where the user may only need a success but a feed-back loop should go to the developer, admin or owner of the service to know when something has gone wrong.  I will leave that up to you, you maybe be happy using STDOUT and looking at the logs or another type of service would be good here.
 
 All the helper scripts and internal code uses `bash`, unless you install `bash` for Windows, sorry, at this time it will probably not work.  I will put it on my TODO list, or come up with a solution and provide a PR.
 
@@ -172,3 +173,4 @@ I've done quite a bit of testing on the different SQL engines and combinations o
 ##### TODO
 - `bash` scripts to os appropriate scripting mechanism
 - Roles for the admin/jwt still need to be implemented
+- Basic web site for auth/login/roles, etc

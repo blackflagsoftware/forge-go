@@ -69,7 +69,7 @@ func (a *LoginRoleGrpc) CreateLoginRole(ctx context.Context, in *p.LoginRole) (*
 	}
 	var errTranslate error
 	response.LoginRole, errTranslate = translateOut(lo)
-	if err != nil {
+	if errTranslate != nil {
 		return response, errTranslate
 	}
 	response.Result.Success = true

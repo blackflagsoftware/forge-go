@@ -33,7 +33,7 @@ func (d *SQLLoginRole) Read(lo *LoginRole) error {
 }
 
 func (d *SQLLoginRole) ReadAll(lo *[]LoginRole, param LoginRoleParam) (int, error) {
-	searchStmt, args := util.BuildSearchString(param.Search)
+	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
 			login_id,

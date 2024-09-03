@@ -93,43 +93,45 @@ func buildAPIHooks(p *m.Project) {
 	if _, err := os.Stat(grpcFile); os.IsNotExist(err) {
 		fmt.Printf("%s is missing unable to write in hooks\n", grpcFile)
 	} else {
-		var grpcReplace bytes.Buffer
-		tGrpc := template.Must(template.New("grpc").Parse(con.GRPC_TEXT))
-		errGrpc := tGrpc.Execute(&grpcReplace, p)
-		if errGrpc != nil {
-			fmt.Printf("%s: template error [%s]\n", grpcFile, errGrpc)
-		} else {
-			cmdGrpc := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace grpc text - do not remove ---/%s/g' %s`, grpcReplace.String(), grpcFile)
-			execGrpc := exec.Command("bash", "-c", cmdGrpc)
-			errGrpcCmd := execGrpc.Run()
-			if errGrpcCmd != nil {
-				fmt.Printf("%s: error in replace for grpc text [%s]\n", grpcFile, errGrpcCmd)
+		if !p.CurrentEntity.SkipGrpc {
+			var grpcReplace bytes.Buffer
+			tGrpc := template.Must(template.New("grpc").Parse(con.GRPC_TEXT))
+			errGrpc := tGrpc.Execute(&grpcReplace, p)
+			if errGrpc != nil {
+				fmt.Printf("%s: template error [%s]\n", grpcFile, errGrpc)
+			} else {
+				cmdGrpc := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace grpc text - do not remove ---/%s/g' %s`, grpcReplace.String(), grpcFile)
+				execGrpc := exec.Command("bash", "-c", cmdGrpc)
+				errGrpcCmd := execGrpc.Run()
+				if errGrpcCmd != nil {
+					fmt.Printf("%s: error in replace for grpc text [%s]\n", grpcFile, errGrpcCmd)
+				}
 			}
-		}
-		var importReplace bytes.Buffer
-		tImport := template.Must(template.New("grpc").Parse(con.GRPC_IMPORT))
-		errGrpc = tImport.Execute(&importReplace, p)
-		if errGrpc != nil {
-			fmt.Printf("%s: template error [%s]\n", grpcFile, errGrpc)
-		} else {
-			cmdGrpc := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace grpc import - do not remove ---/%s/g' %s`, importReplace.String(), grpcFile)
-			execGrpc := exec.Command("bash", "-c", cmdGrpc)
-			errGrpcCmd := execGrpc.Run()
-			if errGrpcCmd != nil {
-				fmt.Printf("%s: error in replace for grpc [%s]\n", grpcFile, errGrpcCmd)
+			var importReplace bytes.Buffer
+			tImport := template.Must(template.New("grpc").Parse(con.GRPC_IMPORT))
+			errGrpc = tImport.Execute(&importReplace, p)
+			if errGrpc != nil {
+				fmt.Printf("%s: template error [%s]\n", grpcFile, errGrpc)
+			} else {
+				cmdGrpc := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace grpc import - do not remove ---/%s/g' %s`, importReplace.String(), grpcFile)
+				execGrpc := exec.Command("bash", "-c", cmdGrpc)
+				errGrpcCmd := execGrpc.Run()
+				if errGrpcCmd != nil {
+					fmt.Printf("%s: error in replace for grpc [%s]\n", grpcFile, errGrpcCmd)
+				}
 			}
-		}
-		var importOnceReplace bytes.Buffer
-		tOnce := template.Must(template.New("grpc").Parse(con.GRPC_IMPORT_ONCE))
-		errGrpc = tOnce.Execute(&importOnceReplace, p)
-		if errGrpc != nil {
-			fmt.Printf("%s: template error [%s]\n", grpcFile, errGrpc)
-		} else {
-			cmdGrpc := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace grpc import once - do not remove ---/%s/g' %s`, importOnceReplace.String(), grpcFile)
-			execGrpc := exec.Command("bash", "-c", cmdGrpc)
-			errGrpcCmd := execGrpc.Run()
-			if errGrpcCmd != nil {
-				fmt.Printf("%s: error in replace for grpc [%s]\n", grpcFile, errGrpcCmd)
+			var importOnceReplace bytes.Buffer
+			tOnce := template.Must(template.New("grpc").Parse(con.GRPC_IMPORT_ONCE))
+			errGrpc = tOnce.Execute(&importOnceReplace, p)
+			if errGrpc != nil {
+				fmt.Printf("%s: template error [%s]\n", grpcFile, errGrpc)
+			} else {
+				cmdGrpc := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace grpc import once - do not remove ---/%s/g' %s`, importOnceReplace.String(), grpcFile)
+				execGrpc := exec.Command("bash", "-c", cmdGrpc)
+				errGrpcCmd := execGrpc.Run()
+				if errGrpcCmd != nil {
+					fmt.Printf("%s: error in replace for grpc [%s]\n", grpcFile, errGrpcCmd)
+				}
 			}
 		}
 		if p.SQLProvider != "" {

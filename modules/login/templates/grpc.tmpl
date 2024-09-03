@@ -70,7 +70,7 @@ func (a *LoginGrpc) CreateLogin(ctx context.Context, in *p.Login) (*p.LoginRespo
 	}
 	var errTranslate error
 	response.Login, errTranslate = translateOut(fin)
-	if err != nil {
+	if errTranslate != nil {
 		return response, errTranslate
 	}
 	response.Result.Success = true

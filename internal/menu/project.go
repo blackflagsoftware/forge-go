@@ -282,7 +282,7 @@ func OrmMenu(p *m.Project) {
 
 func ModuleMenu(p *m.Project) {
 	mainMessage := []string{"** Add Module **", "", "Which module do you wish to add?"}
-	prompts := []string{"(1) Login"}
+	prompts := []string{"(1) Auth"}
 	acceptablePrompt := []string{"1"}
 	for {
 		util.ClearScreen()
@@ -292,7 +292,7 @@ func ModuleMenu(p *m.Project) {
 		}
 		switch sel {
 		case "1":
-			ModuleAddLogin(p)
+			ModuleAddAuth(p)
 		}
 	}
 }
@@ -548,19 +548,19 @@ func saveOutSql(p *m.Project) {
 	}
 }
 
-func ModuleAddLogin(p *m.Project) {
+func ModuleAddAuth(p *m.Project) {
 	for _, m := range p.ProjectFile.Modules {
-		if m == "login" {
-			fmt.Println("The 'Login' module has already been added to this project, press 'enter' to continue")
+		if m == "auth" {
+			fmt.Println("The 'Auth' module has already been added to this project, press 'enter' to continue")
 			util.ParseInput()
 			return
 		}
 	}
-	mod.AddLogin(p)
-	p.ProjectFile.Modules = append(p.ProjectFile.Modules, "login")
+	mod.AddAuth(p)
+	p.ProjectFile.Modules = append(p.ProjectFile.Modules, "auth")
 	p.ProjectFile.SaveProjectFile()
 	fmt.Println("")
-	fmt.Println("'Login' module has been added, press 'enter' to continue")
+	fmt.Println("'Auth' module has been added, press 'enter' to continue")
 	util.ParseInput()
 }
 

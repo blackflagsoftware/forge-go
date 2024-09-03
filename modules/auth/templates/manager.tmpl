@@ -1,0 +1,55 @@
+package auth
+
+import (
+	"time"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	"{{.ProjectPath}}/internal/util"
+	aa "{{.ProjectPath}}/internal/v1/authauthorize"
+	l "{{.ProjectPath}}/internal/v1/login"
+	"gopkg.in/guregu/null.v3"
+)
+
+type (
+	ManagerAuth struct {}
+)
+
+func NewManagerAuth() *ManagerAuth {
+	return &ManagerAuth{}
+}
+
+func (m *ManagerAuth) OAuthSignIn(logIn OAuthLogin) (OAuthResponse, error) {
+	oAuthResponse := OAuthResponse{}
+	if !logIn.EmailAddr.Valid {
+		return oAuthResponse, ae.MissingParamError("EmailAddress")
+	}
+	login := &l.Login{EmailAddr: logIn.EmailAddr}
+	ls := l.InitStorage()
+	err := ls.GetByEmailAddr(login)
+	if err != nil {
+		title := err.(ae.ApiError).BodyError().Title
+		if title == "No Results Error" {
+			return oAuthResponse, ae.EmailPasswordComboError()
+		}
+		return oAuthResponse, err
+	}
+	if err := util.CheckPassword(logIn.Pwd.String, login.Pwd.String); err != nil {
+		return oAuthResponse, err
+	}
+	// check the auth_authorize
+	aas := aa.InitStorage()
+	aam := aa.NewManagerAuthAuthorize(aas)
+	authAuthorize := aa.AuthAuthorize{Id: logIn.AuthId.String}
+	if err := aam.Get(&authAuthorize); err != nil {
+		return oAuthResponse, err
+	}
+	authAuthorize.AuthCode = null.StringFrom(util.GenerateRandomString(16))
+	authAuthorize.AuthCodeAt = null.TimeFrom(time.Now().UTC())
+	if err := aam.Patch(authAuthorize); err != nil {
+		return oAuthResponse, err
+	}
+	// TODO: do we need to check any thing else here
+	oAuthResponse.AuthCode = authAuthorize.AuthCode.String
+	oAuthResponse.State = authAuthorize.State.String
+	return oAuthResponse, nil
+}
