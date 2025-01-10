@@ -61,6 +61,7 @@ func main() {
 	InitializeRoutes(e)
 
 	go func() {
+		// if err := e.StartTLS(fmt.Sprintf(":%s", restPort), "", ""); err != nil && err != http.ErrServerClosed { // or TLS, supplying the cert/key files as needed
 		if err := e.Start(fmt.Sprintf(":%s", restPort)); err != nil && err != http.ErrServerClosed {
 			m.Default.Printf("graceful server stop with error: %s", err)
 		}
@@ -72,7 +73,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := e.Shutdown(ctx); err != nil {
-		m.Default.Printf("gracefult shutdown with error: %s", err)
+		m.Default.Printf("graceful shutdown with error: %s", err)
 	}
 }
 

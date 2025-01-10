@@ -1,11 +1,21 @@
 package auth
 
 import (
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/base64"
+	"fmt"
 	"time"
 
+	"{{.ProjectPath}}/config"
 	ae "{{.ProjectPath}}/internal/api_error"
+	"{{.ProjectPath}}/internal/middleware"
 	"{{.ProjectPath}}/internal/util"
 	aa "{{.ProjectPath}}/internal/v1/authauthorize"
+	ac "{{.ProjectPath}}/internal/v1/authclient"
+	acc "{{.ProjectPath}}/internal/v1/authclientcallback"
+	acs "{{.ProjectPath}}/internal/v1/authclientsecret"
+	ar "{{.ProjectPath}}/internal/v1/authrefresh"
 	l "{{.ProjectPath}}/internal/v1/login"
 	"gopkg.in/guregu/null.v3"
 )
@@ -18,7 +28,18 @@ func NewManagerAuth() *ManagerAuth {
 	return &ManagerAuth{}
 }
 
-func (m *ManagerAuth) OAuthSignIn(logIn OAuthLogin) (OAuthResponse, error) {
+func (m *ManagerAuth) GetClientId(clientId string) (string, error) {
+	// validate the client
+	authClient := ac.AuthClient{Id: clientId}
+	acs := ac.InitStorage()
+	acm := ac.NewManagerAuthClient(acs)
+	if err := acm.Get(&authClient); err != nil {
+		return "", err
+	}
+	return authClient.Name.String, nil
+}
+
+func (m *ManagerAuth) OAuthSignIn(logIn OAuthLogin, authAuthorize aa.AuthAuthorize) (OAuthResponse, error) {
 	oAuthResponse := OAuthResponse{}
 	if !logIn.EmailAddr.Valid {
 		return oAuthResponse, ae.MissingParamError("EmailAddress")
@@ -36,20 +57,134 @@ func (m *ManagerAuth) OAuthSignIn(logIn OAuthLogin) (OAuthResponse, error) {
 	if err := util.CheckPassword(logIn.Pwd.String, login.Pwd.String); err != nil {
 		return oAuthResponse, err
 	}
-	// check the auth_authorize
+	// make sure the redirect url is save on the client, another security check
+	authClientCallback := acc.AuthClientCallback{ClientId: authAuthorize.ClientId.String, CallbackUrl: authAuthorize.RedirectUrl.String}
+	accs := acc.InitStorage()
+	accm := acc.NewManagerAuthClientCallback(accs)
+	if err := accm.Get(&authClientCallback); err != nil {
+		return oAuthResponse, err
+	}
+	authAuthorize.AuthCodeAt = null.TimeFrom(time.Now().UTC())
+	authAuthorize.LoginId = null.StringFrom(login.Id)
+	// save off auth authorize record
 	aas := aa.InitStorage()
 	aam := aa.NewManagerAuthAuthorize(aas)
-	authAuthorize := aa.AuthAuthorize{Id: logIn.AuthId.String}
-	if err := aam.Get(&authAuthorize); err != nil {
+	if err := aam.Post(&authAuthorize); err != nil {
 		return oAuthResponse, err
 	}
-	authAuthorize.AuthCode = null.StringFrom(util.GenerateRandomString(16))
-	authAuthorize.AuthCodeAt = null.TimeFrom(time.Now().UTC())
-	if err := aam.Patch(authAuthorize); err != nil {
-		return oAuthResponse, err
-	}
-	// TODO: do we need to check any thing else here
-	oAuthResponse.AuthCode = authAuthorize.AuthCode.String
+
+	oAuthResponse.AuthCode = authAuthorize.Id
 	oAuthResponse.State = authAuthorize.State.String
+	oAuthResponse.RedirectUrl = authAuthorize.RedirectUrl.String
 	return oAuthResponse, nil
+}
+
+func (m *ManagerAuth) OAuthExchange(authToken OAuthToken) (OAuthToken, error) {
+	// check the client_secret is valid
+	authClientSecret := acs.AuthClientSecret{ClientId: null.StringFrom(authToken.ClientId), Secret: null.StringFrom(authToken.ClientSecret)} // TODO: add to forge
+	acss := acs.InitStorage()
+	acsm := acs.NewManagerAuthClientSecret(acss)
+	if err := acsm.GetByIdAndSecret(&authClientSecret); err != nil {
+		// TODO: send back different error if no record found
+		return OAuthToken{}, err
+	}
+	if !authClientSecret.Active {
+		return OAuthToken{}, ae.GeneralError("Inactive secret", fmt.Errorf("Invalid secret"))
+	}
+	// get the loginId from AuthAuthorize
+	authAuthorize := aa.AuthAuthorize{Id: authToken.Code}
+	aas := aa.InitStorage()
+	aam := aa.NewManagerAuthAuthorize(aas)
+	if err := aam.Get(&authAuthorize); err != nil {
+		// TODO: send back different error if no record found
+		return OAuthToken{}, ae.GeneralError("Bad AuthAuthorize", fmt.Errorf("Bad AuthAuthorize"))
+	}
+	// check the code
+	if authToken.GrantType == "authorization_code" {
+		return ExchangeAuthCode(authToken, authAuthorize)
+	}
+	if authToken.GrantType == "refresh_token" {
+		return ExchangeRefreshToken(authToken, authAuthorize.LoginId.String)
+	}
+	return OAuthToken{}, fmt.Errorf("Invalid grant type")
+}
+
+func ExchangeAuthCode(authToken OAuthToken, authAuthorize aa.AuthAuthorize) (OAuthToken, error) {
+	// will need to check the timing on when that code was created
+	now := time.Now().UTC()
+	expires := authAuthorize.AuthCodeAt.Time.Add(time.Duration(config.GetAuthorizationExpires()) * time.Second)
+	if now.After(expires) {
+		return OAuthToken{}, ae.GeneralError("The Auth Code has expired", fmt.Errorf("The Auth Code has expired"))
+	}
+	// base64 encode the code_verifier (pkce) and verify from the earlier saved off code_challenge (pkce) using the challenge_method
+	coded, err := PkceCodeChallengeCheck(authToken.CodeVerifier, authAuthorize.VerifierEncodeMethod.String)
+	if err != nil {
+		return OAuthToken{}, err
+	}
+	if coded != authAuthorize.Verifier.String {
+		return OAuthToken{}, ae.GeneralError("Invalid PKCE value", fmt.Errorf("Invalid Pkce value"))
+	}
+	// authRefresh := ar.AuthRefresh{LoginId: loginId, Token: authToken.RefreshToken}
+	ars := ar.InitStorage()
+	arm := ar.NewManagerAuthRefresh(ars)
+	refreshToken, err := arm.CycleRefreshToken(ar.AuthRefresh{LoginId: authAuthorize.LoginId.String})
+	if err != nil {
+		return OAuthToken{}, nil
+	}
+	// build return authToken
+	authTokenNew := OAuthToken{}
+	authTokenNew.AccessToken, err = middleware.AuthBuild([]string{}) // TODO: add roles here for the user
+	if err != nil {
+		return OAuthToken{}, ae.GeneralError("Unable to build access token", fmt.Errorf("Unable to build access token"))
+	}
+	authTokenNew.ExpiresIn = config.GetAuthorizationExpires()
+	authTokenNew.RefreshToken = refreshToken
+	authTokenNew.Scope = "" // TODO: fill in your scope(s) here
+	authTokenNew.TokenType = "bearer"
+	return authTokenNew, nil
+}
+
+func ExchangeRefreshToken(authToken OAuthToken, loginId string) (OAuthToken, error) {
+	// grant_type=refresh_token
+	// TODO: we will want to hash the refresh token on save and then do the same here when comparing
+	// TODO: add a config setting to either -1 [keep forever]; 0 [always refresh]; >0 [expire time interval]
+	authRefresh := ar.AuthRefresh{LoginId: loginId, Token: authToken.RefreshToken}
+	ars := ar.InitStorage()
+	arm := ar.NewManagerAuthRefresh(ars)
+	if err := arm.Get(&authRefresh); err != nil {
+		// TODO: send back different error
+		return OAuthToken{}, err
+	}
+	if !authRefresh.Active {
+		return OAuthToken{}, fmt.Errorf("Inactive refresh token")
+	}
+	var err error
+	authToken.AccessToken, err = middleware.AuthBuild([]string{}) // TODO: add roles here for the user
+	if err != nil {
+		return OAuthToken{}, fmt.Errorf("Unable to build access token")
+	}
+	refreshToken, err := arm.CycleRefreshToken(ar.AuthRefresh{LoginId: loginId}) // empty => old
+	if err != nil {
+		return OAuthToken{}, err
+	}
+	authToken.ExpiresIn = config.GetAuthorizationExpires()
+	authToken.RefreshToken = refreshToken
+	authToken.Scope = ""
+	authToken.TokenType = "bearer"
+	return authToken, nil
+}
+
+func PkceCodeChallengeCheck(code, method string) (string, error) {
+	switch method {
+	case "S256":
+		sum := sha256.Sum256([]byte(code))
+		coded := base64.StdEncoding.EncodeToString(sum[:32])
+		return coded, nil
+	case "S512":
+		sum := sha512.Sum512([]byte(code))
+		coded := base64.StdEncoding.EncodeToString(sum[:64])
+		return coded, nil
+	default:
+		return "", fmt.Errorf("Invalid encoded method")
+	}
 }

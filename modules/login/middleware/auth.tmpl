@@ -60,7 +60,19 @@ func AuthConfig() echojwt.Config {
 	keyContent, err := base64.StdEncoding.DecodeString(config.LoginAuthSecret)
 	if err != nil {
 		Default.Println("Unable to DecodeString for auth secret", err)
-		return echojwt.Config{}
+		return echojwt.Config{
+			Skipper: SkipperJWTFunc(),
+			NewClaimsFunc: func(c echo.Context) jwt.Claims {
+				return new(CustomClaims)
+			},
+			KeyFunc: func(token *jwt.Token) (interface{}, error) {
+				publicKey, err := base64.StdEncoding.DecodeString(config.LoginAuthPublic)
+				if err != nil {
+					return nil, fmt.Errorf("unable to decode public string: %w", err)
+				}
+				return publicKey, nil
+			},
+		}
 	}
 	return echojwt.Config{
 		Skipper: SkipperJWTFunc(),
