@@ -1,6 +1,7 @@
 package loginrole
 
 import (
+	"context"
 	"fmt"
 
 	ae "{{.ProjectPath}}/internal/api_error"
@@ -20,7 +21,7 @@ func InitSQL() *SQLLoginRole {
 	return &SQLLoginRole{DB: db}
 }
 
-func (d *SQLLoginRole) Read(lo *LoginRole) error {
+func (d *SQLLoginRole) Read(ctx context.Context, lo *LoginRole) error {
 	sqlGet := `
 		SELECT
 			login_id,
@@ -32,7 +33,7 @@ func (d *SQLLoginRole) Read(lo *LoginRole) error {
 	return nil
 }
 
-func (d *SQLLoginRole) ReadAll(lo *[]LoginRole, param LoginRoleParam) (int, error) {
+func (d *SQLLoginRole) ReadAll(ctx context.Context, lo *[]LoginRole, param LoginRoleParam) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
@@ -57,7 +58,7 @@ func (d *SQLLoginRole) ReadAll(lo *[]LoginRole, param LoginRoleParam) (int, erro
 	return count, nil
 }
 
-func (d *SQLLoginRole) Create(lo *LoginRole) error {
+func (d *SQLLoginRole) Create(ctx context.Context, lo *LoginRole) error {
 	sqlPost := `
 		INSERT INTO login_role (
 			login_id,
@@ -74,7 +75,7 @@ func (d *SQLLoginRole) Create(lo *LoginRole) error {
 	return nil
 }
 
-func (d *SQLLoginRole) Update(lo LoginRole) error {
+func (d *SQLLoginRole) Update(ctx context.Context, lo LoginRole) error {
 	sqlPatch := `
 		UPDATE login_role SET
 			
@@ -85,7 +86,7 @@ func (d *SQLLoginRole) Update(lo LoginRole) error {
 	return nil
 }
 
-func (d *SQLLoginRole) Delete(lo *LoginRole) error {
+func (d *SQLLoginRole) Delete(ctx context.Context, lo *LoginRole) error {
 	sqlDelete := `
 		DELETE FROM login_role WHERE login_id = $1 and role_id = $2`
 	if _, errDB := d.DB.Exec(sqlDelete, lo.LoginId, lo.RoleId); errDB != nil {

@@ -1,6 +1,7 @@
 package {{.CurrentEntity.AllLower}}
 
 import (
+	"context"
 	"net/http"{{.RestStrConv}}
 
 	"github.com/labstack/echo/v4"
@@ -10,11 +11,11 @@ import (
 
 type (
 	Manager{{.CurrentEntity.Camel}}Adapter interface {
-		Get(*{{.CurrentEntity.Camel}}) error
-		Search(*[]{{.CurrentEntity.Camel}}, {{.CurrentEntity.Camel}}Param) (int, error)
-		Post(*{{.CurrentEntity.Camel}}) error
-		Patch({{.CurrentEntity.Camel}}) error
-		Delete(*{{.CurrentEntity.Camel}}) error
+		Get(context.Context, *{{.CurrentEntity.Camel}}) error
+		Search(context.Context, *[]{{.CurrentEntity.Camel}}, {{.CurrentEntity.Camel}}Param) (int, error)
+		Post(context.Context, *{{.CurrentEntity.Camel}}) error
+		Patch(context.Context, {{.CurrentEntity.Camel}}) error
+		Delete(context.Context, *{{.CurrentEntity.Camel}}) error
 	}
 
 	Rest{{.CurrentEntity.Camel}} struct {
@@ -42,9 +43,10 @@ func (h *Rest{{.CurrentEntity.Camel}}) Load{{.CurrentEntity.Camel}}Routes(eg *ec
 }
 
 func (h *Rest{{.CurrentEntity.Camel}}) Get(c echo.Context) error {
+	ctx := context.TODO()
 {{.RestGetDeleteAssign}}
 	{{.CurrentEntity.LowerCamel}} := &{{.CurrentEntity.Camel}}{ {{.RestArgSet}} }
-	if err := h.manager{{.CurrentEntity.Camel}}.Get({{.CurrentEntity.LowerCamel}}); err != nil {
+	if err := h.manager{{.CurrentEntity.Camel}}.Get(ctx, {{.CurrentEntity.LowerCamel}}); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -53,13 +55,14 @@ func (h *Rest{{.CurrentEntity.Camel}}) Get(c echo.Context) error {
 }
 
 func (h *Rest{{.CurrentEntity.Camel}}) Search(c echo.Context) error {
+	ctx := context.TODO()
 	param := {{.CurrentEntity.Camel}}Param{}
 	if err := c.Bind(&param); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
 	}
 	{{.CurrentEntity.LowerCamel}}s := &[]{{.CurrentEntity.Camel}}{}
-	totalCount, err := h.manager{{.CurrentEntity.Camel}}.Search({{.CurrentEntity.LowerCamel}}s, param)
+	totalCount, err := h.manager{{.CurrentEntity.Camel}}.Search(ctx, {{.CurrentEntity.LowerCamel}}s, param)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -69,13 +72,14 @@ func (h *Rest{{.CurrentEntity.Camel}}) Search(c echo.Context) error {
 }
 
 func (h *Rest{{.CurrentEntity.Camel}}) Post(c echo.Context) error {
+	ctx := context.TODO()
 	{{.CurrentEntity.Abbr}} := {{.CurrentEntity.Camel}}{}
 	{{.CurrentEntity.Abbr}}Data := {{.CurrentEntity.Camel}}Data{Data: {{.CurrentEntity.Abbr}} }
 	if err := c.Bind(&{{.CurrentEntity.Abbr}}Data); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.manager{{.CurrentEntity.Camel}}.Post(&{{.CurrentEntity.Abbr}}Data.Data); err != nil {
+	if err := h.manager{{.CurrentEntity.Camel}}.Post(ctx, &{{.CurrentEntity.Abbr}}Data.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -84,13 +88,14 @@ func (h *Rest{{.CurrentEntity.Camel}}) Post(c echo.Context) error {
 }
 
 func (h *Rest{{.CurrentEntity.Camel}}) Patch(c echo.Context) error {
+	ctx := context.TODO()
 	{{.CurrentEntity.Abbr}} := {{.CurrentEntity.Camel}}{}
 	{{.CurrentEntity.Abbr}}Data := {{.CurrentEntity.Camel}}Data{Data: {{.CurrentEntity.Abbr}} }
 	if err := c.Bind(&{{.CurrentEntity.Abbr}}Data); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.manager{{.CurrentEntity.Camel}}.Patch({{.CurrentEntity.Abbr}}Data.Data); err != nil {
+	if err := h.manager{{.CurrentEntity.Camel}}.Patch(ctx, {{.CurrentEntity.Abbr}}Data.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -99,9 +104,10 @@ func (h *Rest{{.CurrentEntity.Camel}}) Patch(c echo.Context) error {
 }
 
 func (h *Rest{{.CurrentEntity.Camel}}) Delete(c echo.Context) error {
+	ctx := context.TODO()
 {{.RestGetDeleteAssign}}
 	{{.CurrentEntity.LowerCamel}} := &{{.CurrentEntity.Camel}}{ {{.RestArgSet}} }
-	if err := h.manager{{.CurrentEntity.Camel}}.Delete({{.CurrentEntity.LowerCamel}}); err != nil {
+	if err := h.manager{{.CurrentEntity.Camel}}.Delete(ctx, {{.CurrentEntity.LowerCamel}}); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))

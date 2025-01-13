@@ -24,7 +24,7 @@ func (a *{{.CurrentEntity.Camel}}Grpc) Get{{.CurrentEntity.Camel}}(ctx context.C
 	result := &p.Result{Success: false}
 	response := &p.{{.CurrentEntity.Camel}}Response{Result: result}
 	{{.CurrentEntity.Abbr}} := &{{.CurrentEntity.Camel}}{ {{.GrpcArgsInit}} }
-	if err := a.manager{{.CurrentEntity.Camel}}.Get({{.CurrentEntity.Abbr}}); err != nil {
+	if err := a.manager{{.CurrentEntity.Camel}}.Get(ctx, {{.CurrentEntity.Abbr}}); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -42,7 +42,7 @@ func (a *{{.CurrentEntity.Camel}}Grpc) Search{{.CurrentEntity.Camel}}(ctx contex
 	result := &p.Result{Success: false}
 	response := &p.{{.CurrentEntity.Camel}}RepeatResponse{Result: result}
 	{{.CurrentEntity.Abbr}}s := &[]{{.CurrentEntity.Camel}}{}
-	if _, err := a.manager{{.CurrentEntity.Camel}}.Search({{.CurrentEntity.Abbr}}s, {{.CurrentEntity.LowerCamel}}Param); err != nil {
+	if _, err := a.manager{{.CurrentEntity.Camel}}.Search(ctx, {{.CurrentEntity.Abbr}}s, {{.CurrentEntity.LowerCamel}}Param); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -64,7 +64,7 @@ func (a *{{.CurrentEntity.Camel}}Grpc) Create{{.CurrentEntity.Camel}}(ctx contex
 	if err != nil {
 		return response, err
 	}
-	if err := a.manager{{.CurrentEntity.Camel}}.Post({{.CurrentEntity.Abbr}}); err != nil {
+	if err := a.manager{{.CurrentEntity.Camel}}.Post(ctx, {{.CurrentEntity.Abbr}}); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -83,7 +83,7 @@ func (a *{{.CurrentEntity.Camel}}Grpc) Update{{.CurrentEntity.Camel}}(ctx contex
 	if err != nil {
 		return response, err
 	}
-	if err := a.manager{{.CurrentEntity.Camel}}.Patch(*{{.CurrentEntity.Abbr}}); err != nil {
+	if err := a.manager{{.CurrentEntity.Camel}}.Patch(ctx, *{{.CurrentEntity.Abbr}}); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}
@@ -94,7 +94,7 @@ func (a *{{.CurrentEntity.Camel}}Grpc) Update{{.CurrentEntity.Camel}}(ctx contex
 func (a *{{.CurrentEntity.Camel}}Grpc) Delete{{.CurrentEntity.Camel}}(ctx context.Context, in *p.{{.CurrentEntity.Camel}}IDIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
 	{{.CurrentEntity.Abbr}} := &{{.CurrentEntity.Camel}}{ {{.GrpcArgsInit}} }
-	if err := a.manager{{.CurrentEntity.Camel}}.Delete({{.CurrentEntity.Abbr}}); err != nil {
+	if err := a.manager{{.CurrentEntity.Camel}}.Delete(ctx, {{.CurrentEntity.Abbr}}); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}

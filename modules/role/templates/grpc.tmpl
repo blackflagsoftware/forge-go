@@ -23,7 +23,7 @@ func (a *RoleGrpc) GetRole(ctx context.Context, in *p.RoleIDIn) (*p.RoleResponse
 	result := &p.Result{Success: false}
 	response := &p.RoleResponse{Result: result}
 	rol := &Role{Id: in.Id}
-	if err := a.managerRole.Get(rol); err != nil {
+	if err := a.managerRole.Get(ctx, rol); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -41,7 +41,7 @@ func (a *RoleGrpc) SearchRole(ctx context.Context, in *p.Role) (*p.RoleRepeatRes
 	result := &p.Result{Success: false}
 	response := &p.RoleRepeatResponse{Result: result}
 	rols := &[]Role{}
-	if _, err := a.managerRole.Search(rols, roleParam); err != nil {
+	if _, err := a.managerRole.Search(ctx, rols, roleParam); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -63,7 +63,7 @@ func (a *RoleGrpc) CreateRole(ctx context.Context, in *p.Role) (*p.RoleResponse,
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerRole.Post(rol); err != nil {
+	if err := a.managerRole.Post(ctx, rol); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -82,7 +82,7 @@ func (a *RoleGrpc) UpdateRole(ctx context.Context, in *p.Role) (*p.Result, error
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerRole.Patch(*rol); err != nil {
+	if err := a.managerRole.Patch(ctx, *rol); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}
@@ -93,7 +93,7 @@ func (a *RoleGrpc) UpdateRole(ctx context.Context, in *p.Role) (*p.Result, error
 func (a *RoleGrpc) DeleteRole(ctx context.Context, in *p.RoleIDIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
 	rol := &Role{Id: in.Id}
-	if err := a.managerRole.Delete(rol); err != nil {
+	if err := a.managerRole.Delete(ctx, rol); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}

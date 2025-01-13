@@ -23,7 +23,7 @@ func (a *AuthClientGrpc) GetAuthClient(ctx context.Context, in *p.AuthClientIDIn
 	result := &p.Result{Success: false}
 	response := &p.AuthClientResponse{Result: result}
 	aut := &AuthClient{Id: in.Id}
-	if err := a.managerAuthClient.Get(aut); err != nil {
+	if err := a.managerAuthClient.Get(ctx, aut); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -41,7 +41,7 @@ func (a *AuthClientGrpc) SearchAuthClient(ctx context.Context, in *p.AuthClient)
 	result := &p.Result{Success: false}
 	response := &p.AuthClientRepeatResponse{Result: result}
 	auts := &[]AuthClient{}
-	if _, err := a.managerAuthClient.Search(auts, authClientParam); err != nil {
+	if _, err := a.managerAuthClient.Search(ctx, auts, authClientParam); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -63,7 +63,7 @@ func (a *AuthClientGrpc) CreateAuthClient(ctx context.Context, in *p.AuthClient)
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerAuthClient.Post(aut); err != nil {
+	if err := a.managerAuthClient.Post(ctx, aut); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -82,7 +82,7 @@ func (a *AuthClientGrpc) UpdateAuthClient(ctx context.Context, in *p.AuthClient)
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerAuthClient.Patch(*aut); err != nil {
+	if err := a.managerAuthClient.Patch(ctx, *aut); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}
@@ -93,7 +93,7 @@ func (a *AuthClientGrpc) UpdateAuthClient(ctx context.Context, in *p.AuthClient)
 func (a *AuthClientGrpc) DeleteAuthClient(ctx context.Context, in *p.AuthClientIDIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
 	aut := &AuthClient{Id: in.Id}
-	if err := a.managerAuthClient.Delete(aut); err != nil {
+	if err := a.managerAuthClient.Delete(ctx, aut); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}

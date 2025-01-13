@@ -1,6 +1,7 @@
 package {{.CurrentEntity.AllLower}}
 
 import (
+	"context"
 	"fmt"
 	{{.StorageImport}}
 
@@ -21,7 +22,7 @@ func InitSQL() *SQL{{.CurrentEntity.Camel}} {
 	return &SQL{{.CurrentEntity.Camel}}{DB: db}
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Read(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	sqlGet := {{.StorageTablePrefix}}`
 		SELECT
 			{{.StorageGetColumns}}
@@ -32,7 +33,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentEn
 	return nil
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
+func (d *SQL{{.CurrentEntity.Camel}}) ReadAll(ctx context.Context, {{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Param, false) // false => include the where clause, see internal/util/sql.go
 	sqlSearch := fmt.Sprintf(`
 		SELECT
@@ -57,7 +58,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.Curr
 	return count, nil
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error { {{.StorageCountCall}}
+func (d *SQL{{.CurrentEntity.Camel}}) Create(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error { {{.StorageCountCall}}
 	sqlPost := {{.StorageTablePrefix}}`
 		INSERT INTO {{.StorageTable}} (
 			{{.StoragePostColumns}}
@@ -72,7 +73,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.Current
 	return nil
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Update({{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Update(ctx context.Context, {{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
 	sqlPatch := {{.StorageTablePrefix}}`
 		UPDATE {{.StorageTable}} SET
 			{{.StoragePatchColumns}}
@@ -83,7 +84,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) Update({{.CurrentEntity.Abbr}} {{.CurrentE
 	return nil
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Delete(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	sqlDelete := {{.StorageTablePrefix}}`
 		DELETE FROM {{.StorageTable}} WHERE {{.StorageTableKeyKeys}}`{{.StorageTablePostfix}}
 	if _, errDB := d.DB.Exec(sqlDelete, {{.StorageTableKeyValues}}); errDB != nil {

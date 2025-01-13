@@ -9,11 +9,11 @@ import (
 //go:generate mockgen -source=manager.go -destination=mock.go -package=role
 type (
 	DataRoleAdapter interface {
-		Read(*Role) error
-		ReadAll(*[]Role, RoleParam) (int, error)
-		Create(*Role) error
-		Update(Role) error
-		Delete(*Role) error
+		Read(context.Context, *Role) error
+		ReadAll(context.Context, *[]Role, RoleParam) (int, error)
+		Create(context.Context, *Role) error
+		Update(context.Context, Role) error
+		Delete(context.Context, *Role) error
 	}
 
 	ManagerRole struct {
@@ -27,20 +27,20 @@ func NewManagerRole(crol DataRoleAdapter) *ManagerRole {
 	return &ManagerRole{dataRole: crol, auditWriter: aw}
 }
 
-func (m *ManagerRole) Get(rol *Role) error {
+func (m *ManagerRole) Get(ctx context.Context, rol *Role) error {
 	if rol.Id== "" {
 		return ae.MissingParamError("Id")
 	}
-	return m.dataRole.Read(rol)
+	return m.dataRole.Read(ctx, rol)
 }
 
-func (m *ManagerRole) Search(rol *[]Role, param RoleParam) (int, error) {
+func (m *ManagerRole) Search(ctx context.Context, rol *[]Role, param RoleParam) (int, error) {
 	param.Param.CalculateParam("name", map[string]string{"name": "name", "description": "description"})
 
-	return m.dataRole.ReadAll(rol, param)
+	return m.dataRole.ReadAll(ctx, rol, param)
 }
 
-func (m *ManagerRole) Post(rol *Role) error {
+func (m *ManagerRole) Post(ctx context.Context, rol *Role) error {
 	if !rol.Name.Valid {
 		return ae.MissingParamError("Name")
 	}
@@ -51,14 +51,14 @@ func (m *ManagerRole) Post(rol *Role) error {
 		return ae.StringLengthError("Description", 500)
 	}
 	rol.Id = util.GenerateUUID()
-	if err := m.dataRole.Create(rol); err != nil {
+	if err := m.dataRole.Create(ctx, rol); err != nil {
 		return err
 	}
 	go a.AuditCreate(m.auditWriter, *rol, RoleConst, a.KeysToString("id", rol.Id))
 	return nil
 }
 
-func (m *ManagerRole) Patch(rolIn Role) error {
+func (m *ManagerRole) Patch(ctx context.Context, rolIn Role) error {
 	rol := &Role{Id: rolIn.Id}
 	errGet := m.dataRole.Read(rol)
 	if errGet != nil {
@@ -81,18 +81,18 @@ func (m *ManagerRole) Patch(rolIn Role) error {
 		existingValues["description"] = rol.Description.String
 		rol.Description = rolIn.Description
 	}
-	if err := m.dataRole.Update(*rol); err != nil {
+	if err := m.dataRole.Update(ctx, *rol); err != nil {
 		return err
 	}
 	go a.AuditPatch(m.auditWriter, *rol, RoleConst, a.KeysToString("id", rol.Id), existingValues)
 	return nil
 }
 
-func (m *ManagerRole) Delete(rol *Role) error {
+func (m *ManagerRole) Delete(ctx context.Context, rol *Role) error {
 	if rol.Id == "" {
 		return ae.MissingParamError("Id")
 	}
-	if err := m.dataRole.Delete(rol); err != nil {
+	if err := m.dataRole.Delete(ctx, rol); err != nil {
 		return err
 	}
 	go a.AuditDelete(m.auditWriter, *rol, RoleConst, a.KeysToString("id", rol.Id))

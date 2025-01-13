@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"net/http"
 
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -12,16 +13,16 @@ import (
 
 type (
 	ManagerLoginAdapter interface {
-		Get(*Login) error
-		Search(*[]Login, LoginParam) (int, error)
-		Post(*Login) error
-		Patch(Login) error
-		PatchPwd(Login) error
-		Delete(*Login) error
-		PwdReset(PasswordReset) error
-		ResetRequest(*ResetRequest) error
-		SignIn(Login) (string, error)
-		WithRoles(*[]LoginRoles) (int, error)
+		Get(context.Context, *Login) error
+		Search(context.Context, *[]Login, LoginParam) (int, error)
+		Post(context.Context, *Login) error
+		Patch(context.Context, Login) error
+		PatchPwd(context.Context, Login) error
+		Delete(context.Context, *Login) error
+		PwdReset(context.Context, PasswordReset) error
+		ResetRequest(context.Context, *ResetRequest) error
+		SignIn(context.Context, Login) (string, error)
+		WithRoles(context.Context, *[]LoginRoles) (int, error)
 	}
 
 	RestLogin struct {
@@ -58,7 +59,7 @@ func (h *RestLogin) LoadLoginRoutes(eg *echo.Group) {
 func (h *RestLogin) Get(c echo.Context) error {
 	id := c.Param("id")
 	login := &Login{Id: id}
-	if err := h.managerLogin.Get(login); err != nil {
+	if err := h.managerLogin.Get(c, login); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -73,7 +74,7 @@ func (h *RestLogin) Search(c echo.Context) error {
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
 	}
 	logins := &[]Login{}
-	totalCount, err := h.managerLogin.Search(logins, param)
+	totalCount, err := h.managerLogin.Search(c, logins, param)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -92,7 +93,7 @@ func (h *RestLogin) Post(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLogin.Post(&logData.Data); err != nil {
+	if err := h.managerLogin.Post(c, &logData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -107,7 +108,7 @@ func (h *RestLogin) Patch(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLogin.Patch(logData.Data); err != nil {
+	if err := h.managerLogin.Patch(c, logData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -122,7 +123,7 @@ func (h *RestLogin) PatchPwd(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLogin.PatchPwd(logData.Data); err != nil {
+	if err := h.managerLogin.PatchPwd(c, logData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -133,7 +134,7 @@ func (h *RestLogin) PatchPwd(c echo.Context) error {
 func (h *RestLogin) Delete(c echo.Context) error {
 	id := c.Param("id")
 	login := &Login{Id: id}
-	if err := h.managerLogin.Delete(login); err != nil {
+	if err := h.managerLogin.Delete(c, login); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -148,7 +149,7 @@ func (h *RestLogin) PostPwd(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLogin.PwdReset(pwdData.Data); err != nil {
+	if err := h.managerLogin.PwdReset(c, pwdData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -159,7 +160,7 @@ func (h *RestLogin) PostPwd(c echo.Context) error {
 func (h *RestLogin) ResetRequest(c echo.Context) error {
 	emailAddr := c.Param("email_addr")
 	resetRequest := &ResetRequest{EmailAddr: emailAddr}
-	if err := h.managerLogin.ResetRequest(resetRequest); err != nil {
+	if err := h.managerLogin.ResetRequest(c, resetRequest); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -174,7 +175,7 @@ func (h *RestLogin) SignIn(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	token, err := h.managerLogin.SignIn(logData.Data)
+	token, err := h.managerLogin.SignIn(c, logData.Data)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -190,7 +191,7 @@ func (h *RestLogin) Verify(c echo.Context) error {
 
 func (h *RestLogin) WithRoles(c echo.Context) error {
 	login := &[]LoginRoles{}
-	totalCount, err := h.managerLogin.WithRoles(login)
+	totalCount, err := h.managerLogin.WithRoles(c, login)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()

@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"net/mail"
 	"time"
 
@@ -16,17 +17,17 @@ import (
 //go:generate mockgen -source=manager.go -destination=mock.go -package=login
 type (
 	DataLoginAdapter interface {
-		Read(*Login) error
-		ReadAll(*[]Login, LoginParam) (int, error)
-		Create(*Login, ResetRequest) error
-		Update(Login) error
-		UpdatePwd(Login) error
-		Delete(*Login) error
-		GetByEmailAddr(*Login) error
-		GetResetRequest(*ResetRequest) error
-		ResetRequest(*ResetRequest) error
-		GetLoginRoles(string, *[]string) error	
-		WithRoles(*[]LoginRoles) (int, error)
+		Read(context.Context, *Login) error
+		ReadAll(context.Context, *[]Login, LoginParam) (int, error)
+		Create(context.Context, *Login, ResetRequest) error
+		Update(context.Context, Login) error
+		UpdatePwd(context.Context, Login) error
+		Delete(context.Context, *Login) error
+		GetByEmailAddr(context.Context, *Login) error
+		GetResetRequest(context.Context, *ResetRequest) error
+		ResetRequest(context.Context, *ResetRequest) error
+		GetLoginRoles(context.Context, string, *[]string) error	
+		WithRoles(context.Context, *[]LoginRoles) (int, error)
 	}
 
 	ManagerLogin struct {
@@ -42,20 +43,20 @@ func NewManagerLogin(clog DataLoginAdapter) *ManagerLogin {
 	return &ManagerLogin{dataLogin: clog, auditWriter: aw, emailer: em}
 }
 
-func (m *ManagerLogin) Get(login *Login) error {
+func (m *ManagerLogin) Get(ctx context.Context, login *Login) error {
 	if login.Id == "" {
 		return ae.MissingParamError("Id")
 	}
-	return m.dataLogin.Read(login)
+	return m.dataLogin.Read(ctx, login)
 }
 
-func (m *ManagerLogin) Search(login *[]Login, param LoginParam) (int, error) {
+func (m *ManagerLogin) Search(ctx context.Context, login *[]Login, param LoginParam) (int, error) {
 	param.Param.CalculateParam("email_addr", map[string]string{"email_addr": "email_addr", "pwd": "pwd", "active": "active", "set_pwd": "set_pwd", "created_at": "created_at", "updated_at": "updated_at"})
 
-	return m.dataLogin.ReadAll(login, param)
+	return m.dataLogin.ReadAll(ctx, login, param)
 }
 
-func (m *ManagerLogin) Post(login *Login) error {
+func (m *ManagerLogin) Post(ctx context.Context, login *Login) error {
 	if !login.EmailAddr.Valid {
 		return ae.MissingParamError("EmailAddress")
 	}
@@ -67,7 +68,7 @@ func (m *ManagerLogin) Post(login *Login) error {
 	}
 	// check if email is already used before
 	logDup := &Login{EmailAddr: login.EmailAddr}
-	if err := m.dataLogin.GetByEmailAddr(logDup); err != nil {
+	if err := m.dataLogin.GetByEmailAddr(ctx, logDup); err != nil {
 		title := err.(ae.ApiError).BodyError().Title
 		if title != "No Results Error" {
 			return err
@@ -83,7 +84,7 @@ func (m *ManagerLogin) Post(login *Login) error {
 	login.CreatedAt.Scan(time.Now().UTC())
 	login.Id = util.GenerateUUID()
 	resetRequest := ResetRequest{LoginId: login.Id, ResetToken: util.GenerateUUID(), CreatedAt: time.Now().UTC()}
-	if err := m.dataLogin.Create(login, resetRequest); err != nil {
+	if err := m.dataLogin.Create(ctx, login, resetRequest); err != nil {
 		return err
 	}
 	go m.emailer.SendReset(login.EmailAddr.String, resetRequest.ResetToken)
@@ -92,7 +93,7 @@ func (m *ManagerLogin) Post(login *Login) error {
 }
 
 // Patch only allows to update the email or active, see PatchPwd to update the pwd
-func (m *ManagerLogin) Patch(logIn Login) error {
+func (m *ManagerLogin) Patch(ctx context.Context, logIn Login) error {
 	login := &Login{Id: logIn.Id}
 	errGet := m.dataLogin.Read(login)
 	if errGet != nil {
@@ -114,7 +115,7 @@ func (m *ManagerLogin) Patch(logIn Login) error {
 	}
 
 	login.UpdatedAt.Scan(time.Now().UTC())
-	if err := m.dataLogin.Update(*login); err != nil {
+	if err := m.dataLogin.Update(ctx, *login); err != nil {
 		return err
 	}
 	go a.AuditPatch(m.auditWriter, *login, LoginConst, a.KeysToString("Id", login.Id), existingValues)
@@ -122,7 +123,7 @@ func (m *ManagerLogin) Patch(logIn Login) error {
 }
 
 // PatchPwd only allows to change the pwd, see Patch to update the email
-func (m *ManagerLogin) PatchPwd(logIn Login) error {
+func (m *ManagerLogin) PatchPwd(ctx context.Context, logIn Login) error {
 	if logIn.Id == "" {
 		return ae.MissingParamError("Id")
 	}
@@ -146,18 +147,18 @@ func (m *ManagerLogin) PatchPwd(logIn Login) error {
 		return errHash
 	}
 	login.Pwd.Scan(hashPwd)
-	if err := m.dataLogin.UpdatePwd(*login); err != nil {
+	if err := m.dataLogin.UpdatePwd(ctx, *login); err != nil {
 		return err
 	}
 	go a.AuditPatch(m.auditWriter, *login, LoginConst, a.KeysToString("id", login.Id), existingValues)
 	return nil
 }
 
-func (m *ManagerLogin) Delete(login *Login) error {
+func (m *ManagerLogin) Delete(ctx context.Context, login *Login) error {
 	if login.Id == "" {
 		return ae.MissingParamError("Id")
 	}
-	if err := m.dataLogin.Delete(login); err != nil {
+	if err := m.dataLogin.Delete(ctx, login); err != nil {
 		return err
 	}
 	go a.AuditDelete(m.auditWriter, *login, LoginConst, a.KeysToString("id", login.Id))
@@ -165,17 +166,17 @@ func (m *ManagerLogin) Delete(login *Login) error {
 }
 
 // ResetPwd takes email, pwd, confirmPwd
-func (m *ManagerLogin) PwdReset(pwd PasswordReset) error {
+func (m *ManagerLogin) PwdReset(ctx context.Context, pwd PasswordReset) error {
 	if pwd.EmailAddr == "" {
 		return ae.MissingParamError("EmailAddress")
 	}
 	login := Login{EmailAddr: null.StringFrom(pwd.EmailAddr)}
-	if errLogin := m.dataLogin.GetByEmailAddr(&login); errLogin != nil {
+	if errLogin := m.dataLogin.GetByEmailAddr(ctx, &login); errLogin != nil {
 		return errLogin
 	}
 	// reset login is still valid
 	resetRequest := ResetRequest{LoginId: login.Id, ResetToken: pwd.ResetToken}
-	if errReset := m.dataLogin.GetResetRequest(&resetRequest); errReset != nil {
+	if errReset := m.dataLogin.GetResetRequest(ctx, &resetRequest); errReset != nil {
 		title := errReset.(ae.ApiError).BodyError().Title
 		if title == "No Results Error" {
 			return ae.ResetTokenInvalidError()
@@ -210,19 +211,19 @@ func (m *ManagerLogin) PwdReset(pwd PasswordReset) error {
 		return errHash
 	}
 	login.Pwd.Scan(hashPwd)
-	if err := m.dataLogin.UpdatePwd(login); err != nil {
+	if err := m.dataLogin.UpdatePwd(ctx, login); err != nil {
 		return err
 	}
 	go a.AuditPatch(m.auditWriter, login, LoginConst, a.KeysToString("id", login.Id), existingValues)
 	return nil
 }
 
-func (m *ManagerLogin) ResetRequest(res *ResetRequest) error {
+func (m *ManagerLogin) ResetRequest(ctx context.Context, res *ResetRequest) error {
 	if res.EmailAddr == "" {
 		return ae.MissingParamError("EmailAddress")
 	}
 	login := &Login{EmailAddr: null.StringFrom(res.EmailAddr)}
-	err := m.dataLogin.GetByEmailAddr(login)
+	err := m.dataLogin.GetByEmailAddr(ctx, login)
 	if err != nil {
 		title := err.(ae.ApiError).BodyError().Title
 		if title == "No Results Error" {
@@ -241,12 +242,12 @@ func (m *ManagerLogin) ResetRequest(res *ResetRequest) error {
 	return m.dataLogin.ResetRequest(res)
 }
 
-func (m *ManagerLogin) SignIn(logIn Login) (string, error) {
+func (m *ManagerLogin) SignIn(ctx context.Context, logIn Login) (string, error) {
 	if !logIn.EmailAddr.Valid {
 		return "", ae.MissingParamError("EmailAddress")
 	}
 	login := &Login{EmailAddr: logIn.EmailAddr}
-	err := m.dataLogin.GetByEmailAddr(login)
+	err := m.dataLogin.GetByEmailAddr(ctx, login)
 	if err != nil {
 		title := err.(ae.ApiError).BodyError().Title
 		if title == "No Results Error" {
@@ -258,7 +259,7 @@ func (m *ManagerLogin) SignIn(logIn Login) (string, error) {
 		return "", err
 	}
 	roles := []string{}
-	if errRoles := m.dataLogin.GetLoginRoles(login.Id, &roles); errRoles != nil {
+	if errRoles := m.dataLogin.GetLoginRoles(ctx, login.Id, &roles); errRoles != nil {
 		title := errRoles.(ae.ApiError).BodyError().Title
 		if title != "No Results Error" {
 			return "", errRoles
@@ -272,8 +273,8 @@ func (m *ManagerLogin) SignIn(logIn Login) (string, error) {
 	return token, nil
 }
 
-func (m *ManagerLogin) WithRoles(login *[]LoginRoles) (int, error) {
-	return m.dataLogin.WithRoles(login)
+func (m *ManagerLogin) WithRoles(ctx context.Context, login *[]LoginRoles) (int, error) {
+	return m.dataLogin.WithRoles(ctx, login)
 }
 
 

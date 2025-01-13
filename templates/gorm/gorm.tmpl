@@ -17,7 +17,7 @@ func InitSQL() *SQL{{.CurrentEntity.Camel}} {
 	return &SQL{{.CurrentEntity.Camel}}{DB: db}
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Get({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Get(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	result := d.DB.Where({{.CurrentEntity.Abbr}}).First({{.CurrentEntity.Abbr}})
 	if result.Error != nil {
 		return ae.DBError("{{.CurrentEntity.Camel}} Get: unable to select record.", result.Error)
@@ -25,7 +25,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) Get({{.CurrentEntity.Abbr}} *{{.CurrentEnt
 	return nil
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Search({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Search(ctx context.Context, {{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}) error {
 	result := d.DB.Find({{.CurrentEntity.Abbr}})
 	if result.Error != nil {
 		return ae.DBError("{{.CurrentEntity.Camel}} Search: unable to select records.", result.Error)
@@ -33,7 +33,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) Search({{.CurrentEntity.Abbr}} *[]{{.Curre
 	return nil
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Post({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Post(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	result := d.DB.Create({{.CurrentEntity.Abbr}})
 	if result.Error != nil {
 		return ae.DBError("{{.CurrentEntity.Camel}} Post: unable to insert record.", result.Error)
@@ -41,7 +41,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) Post({{.CurrentEntity.Abbr}} *{{.CurrentEn
 	return nil
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Patch({{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Patch(ctx context.Context, {{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
 	result := d.DB.Save({{.CurrentEntity.Abbr}})
 	if result.Error != nil {
 		return ae.DBError("{{.CurrentEntity.Camel}} Patch: unable to update record.", result.Error)
@@ -49,7 +49,7 @@ func (d *SQL{{.CurrentEntity.Camel}}) Patch({{.CurrentEntity.Abbr}} {{.CurrentEn
 	return nil
 }
 
-func (d *SQL{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *SQL{{.CurrentEntity.Camel}}) Delete(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	result := d.DB.Delete({{.CurrentEntity.Abbr}})
 	if result.Error != nil {
 		return ae.DBError("{{.CurrentEntity.Camel}} Delete: unable to delete record.", result.Error)

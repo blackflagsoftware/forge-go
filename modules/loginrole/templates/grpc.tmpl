@@ -23,7 +23,7 @@ func (a *LoginRoleGrpc) GetLoginRole(ctx context.Context, in *p.LoginRoleIDsIn) 
 	result := &p.Result{Success: false}
 	response := &p.LoginRoleResponse{Result: result}
 	lo := &LoginRole{LoginId: in.LoginId, RoleId: in.RoleId}
-	if err := a.managerLoginRole.Get(lo); err != nil {
+	if err := a.managerLoginRole.Get(ctx, lo); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -41,7 +41,7 @@ func (a *LoginRoleGrpc) SearchLoginRole(ctx context.Context, in *p.LoginRole) (*
 	result := &p.Result{Success: false}
 	response := &p.LoginRoleRepeatResponse{Result: result}
 	los := &[]LoginRole{}
-	if _, err := a.managerLoginRole.Search(los, loginRoleParam); err != nil {
+	if _, err := a.managerLoginRole.Search(ctx, los, loginRoleParam); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -63,7 +63,7 @@ func (a *LoginRoleGrpc) CreateLoginRole(ctx context.Context, in *p.LoginRole) (*
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerLoginRole.Post(lo); err != nil {
+	if err := a.managerLoginRole.Post(ctx, lo); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -82,7 +82,7 @@ func (a *LoginRoleGrpc) UpdateLoginRole(ctx context.Context, in *p.LoginRolePatc
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerLoginRole.Patch(*lo); err != nil {
+	if err := a.managerLoginRole.Patch(ctx, *lo); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}
@@ -93,7 +93,7 @@ func (a *LoginRoleGrpc) UpdateLoginRole(ctx context.Context, in *p.LoginRolePatc
 func (a *LoginRoleGrpc) DeleteLoginRole(ctx context.Context, in *p.LoginRoleIDsIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
 	lo := &LoginRole{LoginId: in.LoginId, RoleId: in.RoleId}
-	if err := a.managerLoginRole.Delete(lo); err != nil {
+	if err := a.managerLoginRole.Delete(ctx, lo); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}

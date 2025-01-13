@@ -1,6 +1,7 @@
 package authclientsecret
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -20,7 +21,7 @@ func InitSQL() *SQLAuthClientSecret {
 	return &SQLAuthClientSecret{DB: db}
 }
 
-func (d *SQLAuthClientSecret) Read(au *AuthClientSecret) error {
+func (d *SQLAuthClientSecret) Read(ctx context.Context, au *AuthClientSecret) error {
 	sqlGet := `
 		SELECT
 			client_id,
@@ -32,7 +33,7 @@ func (d *SQLAuthClientSecret) Read(au *AuthClientSecret) error {
 	return nil
 }
 
-func (d *SQLAuthClientSecret) ReadAll(au *[]AuthClientSecret, param AuthClientSecretParam) (int, error) {
+func (d *SQLAuthClientSecret) ReadAll(ctx context.Context, au *[]AuthClientSecret, param AuthClientSecretParam) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
@@ -58,7 +59,7 @@ func (d *SQLAuthClientSecret) ReadAll(au *[]AuthClientSecret, param AuthClientSe
 	return count, nil
 }
 
-func (d *SQLAuthClientSecret) Create(au *AuthClientSecret) error {
+func (d *SQLAuthClientSecret) Create(ctx context.Context, au *AuthClientSecret) error {
 	sqlPost := `
 		INSERT INTO auth_client_secret (
 			client_id,
@@ -75,7 +76,7 @@ func (d *SQLAuthClientSecret) Create(au *AuthClientSecret) error {
 	return nil
 }
 
-func (d *SQLAuthClientSecret) Update(au AuthClientSecret) error {
+func (d *SQLAuthClientSecret) Update(ctx context.Context, au AuthClientSecret) error {
 	sqlPatch := `
 		UPDATE auth_client_secret SET
 			
@@ -86,7 +87,7 @@ func (d *SQLAuthClientSecret) Update(au AuthClientSecret) error {
 	return nil
 }
 
-func (d *SQLAuthClientSecret) Delete(au *AuthClientSecret) error {
+func (d *SQLAuthClientSecret) Delete(ctx context.Context, au *AuthClientSecret) error {
 	sqlDelete := `
 		DELETE FROM auth_client_secret WHERE client_id = $1 and secret = $2`
 	if _, errDB := d.DB.Exec(sqlDelete, au.ClientId, au.Secret); errDB != nil {

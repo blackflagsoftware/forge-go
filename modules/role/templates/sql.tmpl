@@ -20,7 +20,7 @@ func InitSQL() *SQLRole {
 	return &SQLRole{DB: db}
 }
 
-func (d *SQLRole) Read(rol *Role) error {
+func (d *SQLRole) Read(ctx context.Context, rol *Role) error {
 	sqlGet := `
 		SELECT
 			id,
@@ -33,7 +33,7 @@ func (d *SQLRole) Read(rol *Role) error {
 	return nil
 }
 
-func (d *SQLRole) ReadAll(rol *[]Role, param RoleParam) (int, error) {
+func (d *SQLRole) ReadAll(ctx context.Context, rol *[]Role, param RoleParam) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
@@ -60,7 +60,7 @@ func (d *SQLRole) ReadAll(rol *[]Role, param RoleParam) (int, error) {
 	return count, nil
 }
 
-func (d *SQLRole) Create(rol *Role) error {
+func (d *SQLRole) Create(ctx context.Context, rol *Role) error {
 	sqlPost := `
 		INSERT INTO role (
 			id,
@@ -79,7 +79,7 @@ func (d *SQLRole) Create(rol *Role) error {
 	return nil
 }
 
-func (d *SQLRole) Update(rol Role) error {
+func (d *SQLRole) Update(ctx context.Context, rol Role) error {
 	sqlPatch := `
 		UPDATE role SET
 			name = :name,
@@ -91,7 +91,7 @@ func (d *SQLRole) Update(rol Role) error {
 	return nil
 }
 
-func (d *SQLRole) Delete(rol *Role) (err error) {
+func (d *SQLRole) Delete(ctx context.Context, rol *Role) (err error) {
 	txn := d.DB.MustBegin()
 	defer util.TxnFinish(txn, &err)
 

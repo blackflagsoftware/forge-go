@@ -1,6 +1,8 @@
 package {{.CurrentEntity.AllLower}}
 
 import (
+	"context"
+
 	{{.ManagerImport}}
 	stor "{{.ProjectPath}}/internal/storage"
 )
@@ -8,11 +10,11 @@ import (
 //go:generate mockgen -source=manager.go -destination=mock.go -package={{.CurrentEntity.AllLower}}
 type (
 	Data{{.CurrentEntity.Camel}}Adapter interface {
-		Read(*{{.CurrentEntity.Camel}}) error
-		ReadAll(*[]{{.CurrentEntity.Camel}}, {{.CurrentEntity.Camel}}Param) (int, error)
-		Create(*{{.CurrentEntity.Camel}}) error
-		Update({{.CurrentEntity.Camel}}) error
-		Delete(*{{.CurrentEntity.Camel}}) error
+		Read(context.Context, *{{.CurrentEntity.Camel}}) error
+		ReadAll(context.Context, *[]{{.CurrentEntity.Camel}}, {{.CurrentEntity.Camel}}Param) (int, error)
+		Create(context.Context, *{{.CurrentEntity.Camel}}) error
+		Update(context.Context, {{.CurrentEntity.Camel}}) error
+		Delete(context.Context, *{{.CurrentEntity.Camel}}) error
 	}
 
 	Manager{{.CurrentEntity.Camel}} struct {
@@ -26,47 +28,47 @@ func NewManager{{.CurrentEntity.Camel}}(c{{.CurrentEntity.Abbr}} Data{{.CurrentE
 	return &Manager{{.CurrentEntity.Camel}}{data{{.CurrentEntity.Camel}}: c{{.CurrentEntity.Abbr}}, auditWriter: aw}
 }
 
-func (m *Manager{{.CurrentEntity.Camel}}) Get({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (m *Manager{{.CurrentEntity.Camel}}) Get(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	{{.ManagerGetRows}}
-	return m.data{{.CurrentEntity.Camel}}.Read({{.CurrentEntity.Abbr}})
+	return m.data{{.CurrentEntity.Camel}}.Read(ctx, {{.CurrentEntity.Abbr}})
 }
 
-func (m *Manager{{.CurrentEntity.Camel}}) Search({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
+func (m *Manager{{.CurrentEntity.Camel}}) Search(ctx context.Context, {{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
 	// the second argument (map[string]string) is a list of columns to use for filtering
 	// the key matches the json struct tag, the value is the actual table column name (this should change if aliases are used in your query)
 	param.Param.CalculateParam("{{.CurrentEntity.DefaultColumn}}", map[string]string{ {{.CurrentEntity.SortColumns}} })
 	param.Param.PaginationString = stor.FormatPagination(param.Param.Limit, param.Param.Offset)
 
-	return m.data{{.CurrentEntity.Camel}}.ReadAll({{.CurrentEntity.Abbr}}, param)
+	return m.data{{.CurrentEntity.Camel}}.ReadAll(ctx, {{.CurrentEntity.Abbr}}, param)
 }
 
-func (m *Manager{{.CurrentEntity.Camel}}) Post({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (m *Manager{{.CurrentEntity.Camel}}) Post(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	{{.ManagerPostRows}}
-	if err := m.data{{.CurrentEntity.Camel}}.Create({{.CurrentEntity.Abbr}}); err != nil {
+	if err := m.data{{.CurrentEntity.Camel}}.Create(ctx, {{.CurrentEntity.Abbr}}); err != nil {
 		return err
 	}
 	go a.AuditCreate(m.auditWriter, *{{.CurrentEntity.Abbr}}, {{.CurrentEntity.Camel}}Const, a.KeysToString({{.ManagerAuditKey}}))
 	return nil
 }
 
-func (m *Manager{{.CurrentEntity.Camel}}) Patch({{.CurrentEntity.Abbr}}In {{.CurrentEntity.Camel}}) error {
+func (m *Manager{{.CurrentEntity.Camel}}) Patch(ctx context.Context, {{.CurrentEntity.Abbr}}In {{.CurrentEntity.Camel}}) error {
 	{{.CurrentEntity.Abbr}} := &{{.CurrentEntity.Camel}}{ {{.ManagerPatchInitArgs}} }
-	errGet := m.data{{.CurrentEntity.Camel}}.Read({{.CurrentEntity.Abbr}})
+	errGet := m.data{{.CurrentEntity.Camel}}.Read(ctx, {{.CurrentEntity.Abbr}})
 	if errGet != nil {
 		return errGet
 	}
 	existingValues := make(map[string]interface{})
 	{{.ManagerPatchRows}}
-	if err := m.data{{.CurrentEntity.Camel}}.Update(*{{.CurrentEntity.Abbr}}); err != nil {
+	if err := m.data{{.CurrentEntity.Camel}}.Update(ctx, *{{.CurrentEntity.Abbr}}); err != nil {
 		return err
 	}
 	go a.AuditPatch(m.auditWriter, *{{.CurrentEntity.Abbr}}, {{.CurrentEntity.Camel}}Const, a.KeysToString({{.ManagerAuditKey}}), existingValues)
 	return nil
 }
 
-func (m *Manager{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (m *Manager{{.CurrentEntity.Camel}}) Delete(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	{{.ManagerGetRows}}
-	if err := m.data{{.CurrentEntity.Camel}}.Delete({{.CurrentEntity.Abbr}}); err != nil {
+	if err := m.data{{.CurrentEntity.Camel}}.Delete(ctx, {{.CurrentEntity.Abbr}}); err != nil {
 		return err
 	}
 	go a.AuditDelete(m.auditWriter, *{{.CurrentEntity.Abbr}}, {{.CurrentEntity.Camel}}Const, a.KeysToString({{.ManagerAuditKey}}))

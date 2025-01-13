@@ -1,6 +1,7 @@
 package loginrole
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -36,7 +37,7 @@ func TestManagerLoginRole_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerLoginRole{dataLoginRole: mockDataLoginRole}
-			err := m.Get(tt.lo)
+			err := m.Get(ctx, tt.lo)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerLoginRole.Get().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -48,6 +49,7 @@ func TestManagerLoginRole_Get(t *testing.T) {
 }
 
 func TestManagerLoginRole_Post(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataLoginRole := NewMockDataLoginRoleAdapter(ctrl)
 
@@ -79,7 +81,7 @@ func TestManagerLoginRole_Post(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerLoginRole{dataLoginRole: mockDataLoginRole}
-			err := m.Post(tt.lo)
+			err := m.Post(ctx, tt.lo)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerLoginRole.Create().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -91,6 +93,7 @@ func TestManagerLoginRole_Post(t *testing.T) {
 }
 
 func TestManagerLoginRole_Patch(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataLoginRole := NewMockDataLoginRoleAdapter(ctrl)
 
@@ -121,7 +124,7 @@ func TestManagerLoginRole_Patch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerLoginRole{dataLoginRole: mockDataLoginRole}
-			err := m.Patch(tt.body)
+			err := m.Patch(ctx, tt.body)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerLoginRole.Update().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -133,6 +136,7 @@ func TestManagerLoginRole_Patch(t *testing.T) {
 }
 
 func TestManagerLoginRole_Delete(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataLoginRole := NewMockDataLoginRoleAdapter(ctrl)
 
@@ -160,7 +164,7 @@ func TestManagerLoginRole_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerLoginRole{dataLoginRole: mockDataLoginRole}
-			err := m.Delete(tt.lo)
+			err := m.Delete(ctx, tt.lo)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerLoginRole.Delete().%s => expected not error; got: %s", tt.name, err)
 			}

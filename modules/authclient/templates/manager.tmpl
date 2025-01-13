@@ -1,6 +1,8 @@
 package authclient
 
 import (
+	"context"
+
 	ae "{{.ProjectPath}}/internal/api_error"
 	a "{{.ProjectPath}}/internal/audit"
 	"{{.ProjectPath}}/internal/util"
@@ -9,11 +11,11 @@ import (
 //go:generate mockgen -source=manager.go -destination=mock.go -package=authclient
 type (
 	DataAuthClientAdapter interface {
-		Read(*AuthClient) error
-		ReadAll(*[]AuthClient, AuthClientParam) (int, error)
-		Create(*AuthClient) error
-		Update(AuthClient) error
-		Delete(*AuthClient) error
+		Read(context.Context, *AuthClient) error
+		ReadAll(context.Context, *[]AuthClient, AuthClientParam) (int, error)
+		Create(context.Context, *AuthClient) error
+		Update(context.Context, AuthClient) error
+		Delete(context.Context, *AuthClient) error
 	}
 
 	ManagerAuthClient struct {
@@ -27,18 +29,17 @@ func NewManagerAuthClient(caut DataAuthClientAdapter) *ManagerAuthClient {
 	return &ManagerAuthClient{dataAuthClient: caut, auditWriter: aw}
 }
 
-func (m *ManagerAuthClient) Get(aut *AuthClient) error {
-
-	return m.dataAuthClient.Read(aut)
+func (m *ManagerAuthClient) Get(ctx context.Context, aut *AuthClient) error {
+	return m.dataAuthClient.Read(ctx, aut)
 }
 
-func (m *ManagerAuthClient) Search(aut *[]AuthClient, param AuthClientParam) (int, error) {
+func (m *ManagerAuthClient) Search(ctx context.Context, aut *[]AuthClient, param AuthClientParam) (int, error) {
 	param.Param.CalculateParam("name", map[string]string{"name": "name", "description": "description", "homepage_url": "homepage_url", "callback_url": "callback_url"})
 
-	return m.dataAuthClient.ReadAll(aut, param)
+	return m.dataAuthClient.ReadAll(ctx, aut, param)
 }
 
-func (m *ManagerAuthClient) Post(aut *AuthClient) error {
+func (m *ManagerAuthClient) Post(ctx context.Context, aut *AuthClient) error {
 	if !aut.Name.Valid {
 		return ae.MissingParamError("Name")
 	}
@@ -61,16 +62,16 @@ func (m *ManagerAuthClient) Post(aut *AuthClient) error {
 		return ae.StringLengthError("CallbackUrl", 500)
 	}
 	aut.Id = util.GenerateRandomString(32)
-	if err := m.dataAuthClient.Create(aut); err != nil {
+	if err := m.dataAuthClient.Create(ctx, aut); err != nil {
 		return err
 	}
 	go a.AuditCreate(m.auditWriter, *aut, AuthClientConst, a.KeysToString("id", aut.Id))
 	return nil
 }
 
-func (m *ManagerAuthClient) Patch(autIn AuthClient) error {
+func (m *ManagerAuthClient) Patch(ctx context.Context, autIn AuthClient) error {
 	aut := &AuthClient{Id: autIn.Id}
-	errGet := m.dataAuthClient.Read(aut)
+	errGet := m.dataAuthClient.Read(ctx, aut)
 	if errGet != nil {
 		return errGet
 	}
@@ -107,16 +108,16 @@ func (m *ManagerAuthClient) Patch(autIn AuthClient) error {
 		existingValues["callback_url"] = aut.CallbackUrl.String
 		aut.CallbackUrl = autIn.CallbackUrl
 	}
-	if err := m.dataAuthClient.Update(*aut); err != nil {
+	if err := m.dataAuthClient.Update(ctx, *aut); err != nil {
 		return err
 	}
 	go a.AuditPatch(m.auditWriter, *aut, AuthClientConst, a.KeysToString("id", aut.Id), existingValues)
 	return nil
 }
 
-func (m *ManagerAuthClient) Delete(aut *AuthClient) error {
+func (m *ManagerAuthClient) Delete(ctx context.Context, aut *AuthClient) error {
 
-	if err := m.dataAuthClient.Delete(aut); err != nil {
+	if err := m.dataAuthClient.Delete(ctx, aut); err != nil {
 		return err
 	}
 	go a.AuditDelete(m.auditWriter, *aut, AuthClientConst, a.KeysToString("id", aut.Id))

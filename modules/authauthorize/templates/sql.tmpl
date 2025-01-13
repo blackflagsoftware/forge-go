@@ -1,6 +1,7 @@
 package authauthorize
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -20,7 +21,7 @@ func InitSQL() *SQLAuthAuthorize {
 	return &SQLAuthAuthorize{DB: db}
 }
 
-func (d *SQLAuthAuthorize) Read(aa *AuthAuthorize) error {
+func (d *SQLAuthAuthorize) Read(ctx context.Context, aa *AuthAuthorize) error {
 	sqlGet := `
 		SELECT
 			id,
@@ -40,7 +41,7 @@ func (d *SQLAuthAuthorize) Read(aa *AuthAuthorize) error {
 	return nil
 }
 
-func (d *SQLAuthAuthorize) ReadAll(aa *[]AuthAuthorize, param AuthAuthorizeParam) (int, error) {
+func (d *SQLAuthAuthorize) ReadAll(ctx context.Context, aa *[]AuthAuthorize, param AuthAuthorizeParam) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
@@ -74,7 +75,7 @@ func (d *SQLAuthAuthorize) ReadAll(aa *[]AuthAuthorize, param AuthAuthorizeParam
 	return count, nil
 }
 
-func (d *SQLAuthAuthorize) Create(aa *AuthAuthorize) error {
+func (d *SQLAuthAuthorize) Create(ctx context.Context, aa *AuthAuthorize) error {
 	sqlPost := `
 		INSERT INTO auth_authorize (
 			id,
@@ -107,7 +108,7 @@ func (d *SQLAuthAuthorize) Create(aa *AuthAuthorize) error {
 	return nil
 }
 
-func (d *SQLAuthAuthorize) Update(aa AuthAuthorize) error {
+func (d *SQLAuthAuthorize) Update(ctx context.Context, aa AuthAuthorize) error {
 	sqlPatch := `
 		UPDATE auth_authorize SET
 			client_id = :client_id,
@@ -126,7 +127,7 @@ func (d *SQLAuthAuthorize) Update(aa AuthAuthorize) error {
 	return nil
 }
 
-func (d *SQLAuthAuthorize) Delete(aa *AuthAuthorize) error {
+func (d *SQLAuthAuthorize) Delete(ctx context.Context, aa *AuthAuthorize) error {
 	sqlDelete := `
 		DELETE FROM auth_authorize WHERE id = $1`
 	if _, errDB := d.DB.Exec(sqlDelete, aa.Id); errDB != nil {
@@ -135,7 +136,7 @@ func (d *SQLAuthAuthorize) Delete(aa *AuthAuthorize) error {
 	return nil
 }
 
-func (d *SQLAuthAuthorize) VerifyConsent(aa AuthAuthorize) error {
+func (d *SQLAuthAuthorize) VerifyConsent(ctx context.Context, aa AuthAuthorize) error {
 	exists := false
 	sqlGet := `SELECT EXIST(SELECT id FROM auth_authorize WHERE id = $1 AND consent_id = $2)`
 	if errDB := d.DB.Get(&exists, sqlGet, aa.Id, aa.ConsentId); errDB != nil {

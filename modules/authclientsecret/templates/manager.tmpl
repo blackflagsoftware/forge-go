@@ -1,17 +1,18 @@
 package authclientsecret
 
 import (
+	"context"
 	a "{{.ProjectPath}}/internal/audit"
 )
 
 //go:generate mockgen -source=manager.go -destination=mock.go -package=authclientsecret
 type (
 	DataAuthClientSecretAdapter interface {
-		Read(*AuthClientSecret) error
-		ReadAll(*[]AuthClientSecret, AuthClientSecretParam) (int, error)
-		Create(*AuthClientSecret) error
-		Update(AuthClientSecret) error
-		Delete(*AuthClientSecret) error
+		Read(context.Context, *AuthClientSecret) error
+		ReadAll(context.Context, *[]AuthClientSecret, AuthClientSecretParam) (int, error)
+		Create(context.Context, *AuthClientSecret) error
+		Update(context.Context, AuthClientSecret) error
+		Delete(context.Context, *AuthClientSecret) error
 	}
 
 	ManagerAuthClientSecret struct {
@@ -20,49 +21,49 @@ type (
 	}
 )
 
-func NewManagerAuthClientSecret(cau DataAuthClientSecretAdapter) *ManagerAuthClientSecret {
+func NewManagerAuthClientSecret(ctx context.Context, cau DataAuthClientSecretAdapter) *ManagerAuthClientSecret {
 	aw := a.AuditInit()
 	return &ManagerAuthClientSecret{dataAuthClientSecret: cau, auditWriter: aw}
 }
 
-func (m *ManagerAuthClientSecret) Get(au *AuthClientSecret) error {
+func (m *ManagerAuthClientSecret) Get(ctx context.Context, au *AuthClientSecret) error {
 
-	return m.dataAuthClientSecret.Read(au)
+	return m.dataAuthClientSecret.Read(ctx, au)
 }
 
-func (m *ManagerAuthClientSecret) Search(au *[]AuthClientSecret, param AuthClientSecretParam) (int, error) {
+func (m *ManagerAuthClientSecret) Search(ctx context.Context, au *[]AuthClientSecret, param AuthClientSecretParam) (int, error) {
 	param.Param.CalculateParam("", map[string]string{})
 
 	return m.dataAuthClientSecret.ReadAll(au, param)
 }
 
-func (m *ManagerAuthClientSecret) Post(au *AuthClientSecret) error {
+func (m *ManagerAuthClientSecret) Post(ctx context.Context, au *AuthClientSecret) error {
 
-	if err := m.dataAuthClientSecret.Create(au); err != nil {
+	if err := m.dataAuthClientSecret.Create(ctx, au); err != nil {
 		return err
 	}
 	go a.AuditCreate(m.auditWriter, *au, AuthClientSecretConst, a.KeysToString("client_id", au.ClientId, "secret", au.Secret))
 	return nil
 }
 
-func (m *ManagerAuthClientSecret) Patch(auIn AuthClientSecret) error {
+func (m *ManagerAuthClientSecret) Patch(ctx context.Context, auIn AuthClientSecret) error {
 	au := &AuthClientSecret{ClientId: auIn.ClientId, Secret: auIn.Secret}
-	errGet := m.dataAuthClientSecret.Read(au)
+	errGet := m.dataAuthClientSecret.Read(ctx, au)
 	if errGet != nil {
 		return errGet
 	}
 	existingValues := make(map[string]interface{})
 
-	if err := m.dataAuthClientSecret.Update(*au); err != nil {
+	if err := m.dataAuthClientSecret.Update(ctx, *au); err != nil {
 		return err
 	}
 	go a.AuditPatch(m.auditWriter, *au, AuthClientSecretConst, a.KeysToString("client_id", au.ClientId, "secret", au.Secret), existingValues)
 	return nil
 }
 
-func (m *ManagerAuthClientSecret) Delete(au *AuthClientSecret) error {
+func (m *ManagerAuthClientSecret) Delete(ctx context.Context, au *AuthClientSecret) error {
 
-	if err := m.dataAuthClientSecret.Delete(au); err != nil {
+	if err := m.dataAuthClientSecret.Delete(ctx, au); err != nil {
 		return err
 	}
 	go a.AuditDelete(m.auditWriter, *au, AuthClientSecretConst, a.KeysToString("client_id", au.ClientId, "secret", au.Secret))

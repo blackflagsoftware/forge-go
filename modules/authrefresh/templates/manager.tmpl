@@ -1,6 +1,7 @@
 package authrefresh
 
 import (
+	"context"
 	"time"
 
 	ae "{{.ProjectPath}}/internal/api_error"
@@ -10,11 +11,11 @@ import (
 //go:generate mockgen -source=manager.go -destination=mock.go -package=authrefresh
 type (
 	DataAuthRefreshAdapter interface {
-		Read(*AuthRefresh) error
-		ReadAll(*[]AuthRefresh, AuthRefreshParam) (int, error)
-		Create(*AuthRefresh) error
-		Update(AuthRefresh) error
-		Delete(*AuthRefresh) error
+		Read(context.Context, *AuthRefresh) error
+		ReadAll(*Context, []AuthRefresh, AuthRefreshParam) (int, error)
+		Create(context.Context, *AuthRefresh) error
+		Update(context.Context, AuthRefresh) error
+		Delete(context.Context, *AuthRefresh) error
 	}
 
 	ManagerAuthRefresh struct {
@@ -28,30 +29,29 @@ func NewManagerAuthRefresh(car DataAuthRefreshAdapter) *ManagerAuthRefresh {
 	return &ManagerAuthRefresh{dataAuthRefresh: car, auditWriter: aw}
 }
 
-func (m *ManagerAuthRefresh) Get(ar *AuthRefresh) error {
-
-	return m.dataAuthRefresh.Read(ar)
+func (m *ManagerAuthRefresh) Get(ctx context.Context, ctx, ar *AuthRefresh) error {
+	return m.dataAuthRefresh.Read(ctx, ar)
 }
 
-func (m *ManagerAuthRefresh) Search(ar *[]AuthRefresh, param AuthRefreshParam) (int, error) {
+func (m *ManagerAuthRefresh) Search(ctx context.Context, ar *[]AuthRefresh, param AuthRefreshParam) (int, error) {
 	param.Param.CalculateParam("created_at", map[string]string{"created_at": "created_at"})
 
-	return m.dataAuthRefresh.ReadAll(ar, param)
+	return m.dataAuthRefresh.ReadAll(ctx, ar, param)
 }
 
-func (m *ManagerAuthRefresh) Post(ar *AuthRefresh) error {
+func (m *ManagerAuthRefresh) Post(ctx context.Context, ar *AuthRefresh) error {
 	if !ar.CreatedAt.Valid {
 		return ae.MissingParamError("CreatedAt")
 	}
 	ar.CreatedAt.Scan(time.Now().UTC())
-	if err := m.dataAuthRefresh.Create(ar); err != nil {
+	if err := m.dataAuthRefresh.Create(ctx, ar); err != nil {
 		return err
 	}
 	go a.AuditCreate(m.auditWriter, *ar, AuthRefreshConst, a.KeysToString("client_id", ar.ClientId, "token", ar.Token))
 	return nil
 }
 
-func (m *ManagerAuthRefresh) Patch(arIn AuthRefresh) error {
+func (m *ManagerAuthRefresh) Patch(ctx context.Context, arIn AuthRefresh) error {
 	ar := &AuthRefresh{ClientId: arIn.ClientId, Token: arIn.Token}
 	errGet := m.dataAuthRefresh.Read(ar)
 	if errGet != nil {
@@ -59,16 +59,15 @@ func (m *ManagerAuthRefresh) Patch(arIn AuthRefresh) error {
 	}
 	existingValues := make(map[string]interface{})
 
-	if err := m.dataAuthRefresh.Update(*ar); err != nil {
+	if err := m.dataAuthRefresh.Update(ctx, *ar); err != nil {
 		return err
 	}
 	go a.AuditPatch(m.auditWriter, *ar, AuthRefreshConst, a.KeysToString("client_id", ar.ClientId, "token", ar.Token), existingValues)
 	return nil
 }
 
-func (m *ManagerAuthRefresh) Delete(ar *AuthRefresh) error {
-
-	if err := m.dataAuthRefresh.Delete(ar); err != nil {
+func (m *ManagerAuthRefresh) Delete(ctx context.Context, ar *AuthRefresh) error {
+	if err := m.dataAuthRefresh.Delete(ctx, ar); err != nil {
 		return err
 	}
 	go a.AuditDelete(m.auditWriter, *ar, AuthRefreshConst, a.KeysToString("client_id", ar.ClientId, "token", ar.Token))

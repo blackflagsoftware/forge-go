@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
@@ -28,25 +29,25 @@ func NewManagerAuth() *ManagerAuth {
 	return &ManagerAuth{}
 }
 
-func (m *ManagerAuth) GetClientId(clientId string) (string, error) {
+func (m *ManagerAuth) GetClientId(ctx context.Context, clientId string) (string, error) {
 	// validate the client
 	authClient := ac.AuthClient{Id: clientId}
 	acs := ac.InitStorage()
 	acm := ac.NewManagerAuthClient(acs)
-	if err := acm.Get(&authClient); err != nil {
+	if err := acm.Get(ctx, &authClient); err != nil {
 		return "", err
 	}
 	return authClient.Name.String, nil
 }
 
-func (m *ManagerAuth) OAuthSignIn(logIn OAuthLogin, authAuthorize aa.AuthAuthorize) (OAuthResponse, error) {
+func (m *ManagerAuth) OAuthSignIn(ctx context.Context, logIn OAuthLogin, authAuthorize aa.AuthAuthorize) (OAuthResponse, error) {
 	oAuthResponse := OAuthResponse{}
 	if !logIn.EmailAddr.Valid {
 		return oAuthResponse, ae.MissingParamError("EmailAddress")
 	}
 	login := &l.Login{EmailAddr: logIn.EmailAddr}
 	ls := l.InitStorage()
-	err := ls.GetByEmailAddr(login)
+	err := ls.GetByEmailAddr(ctx, login)
 	if err != nil {
 		title := err.(ae.ApiError).BodyError().Title
 		if title == "No Results Error" {
@@ -61,7 +62,7 @@ func (m *ManagerAuth) OAuthSignIn(logIn OAuthLogin, authAuthorize aa.AuthAuthori
 	authClientCallback := acc.AuthClientCallback{ClientId: authAuthorize.ClientId.String, CallbackUrl: authAuthorize.RedirectUrl.String}
 	accs := acc.InitStorage()
 	accm := acc.NewManagerAuthClientCallback(accs)
-	if err := accm.Get(&authClientCallback); err != nil {
+	if err := accm.Get(ctx, &authClientCallback); err != nil {
 		return oAuthResponse, err
 	}
 	authAuthorize.AuthCodeAt = null.TimeFrom(time.Now().UTC())
@@ -69,7 +70,7 @@ func (m *ManagerAuth) OAuthSignIn(logIn OAuthLogin, authAuthorize aa.AuthAuthori
 	// save off auth authorize record
 	aas := aa.InitStorage()
 	aam := aa.NewManagerAuthAuthorize(aas)
-	if err := aam.Post(&authAuthorize); err != nil {
+	if err := aam.Post(ctx, &authAuthorize); err != nil {
 		return oAuthResponse, err
 	}
 
@@ -79,12 +80,12 @@ func (m *ManagerAuth) OAuthSignIn(logIn OAuthLogin, authAuthorize aa.AuthAuthori
 	return oAuthResponse, nil
 }
 
-func (m *ManagerAuth) OAuthExchange(authToken OAuthToken) (OAuthToken, error) {
+func (m *ManagerAuth) OAuthExchange(ctx context.Context, authToken OAuthToken) (OAuthToken, error) {
 	// check the client_secret is valid
 	authClientSecret := acs.AuthClientSecret{ClientId: null.StringFrom(authToken.ClientId), Secret: null.StringFrom(authToken.ClientSecret)} // TODO: add to forge
 	acss := acs.InitStorage()
 	acsm := acs.NewManagerAuthClientSecret(acss)
-	if err := acsm.GetByIdAndSecret(&authClientSecret); err != nil {
+	if err := acsm.GetByIdAndSecret(ctx, &authClientSecret); err != nil {
 		// TODO: send back different error if no record found
 		return OAuthToken{}, err
 	}
@@ -95,7 +96,7 @@ func (m *ManagerAuth) OAuthExchange(authToken OAuthToken) (OAuthToken, error) {
 	authAuthorize := aa.AuthAuthorize{Id: authToken.Code}
 	aas := aa.InitStorage()
 	aam := aa.NewManagerAuthAuthorize(aas)
-	if err := aam.Get(&authAuthorize); err != nil {
+	if err := aam.Get(ctx, &authAuthorize); err != nil {
 		// TODO: send back different error if no record found
 		return OAuthToken{}, ae.GeneralError("Bad AuthAuthorize", fmt.Errorf("Bad AuthAuthorize"))
 	}
@@ -109,7 +110,7 @@ func (m *ManagerAuth) OAuthExchange(authToken OAuthToken) (OAuthToken, error) {
 	return OAuthToken{}, fmt.Errorf("Invalid grant type")
 }
 
-func ExchangeAuthCode(authToken OAuthToken, authAuthorize aa.AuthAuthorize) (OAuthToken, error) {
+func ExchangeAuthCode(ctx context.Context, authToken OAuthToken, authAuthorize aa.AuthAuthorize) (OAuthToken, error) {
 	// will need to check the timing on when that code was created
 	now := time.Now().UTC()
 	expires := authAuthorize.AuthCodeAt.Time.Add(time.Duration(config.GetAuthorizationExpires()) * time.Second)
@@ -127,7 +128,7 @@ func ExchangeAuthCode(authToken OAuthToken, authAuthorize aa.AuthAuthorize) (OAu
 	// authRefresh := ar.AuthRefresh{LoginId: loginId, Token: authToken.RefreshToken}
 	ars := ar.InitStorage()
 	arm := ar.NewManagerAuthRefresh(ars)
-	refreshToken, err := arm.CycleRefreshToken(ar.AuthRefresh{LoginId: authAuthorize.LoginId.String})
+	refreshToken, err := arm.CycleRefreshToken(ctx, ar.AuthRefresh{LoginId: authAuthorize.LoginId.String})
 	if err != nil {
 		return OAuthToken{}, nil
 	}
@@ -144,14 +145,14 @@ func ExchangeAuthCode(authToken OAuthToken, authAuthorize aa.AuthAuthorize) (OAu
 	return authTokenNew, nil
 }
 
-func ExchangeRefreshToken(authToken OAuthToken, loginId string) (OAuthToken, error) {
+func ExchangeRefreshToken(ctx context.Context, authToken OAuthToken, loginId string) (OAuthToken, error) {
 	// grant_type=refresh_token
 	// TODO: we will want to hash the refresh token on save and then do the same here when comparing
 	// TODO: add a config setting to either -1 [keep forever]; 0 [always refresh]; >0 [expire time interval]
 	authRefresh := ar.AuthRefresh{LoginId: loginId, Token: authToken.RefreshToken}
 	ars := ar.InitStorage()
 	arm := ar.NewManagerAuthRefresh(ars)
-	if err := arm.Get(&authRefresh); err != nil {
+	if err := arm.Get(ctx, &authRefresh); err != nil {
 		// TODO: send back different error
 		return OAuthToken{}, err
 	}

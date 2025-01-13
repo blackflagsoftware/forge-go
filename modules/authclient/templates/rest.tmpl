@@ -1,6 +1,7 @@
 package authclient
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -10,11 +11,11 @@ import (
 
 type (
 	ManagerAuthClientAdapter interface {
-		Get(*AuthClient) error
-		Search(*[]AuthClient, AuthClientParam) (int, error)
-		Post(*AuthClient) error
-		Patch(AuthClient) error
-		Delete(*AuthClient) error
+		Get(context.Context, *AuthClient) error
+		Search(context.Context, *[]AuthClient, AuthClientParam) (int, error)
+		Post(context.Context, *AuthClient) error
+		Patch(context.Context, AuthClient) error
+		Delete(context.Context, *AuthClient) error
 	}
 
 	RestAuthClient struct {
@@ -42,9 +43,8 @@ func (h *RestAuthClient) LoadAuthClientRoutes(eg *echo.Group) {
 }
 
 func (h *RestAuthClient) Get(c echo.Context) error {
-
 	authClient := &AuthClient{}
-	if err := h.managerAuthClient.Get(authClient); err != nil {
+	if err := h.managerAuthClient.Get(c, authClient); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -59,7 +59,7 @@ func (h *RestAuthClient) Search(c echo.Context) error {
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
 	}
 	authClients := &[]AuthClient{}
-	totalCount, err := h.managerAuthClient.Search(authClients, param)
+	totalCount, err := h.managerAuthClient.Search(c, authClients, param)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -75,7 +75,7 @@ func (h *RestAuthClient) Post(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerAuthClient.Post(&autData.Data); err != nil {
+	if err := h.managerAuthClient.Post(c, &autData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -90,7 +90,7 @@ func (h *RestAuthClient) Patch(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerAuthClient.Patch(autData.Data); err != nil {
+	if err := h.managerAuthClient.Patch(c, autData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -99,9 +99,8 @@ func (h *RestAuthClient) Patch(c echo.Context) error {
 }
 
 func (h *RestAuthClient) Delete(c echo.Context) error {
-
 	authClient := &AuthClient{}
-	if err := h.managerAuthClient.Delete(authClient); err != nil {
+	if err := h.managerAuthClient.Delete(c, authClient); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))

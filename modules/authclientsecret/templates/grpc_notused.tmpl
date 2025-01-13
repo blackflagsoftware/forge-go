@@ -23,7 +23,7 @@ func (a *AuthClientSecretGrpc) GetAuthClientSecret(ctx context.Context, in *p.Au
 	result := &p.Result{Success: false}
 	response := &p.AuthClientSecretResponse{Result: result}
 	au := &AuthClientSecret{ClientId: in.ClientId, Secret: in.Secret}
-	if err := a.managerAuthClientSecret.Get(au); err != nil {
+	if err := a.managerAuthClientSecret.Get(ctx, au); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -41,7 +41,7 @@ func (a *AuthClientSecretGrpc) SearchAuthClientSecret(ctx context.Context, in *p
 	result := &p.Result{Success: false}
 	response := &p.AuthClientSecretRepeatResponse{Result: result}
 	aus := &[]AuthClientSecret{}
-	if _, err := a.managerAuthClientSecret.Search(aus, authClientSecretParam); err != nil {
+	if _, err := a.managerAuthClientSecret.Search(ctx, aus, authClientSecretParam); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -63,7 +63,7 @@ func (a *AuthClientSecretGrpc) CreateAuthClientSecret(ctx context.Context, in *p
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerAuthClientSecret.Post(au); err != nil {
+	if err := a.managerAuthClientSecret.Post(ctx, au); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -82,7 +82,7 @@ func (a *AuthClientSecretGrpc) UpdateAuthClientSecret(ctx context.Context, in *p
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerAuthClientSecret.Patch(*au); err != nil {
+	if err := a.managerAuthClientSecret.Patch(ctx, *au); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}
@@ -93,7 +93,7 @@ func (a *AuthClientSecretGrpc) UpdateAuthClientSecret(ctx context.Context, in *p
 func (a *AuthClientSecretGrpc) DeleteAuthClientSecret(ctx context.Context, in *p.AuthClientSecretIDIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
 	au := &AuthClientSecret{ClientId: in.ClientId, Secret: in.Secret}
-	if err := a.managerAuthClientSecret.Delete(au); err != nil {
+	if err := a.managerAuthClientSecret.Delete(ctx, au); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}

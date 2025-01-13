@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -21,7 +22,7 @@ func InitSQL() *SQLLogin {
 	return &SQLLogin{DB: db}
 }
 
-func (d *SQLLogin) Read(login *Login) error {
+func (d *SQLLogin) Read(ctx context.Context, login *Login) error {
 	sqlGet := `
 		SELECT
 			id,
@@ -37,7 +38,7 @@ func (d *SQLLogin) Read(login *Login) error {
 	return nil
 }
 
-func (d *SQLLogin) ReadAll(login *[]Login, param LoginParam) (int, error) {
+func (d *SQLLogin) ReadAll(ctx context.Context, login *[]Login, param LoginParam) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
@@ -67,7 +68,7 @@ func (d *SQLLogin) ReadAll(login *[]Login, param LoginParam) (int, error) {
 	return count, nil
 }
 
-func (d *SQLLogin) Create(login *Login, res ResetRequest) (err error) {
+func (d *SQLLogin) Create(ctx context.Context, login *Login, res ResetRequest) (err error) {
 	txn := d.DB.MustBegin()
 	defer util.TxnFinish(txn, &err)
 
@@ -103,7 +104,7 @@ func (d *SQLLogin) Create(login *Login, res ResetRequest) (err error) {
 	return err
 }
 
-func (d *SQLLogin) Update(login Login) error {
+func (d *SQLLogin) Update(ctx context.Context, login Login) error {
 	sqlPatch := `
 		UPDATE login SET
 			email_addr = :email_addr,
@@ -116,7 +117,7 @@ func (d *SQLLogin) Update(login Login) error {
 	return nil
 }
 
-func (d *SQLLogin) UpdatePwd(login Login) (err error) {
+func (d *SQLLogin) UpdatePwd(ctx context.Context, login Login) (err error) {
 	txn := d.DB.MustBegin()
 	defer util.TxnFinish(txn, &err)
 
@@ -140,7 +141,7 @@ func (d *SQLLogin) UpdatePwd(login Login) (err error) {
 	return nil
 }
 
-func (d *SQLLogin) Delete(login *Login) (err error) {
+func (d *SQLLogin) Delete(ctx context.Context, login *Login) (err error) {
 	txn := d.DB.MustBegin()
 	defer util.TxnFinish(txn, &err)
 
@@ -156,7 +157,7 @@ func (d *SQLLogin) Delete(login *Login) (err error) {
 	return nil
 }
 
-func (d *SQLLogin) GetByEmailAddr(login *Login) error {
+func (d *SQLLogin) GetByEmailAddr(ctx context.Context, login *Login) error {
 	sqlGet := `SELECT id, pwd, active, set_pwd FROM login WHERE email_addr = $1`
 	if errDB := d.DB.Get(login, sqlGet, login.EmailAddr); errDB != nil {
 		return ae.DBError("GetByEmailAddr: unable to get record.", errDB)
@@ -164,7 +165,7 @@ func (d *SQLLogin) GetByEmailAddr(login *Login) error {
 	return nil
 }
 
-func (d *SQLLogin) GetResetRequest(resetRequest *ResetRequest) error {
+func (d *SQLLogin) GetResetRequest(ctx context.Context, resetRequest *ResetRequest) error {
 	sqlGet := `SELECT login_id, reset_token, created_at FROM login_reset WHERE text(login_id) = $1 AND text(reset_token) = $2 AND updated_at IS NULL LIMIT 1`
 	if errDB := d.DB.Get(resetRequest, sqlGet, resetRequest.LoginId, resetRequest.ResetToken); errDB != nil {
 		return ae.DBError("GetByEmailAddr: unable to get record.", errDB)
@@ -172,7 +173,7 @@ func (d *SQLLogin) GetResetRequest(resetRequest *ResetRequest) error {
 	return nil
 }
 
-func (d *SQLLogin) ResetRequest(res *ResetRequest) (err error) {
+func (d *SQLLogin) ResetRequest(ctx context.Context, res *ResetRequest) (err error) {
 	txn := d.DB.MustBegin()
 	defer util.TxnFinish(txn, &err)
 
@@ -196,7 +197,7 @@ func (d *SQLLogin) ResetRequest(res *ResetRequest) (err error) {
 	return err
 }
 
-func (d *SQLLogin) GetLoginRoles(loginId string, roles *[]string) error {
+func (d *SQLLogin) GetLoginRoles(ctx context.Context, loginId string, roles *[]string) error {
 	sqlGet := `
 		SELECT
 			r.name
@@ -209,7 +210,7 @@ func (d *SQLLogin) GetLoginRoles(loginId string, roles *[]string) error {
 	return nil
 }
 
-func (d *SQLLogin) WithRoles(login *[]LoginRoles) (int, error) {
+func (d *SQLLogin) WithRoles(ctx context.Context, login *[]LoginRoles) (int, error) {
 	sqlLogin := `
 		SELECT
 			id,

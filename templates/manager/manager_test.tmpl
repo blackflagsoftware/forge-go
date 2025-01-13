@@ -1,10 +1,12 @@
 package {{.CurrentEntity.AllLower}}
 
 import (
+	"context"
 	{{.ManagerTestImport}}
 )
 
 func TestManager{{.CurrentEntity.Camel}}_Get(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockData{{.CurrentEntity.Camel}} := NewMockData{{.CurrentEntity.Camel}}Adapter(ctrl)
 
@@ -19,7 +21,7 @@ func TestManager{{.CurrentEntity.Camel}}_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Manager{{.CurrentEntity.Camel}}{data{{.CurrentEntity.Camel}}: mockData{{.CurrentEntity.Camel}}}
-			err := m.Get(tt.{{.CurrentEntity.Abbr}})
+			err := m.Get(ctx, tt.{{.CurrentEntity.Abbr}})
 			if !tt.wantErr {
 				assert.Nil(t, err, "Manager{{.CurrentEntity.Camel}}.Get().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -31,6 +33,7 @@ func TestManager{{.CurrentEntity.Camel}}_Get(t *testing.T) {
 }
 
 func TestManager{{.CurrentEntity.Camel}}_Post(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockData{{.CurrentEntity.Camel}} := NewMockData{{.CurrentEntity.Camel}}Adapter(ctrl)
 
@@ -45,7 +48,7 @@ func TestManager{{.CurrentEntity.Camel}}_Post(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Manager{{.CurrentEntity.Camel}}{data{{.CurrentEntity.Camel}}: mockData{{.CurrentEntity.Camel}}}
-			err := m.Post(tt.{{.CurrentEntity.Abbr}})
+			err := m.Post(ctx, tt.{{.CurrentEntity.Abbr}})
 			if !tt.wantErr {
 				assert.Nil(t, err, "Manager{{.CurrentEntity.Camel}}.Create().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -57,6 +60,7 @@ func TestManager{{.CurrentEntity.Camel}}_Post(t *testing.T) {
 }
 
 func TestManager{{.CurrentEntity.Camel}}_Patch(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockData{{.CurrentEntity.Camel}} := NewMockData{{.CurrentEntity.Camel}}Adapter(ctrl)
 
@@ -71,8 +75,8 @@ func TestManager{{.CurrentEntity.Camel}}_Patch(t *testing.T) {
 			{{.CurrentEntity.Camel}}{ {{.ManagerTestPatchInit}} },
 			false,
 			[]*gomock.Call{
-				mockData{{.CurrentEntity.Camel}}.EXPECT().Read(gomock.Any()).Return(nil),
-				mockData{{.CurrentEntity.Camel}}.EXPECT().Update(gomock.Any()).Return(nil),
+				mockData{{.CurrentEntity.Camel}}.EXPECT().Read(ctx, gomock.Any()).Return(nil),
+				mockData{{.CurrentEntity.Camel}}.EXPECT().Update(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{
@@ -80,14 +84,14 @@ func TestManager{{.CurrentEntity.Camel}}_Patch(t *testing.T) {
 			{{.CurrentEntity.Camel}}{ {{.ManagerTestPatchInit}} },
 			true,
 			[]*gomock.Call{
-				mockData{{.CurrentEntity.Camel}}.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+				mockData{{.CurrentEntity.Camel}}.EXPECT().Read(ctx, gomock.Any()).Return(fmt.Errorf("missing record")),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Manager{{.CurrentEntity.Camel}}{data{{.CurrentEntity.Camel}}: mockData{{.CurrentEntity.Camel}}}
-			err := m.Patch(tt.body)
+			err := m.Patch(ctx, tt.body)
 			if !tt.wantErr {
 				assert.Nil(t, err, "Manager{{.CurrentEntity.Camel}}.Update().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -99,6 +103,7 @@ func TestManager{{.CurrentEntity.Camel}}_Patch(t *testing.T) {
 }
 
 func TestManager{{.CurrentEntity.Camel}}_Delete(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockData{{.CurrentEntity.Camel}} := NewMockData{{.CurrentEntity.Camel}}Adapter(ctrl)
 
@@ -113,7 +118,7 @@ func TestManager{{.CurrentEntity.Camel}}_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Manager{{.CurrentEntity.Camel}}{data{{.CurrentEntity.Camel}}: mockData{{.CurrentEntity.Camel}}}
-			err := m.Delete(tt.{{.CurrentEntity.Abbr}})
+			err := m.Delete(ctx, tt.{{.CurrentEntity.Abbr}})
 			if !tt.wantErr {
 				assert.Nil(t, err, "Manager{{.CurrentEntity.Camel}}.Delete().%s => expected not error; got: %s", tt.name, err)
 			}

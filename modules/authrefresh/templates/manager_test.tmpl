@@ -1,6 +1,7 @@
 package authrefresh
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 )
 
 func TestManagerAuthRefresh_Get(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataAuthRefresh := NewMockDataAuthRefreshAdapter(ctrl)
 
@@ -23,7 +25,7 @@ func TestManagerAuthRefresh_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerAuthRefresh{dataAuthRefresh: mockDataAuthRefresh}
-			err := m.Get(tt.ar)
+			err := m.Get(ctx, tt.ar)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerAuthRefresh.Get().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -35,6 +37,7 @@ func TestManagerAuthRefresh_Get(t *testing.T) {
 }
 
 func TestManagerAuthRefresh_Post(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataAuthRefresh := NewMockDataAuthRefreshAdapter(ctrl)
 
@@ -84,7 +87,7 @@ func TestManagerAuthRefresh_Post(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerAuthRefresh{dataAuthRefresh: mockDataAuthRefresh}
-			err := m.Post(tt.ar)
+			err := m.Post(ctx, tt.ar)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerAuthRefresh.Create().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -96,6 +99,7 @@ func TestManagerAuthRefresh_Post(t *testing.T) {
 }
 
 func TestManagerAuthRefresh_Patch(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataAuthRefresh := NewMockDataAuthRefreshAdapter(ctrl)
 
@@ -126,7 +130,7 @@ func TestManagerAuthRefresh_Patch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerAuthRefresh{dataAuthRefresh: mockDataAuthRefresh}
-			err := m.Patch(tt.body)
+			err := m.Patch(ctx, tt.body)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerAuthRefresh.Update().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -138,6 +142,7 @@ func TestManagerAuthRefresh_Patch(t *testing.T) {
 }
 
 func TestManagerAuthRefresh_Delete(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataAuthRefresh := NewMockDataAuthRefreshAdapter(ctrl)
 
@@ -150,7 +155,7 @@ func TestManagerAuthRefresh_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerAuthRefresh{dataAuthRefresh: mockDataAuthRefresh}
-			err := m.Delete(tt.ar)
+			err := m.Delete(ctx, tt.ar)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerAuthRefresh.Delete().%s => expected not error; got: %s", tt.name, err)
 			}

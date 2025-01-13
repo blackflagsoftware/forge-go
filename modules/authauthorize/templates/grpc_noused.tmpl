@@ -24,7 +24,7 @@ func (a *AuthAuthorizeGrpc) GetAuthAuthorize(ctx context.Context, in *p.AuthAuth
 	result := &p.Result{Success: false}
 	response := &p.AuthAuthorizeResponse{Result: result}
 	aa := &AuthAuthorize{Id: in.Id}
-	if err := a.managerAuthAuthorize.Get(aa); err != nil {
+	if err := a.managerAuthAuthorize.Get(ctx, aa); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -42,7 +42,7 @@ func (a *AuthAuthorizeGrpc) SearchAuthAuthorize(ctx context.Context, in *p.AuthA
 	result := &p.Result{Success: false}
 	response := &p.AuthAuthorizeRepeatResponse{Result: result}
 	aas := &[]AuthAuthorize{}
-	if _, err := a.managerAuthAuthorize.Search(aas, authAuthorizeParam); err != nil {
+	if _, err := a.managerAuthAuthorize.Search(ctx, aas, authAuthorizeParam); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -64,7 +64,7 @@ func (a *AuthAuthorizeGrpc) CreateAuthAuthorize(ctx context.Context, in *p.AuthA
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerAuthAuthorize.Post(aa); err != nil {
+	if err := a.managerAuthAuthorize.Post(ctx, aa); err != nil {
 		response.Result.Error = err.Error()
 		return response, err
 	}
@@ -83,7 +83,7 @@ func (a *AuthAuthorizeGrpc) UpdateAuthAuthorize(ctx context.Context, in *p.AuthA
 	if err != nil {
 		return response, err
 	}
-	if err := a.managerAuthAuthorize.Patch(*aa); err != nil {
+	if err := a.managerAuthAuthorize.Patch(ctx, *aa); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}
@@ -94,7 +94,7 @@ func (a *AuthAuthorizeGrpc) UpdateAuthAuthorize(ctx context.Context, in *p.AuthA
 func (a *AuthAuthorizeGrpc) DeleteAuthAuthorize(ctx context.Context, in *p.AuthAuthorizeIDIn) (*p.Result, error) {
 	response := &p.Result{Success: false}
 	aa := &AuthAuthorize{Id: in.Id}
-	if err := a.managerAuthAuthorize.Delete(aa); err != nil {
+	if err := a.managerAuthAuthorize.Delete(ctx, aa); err != nil {
 		response.Error = err.Error()
 		return response, err
 	}

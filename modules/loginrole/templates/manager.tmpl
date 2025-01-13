@@ -1,6 +1,8 @@
 package loginrole
 
-import (
+import (  
+	"context"
+
 	ae "{{.ProjectPath}}/internal/api_error"
 	a "{{.ProjectPath}}/internal/audit"
 	"{{.ProjectPath}}/internal/util"
@@ -9,11 +11,11 @@ import (
 //go:generate mockgen -source=manager.go -destination=mock.go -package=loginrole
 type (
 	DataLoginRoleAdapter interface {
-		Read(*LoginRole) error
-		ReadAll(*[]LoginRole, LoginRoleParam) (int, error)
-		Create(*LoginRole) error
-		Update(LoginRole) error
-		Delete(*LoginRole) error
+		Read(context.Context, *LoginRole) error
+		ReadAll(context.Context, *[]LoginRole, LoginRoleParam) (int, error)
+		Create(context.Context, *LoginRole) error
+		Update(context.Context, LoginRole) error
+		Delete(context.Context, *LoginRole) error
 	}
 
 	ManagerLoginRole struct {
@@ -27,36 +29,36 @@ func NewManagerLoginRole(clo DataLoginRoleAdapter) *ManagerLoginRole {
 	return &ManagerLoginRole{dataLoginRole: clo, auditWriter: aw}
 }
 
-func (m *ManagerLoginRole) Get(lo *LoginRole) error {
+func (m *ManagerLoginRole) Get(ctx context.Context, lo *LoginRole) error {
 	if lo.LoginId == "" {
 		return ae.MissingParamError("LoginId")
 	}
 	if lo.RoleId == "" {
 		return ae.MissingParamError("RoleId")
 	}
-	return m.dataLoginRole.Read(lo)
+	return m.dataLoginRole.Read(ctx, lo)
 }
 
-func (m *ManagerLoginRole) Search(lo *[]LoginRole, param LoginRoleParam) (int, error) {
+func (m *ManagerLoginRole) Search(ctx context.Context, lo *[]LoginRole, param LoginRoleParam) (int, error) {
 	param.Param.CalculateParam("login_id", map[string]string{"login_id": "login_id"})
 
-	return m.dataLoginRole.ReadAll(lo, param)
+	return m.dataLoginRole.ReadAll(ctx, lo, param)
 }
 
 func (m *ManagerLoginRole) Post(lo *LoginRole) error {
 
-	if err := m.dataLoginRole.Create(lo); err != nil {
+	if err := m.dataLoginRole.Create(ctx, lo); err != nil {
 		return err
 	}
 	go a.AuditCreate(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_id", lo.LoginId, "role_id", lo.RoleId))
 	return nil
 }
 
-func (m *ManagerLoginRole) Patch(loIn LoginRolePatch) error {
+func (m *ManagerLoginRole) Patch(ctx context.Context, loIn LoginRolePatch) error {
 	// get old list
 	loginRoleParam := LoginRoleParam{Param: util.Param{Search: util.Search{Filters: []util.Filter{ {Column: "login_id", Compare: "=", Value: loIn.LoginId}}}}}
 	existingLoginRoles := []LoginRole{}
-	_, errSearch := m.dataLoginRole.ReadAll(&existingLoginRoles, loginRoleParam)
+	_, errSearch := m.dataLoginRole.ReadAll(ctx, &existingLoginRoles, loginRoleParam)
 	if errSearch != nil {
 		return errSearch
 	}
@@ -67,27 +69,27 @@ func (m *ManagerLoginRole) Patch(loIn LoginRolePatch) error {
 	// compare new to old
 	addRoles := util.ArrayDiff(exisingRoles, loIn.RoleIds)
 	for _, add := range addRoles {
-		if err := m.dataLoginRole.Create(&LoginRole{LoginId: loIn.LoginId, RoleId: add}); err != nil {
+		if err := m.dataLoginRole.Create(ctx, &LoginRole{LoginId: loIn.LoginId, RoleId: add}); err != nil {
 			return err
 		}
 	}
-	deleteRoles := util.ArrayDiff(loIn.RoleIds, exisingRoles)
+	deleteRoles := util.ArrayDiff(ctx context.Context, loIn.RoleIds, exisingRoles)
 	for _, del := range deleteRoles {
-		if err := m.dataLoginRole.Delete(&LoginRole{LoginId: loIn.LoginId, RoleId: del}); err != nil {
+		if err := m.dataLoginRole.Delete(ctx, &LoginRole{LoginId: loIn.LoginId, RoleId: del}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (m *ManagerLoginRole) Delete(lo *LoginRole) error {
+func (m *ManagerLoginRole) Delete(ctx context.Context, lo *LoginRole) error {
 	if lo.LoginId == "" {
 		return ae.MissingParamError("LoginId")
 	}
 	if lo.RoleId == "" {
 		return ae.MissingParamError("RoleId")
 	}
-	if err := m.dataLoginRole.Delete(lo); err != nil {
+	if err := m.dataLoginRole.Delete(ctx, lo); err != nil {
 		return err
 	}
 	go a.AuditDelete(m.auditWriter, *lo, LoginRoleConst, a.KeysToString("login_id", lo.LoginId, "role_id", lo.RoleId))

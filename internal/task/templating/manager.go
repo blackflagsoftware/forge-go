@@ -255,8 +255,8 @@ func buildTest(p *m.Project) {
 	managerDeleteSuccessfulRow := ""
 	managerDeleteFailureRow := ""
 	if len(getDeleteKeyTestSuccessful) > 0 {
-		managerGetSuccessfulRow = fmt.Sprintf("{\n\t\t\t\"successful\",\n\t\t\t&%s{%s},\n\t\t\tfalse,\n\t\t\t[]*gomock.Call{\n\t\t\t\tmockData%s.EXPECT().Read(gomock.Any()).Return(nil),\n\t\t\t},\n\t\t},", p.CurrentEntity.Camel, strings.Join(getDeleteKeyTestSuccessful, ", "), p.CurrentEntity.Camel)
-		managerDeleteSuccessfulRow = fmt.Sprintf("{\n\t\t\t\"successful\",\n\t\t\t&%s{%s},\n\t\t\tfalse,\n\t\t\t[]*gomock.Call{\n\t\t\t\tmockData%s.EXPECT().Delete(gomock.Any()).Return(nil),\n\t\t\t},\n\t\t},", p.CurrentEntity.Camel, strings.Join(getDeleteKeyTestSuccessful, ", "), p.CurrentEntity.Camel)
+		managerGetSuccessfulRow = fmt.Sprintf("{\n\t\t\t\"successful\",\n\t\t\t&%s{%s},\n\t\t\tfalse,\n\t\t\t[]*gomock.Call{\n\t\t\t\tmockData%s.EXPECT().Read(ctx, gomock.Any()).Return(nil),\n\t\t\t},\n\t\t},", p.CurrentEntity.Camel, strings.Join(getDeleteKeyTestSuccessful, ", "), p.CurrentEntity.Camel)
+		managerDeleteSuccessfulRow = fmt.Sprintf("{\n\t\t\t\"successful\",\n\t\t\t&%s{%s},\n\t\t\tfalse,\n\t\t\t[]*gomock.Call{\n\t\t\t\tmockData%s.EXPECT().Delete(ctx, gomock.Any()).Return(nil),\n\t\t\t},\n\t\t},", p.CurrentEntity.Camel, strings.Join(getDeleteKeyTestSuccessful, ", "), p.CurrentEntity.Camel)
 	}
 	if len(getDeleteKeyTestFailure) > 0 {
 		managerGetFailureRow = fmt.Sprintf("{\n\t\t\t\"invalid id\",\n\t\t\t&%s{%s},\n\t\t\ttrue,\n\t\t\t[]*gomock.Call{},\n\t\t},", p.CurrentEntity.Camel, strings.Join(getDeleteKeyTestFailure, ", "))
@@ -269,7 +269,7 @@ func buildTest(p *m.Project) {
 	for _, postTest := range postTests {
 		call := ""
 		if !postTest.Failure {
-			call = fmt.Sprintf("mockData%s.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes(),\n\t\t\t", p.CurrentEntity.Camel)
+			call = fmt.Sprintf("mockData%s.EXPECT().Create(ctx, gomock.Any()).Return(nil).AnyTimes(),\n\t\t\t", p.CurrentEntity.Camel)
 		}
 		columnStr := []string{}
 		for name, column := range PostTests {

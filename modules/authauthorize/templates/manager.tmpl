@@ -1,6 +1,7 @@
 package authauthorize
 
 import (
+	"context"
 	"time"
 
 	ae "{{.ProjectPath}}/internal/api_error"
@@ -29,18 +30,17 @@ func NewManagerAuthAuthorize(caa DataAuthAuthorizeAdapter) *ManagerAuthAuthorize
 	return &ManagerAuthAuthorize{dataAuthAuthorize: caa, auditWriter: aw}
 }
 
-func (m *ManagerAuthAuthorize) Get(aa *AuthAuthorize) error {
-
+func (m *ManagerAuthAuthorize) Get(ctx context.Context, aa *AuthAuthorize) error {
 	return m.dataAuthAuthorize.Read(aa)
 }
 
-func (m *ManagerAuthAuthorize) Search(aa *[]AuthAuthorize, param AuthAuthorizeParam) (int, error) {
+func (m *ManagerAuthAuthorize) Search(ctx context.Context, aa *[]AuthAuthorize, param AuthAuthorizeParam) (int, error) {
 	param.Param.CalculateParam("client_id", map[string]string{"client_id": "client_id", "verifier": "verifier", "verifier_encode_method": "verifier_encode_method", "state": "state", "scope": "scope", "authorized_at": "authorized_at", "auth_code_at": "auth_code_at", "auth_code": "auth_code"})
 
-	return m.dataAuthAuthorize.ReadAll(aa, param)
+	return m.dataAuthAuthorize.ReadAll(ctx, aa, param)
 }
 
-func (m *ManagerAuthAuthorize) Post(aa *AuthAuthorize) error {
+func (m *ManagerAuthAuthorize) Post(ctx context.Context, aa *AuthAuthorize) error {
 	if !aa.ClientId.Valid {
 		return ae.MissingParamError("ClientId")
 	}
@@ -63,16 +63,16 @@ func (m *ManagerAuthAuthorize) Post(aa *AuthAuthorize) error {
 	if aa.AuthCode.Valid && len(aa.AuthCode.ValueOrZero()) > 256 {
 		return ae.StringLengthError("AuthCode", 256)
 	}
-	if err := m.dataAuthAuthorize.Create(aa); err != nil {
+	if err := m.dataAuthAuthorize.Create(ctx, aa); err != nil {
 		return err
 	}
 	go a.AuditCreate(m.auditWriter, *aa, AuthAuthorizeConst, a.KeysToString("id", aa.Id))
 	return nil
 }
 
-func (m *ManagerAuthAuthorize) Patch(aaIn AuthAuthorize) error {
+func (m *ManagerAuthAuthorize) Patch(ctx context.Context, aaIn AuthAuthorize) error {
 	aa := &AuthAuthorize{Id: aaIn.Id}
-	errGet := m.dataAuthAuthorize.Read(aa)
+	errGet := m.dataAuthAuthorize.Read(ctx, aa)
 	if errGet != nil {
 		return errGet
 	}
@@ -140,23 +140,21 @@ func (m *ManagerAuthAuthorize) Patch(aaIn AuthAuthorize) error {
 		existingValues["auth_code"] = aa.AuthCode.String
 		aa.AuthCode = aaIn.AuthCode
 	}
-	if err := m.dataAuthAuthorize.Update(*aa); err != nil {
+	if err := m.dataAuthAuthorize.Update(ctx, *aa); err != nil {
 		return err
 	}
 	go a.AuditPatch(m.auditWriter, *aa, AuthAuthorizeConst, a.KeysToString("id", aa.Id), existingValues)
 	return nil
 }
 
-func (m *ManagerAuthAuthorize) Delete(aa *AuthAuthorize) error {
-
-	if err := m.dataAuthAuthorize.Delete(aa); err != nil {
+func (m *ManagerAuthAuthorize) Delete(ctx context.Context, aa *AuthAuthorize) error {
+	if err := m.dataAuthAuthorize.Delete(ctx, aa); err != nil {
 		return err
 	}
 	go a.AuditDelete(m.auditWriter, *aa, AuthAuthorizeConst, a.KeysToString("id", aa.Id))
 	return nil
 }
 
-func (m *ManagerAuthAuthorize) VerifyConsent(aa AuthAuthorize) error {
-
-	return m.dataAuthAuthorize.VerifyConsent(aa)
+func (m *ManagerAuthAuthorize) VerifyConsent(ctx context.Context, aa AuthAuthorize) error {
+	return m.dataAuthAuthorize.VerifyConsent(ctx, aa)
 }

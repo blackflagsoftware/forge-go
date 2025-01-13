@@ -20,7 +20,7 @@ func InitMongo() *Mongo{{.CurrentEntity.Camel}} {
 	return &Mongo{{.CurrentEntity.Camel}}{DB: db}
 }
 
-func (d *Mongo{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *Mongo{{.CurrentEntity.Camel}}) Read(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	collection := d.DB.Database("{{.CurrentEntity.Lower}}").Collection("{{.CurrentEntity.Abbr}}")
 	filter := bson.M{ {{.ManagerInitArgsMongo}} }
 	err := collection.FindOne(context.TODO(), filter).Decode({{.CurrentEntity.Abbr}})
@@ -30,7 +30,7 @@ func (d *Mongo{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.Current
 	return nil
 }
 
-func (d *Mongo{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
+func (d *Mongo{{.CurrentEntity.Camel}}) ReadAll(ctx context.Context, {{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
 	/*
 	collection := d.DB.Database("{{.CurrentEntity.Lower}}").Collection("{{.CurrentEntity.Abbr}}")
 	filter := bson.M{ {{.ManagerInitArgsMongo}} }
@@ -42,7 +42,7 @@ func (d *Mongo{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.Cu
 	return 0, nil
 }
 
-func (d *Mongo{{.CurrentEntity.Camel}}) Select({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, {{.CurrentEntity.LowerCamel}}Param {{.CurrentEntity.Camel}}Param) error {
+func (d *Mongo{{.CurrentEntity.Camel}}) Select(ctx context.Context, {{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, {{.CurrentEntity.LowerCamel}}Param {{.CurrentEntity.Camel}}Param) error {
 	collection := d.DB.Database("{{.CurrentEntity.Lower}}").Collection("{{.CurrentEntity.Abbr}}")
 	filter := bson.D{}
 	cur, err := collection.Find(context.TODO(), filter)
@@ -61,7 +61,7 @@ func (d *Mongo{{.CurrentEntity.Camel}}) Select({{.CurrentEntity.Abbr}} *[]{{.Cur
 	return nil
 }
 
-func (d *Mongo{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error { {{.StorageCountCall}}
+func (d *Mongo{{.CurrentEntity.Camel}}) Create(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error { {{.StorageCountCall}}
 	collection := d.DB.Database("{{.CurrentEntity.Lower}}").Collection("{{.CurrentEntity.Abbr}}")
 	_, err := collection.InsertOne(context.TODO(), {{.CurrentEntity.Abbr}})
 	if err != nil {
@@ -70,7 +70,7 @@ func (d *Mongo{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.Curre
 	return nil
 }
 
-func (d *Mongo{{.CurrentEntity.Camel}}) Update({{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
+func (d *Mongo{{.CurrentEntity.Camel}}) Update(ctx context.Context, {{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
 	obj, err := bson.Marshal({{.CurrentEntity.Abbr}})
 	if err != nil {
 		return ae.GeneralError("{{.CurrentEntity.Camel}} Put: unable to decode entity.", err)
@@ -91,7 +91,7 @@ func (d *Mongo{{.CurrentEntity.Camel}}) Update({{.CurrentEntity.Abbr}} {{.Curren
 	return nil
 }
 
-func (d *Mongo{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *Mongo{{.CurrentEntity.Camel}}) Delete(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	collection := d.DB.Database("{{.CurrentEntity.Lower}}").Collection("{{.CurrentEntity.Abbr}}")
 	filter := bson.M{ {{.ManagerInitArgsMongo}} }
 	_, err := collection.DeleteOne(context.TODO(), filter)

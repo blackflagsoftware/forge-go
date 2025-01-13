@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -39,7 +40,7 @@ func TestManagerLogin_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerLogin{dataLogin: mockDataLogin}
-			err := m.Get(tt.fin)
+			err := m.Get(ctx, tt.fin)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerLogin.Get().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -51,6 +52,7 @@ func TestManagerLogin_Get(t *testing.T) {
 }
 
 func TestManagerLogin_Post(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataLogin := NewMockDataLoginAdapter(ctrl)
 	mockEmail := email.NewMockEmailer(ctrl)
@@ -117,7 +119,7 @@ func TestManagerLogin_Post(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerLogin{dataLogin: mockDataLogin, emailer: mockEmail}
-			err := m.Post(tt.fin)
+			err := m.Post(ctx, tt.fin)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerLogin.Create().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -129,6 +131,7 @@ func TestManagerLogin_Post(t *testing.T) {
 }
 
 func TestManagerLogin_Patch(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataLogin := NewMockDataLoginAdapter(ctrl)
 
@@ -159,7 +162,7 @@ func TestManagerLogin_Patch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerLogin{dataLogin: mockDataLogin}
-			err := m.Patch(tt.body)
+			err := m.Patch(ctx, tt.body)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerLogin.Update().%s => expected not error; got: %s", tt.name, err)
 			}
@@ -171,6 +174,7 @@ func TestManagerLogin_Patch(t *testing.T) {
 }
 
 func TestManagerLogin_Delete(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataLogin := NewMockDataLoginAdapter(ctrl)
 
@@ -198,7 +202,7 @@ func TestManagerLogin_Delete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ManagerLogin{dataLogin: mockDataLogin}
-			err := m.Delete(tt.fin)
+			err := m.Delete(ctx, tt.fin)
 			if !tt.wantErr {
 				assert.Nil(t, err, "ManagerLogin.Delete().%s => expected not error; got: %s", tt.name, err)
 			}

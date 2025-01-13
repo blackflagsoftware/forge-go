@@ -8,7 +8,7 @@ type (
 	File{{.CurrentEntity.Camel}} struct {}
 )
 
-func (d *File{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *File{{.CurrentEntity.Camel}}) Read(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	{{.CurrentEntity.Abbr}}s := []{{.CurrentEntity.Camel}}{}
 	if err := storage.OpenFile({{.CurrentEntity.Camel}}Const, &{{.CurrentEntity.Abbr}}s); err != nil {
 		return err
@@ -22,12 +22,12 @@ func (d *File{{.CurrentEntity.Camel}}) Read({{.CurrentEntity.Abbr}} *{{.CurrentE
 	return nil
 }
 
-func (d *File{{.CurrentEntity.Camel}}) ReadAll({{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
+func (d *File{{.CurrentEntity.Camel}}) ReadAll(ctx context.Context, {{.CurrentEntity.Abbr}} *[]{{.CurrentEntity.Camel}}, param {{.CurrentEntity.Camel}}Param) (int, error) {
 	err := storage.OpenFile({{.CurrentEntity.Camel}}Const, {{.CurrentEntity.Abbr}})
 	return len(*{{.CurrentEntity.Abbr}}), err
 }
 
-func (d *File{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *File{{.CurrentEntity.Camel}}) Create(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	{{.CurrentEntity.Abbr}}s := []{{.CurrentEntity.Camel}}{}
 	if err := storage.OpenFile({{.CurrentEntity.Camel}}Const, &{{.CurrentEntity.Abbr}}s); err != nil {
 		return err
@@ -37,7 +37,7 @@ func (d *File{{.CurrentEntity.Camel}}) Create({{.CurrentEntity.Abbr}} *{{.Curren
 	return storage.SaveFile({{.CurrentEntity.Camel}}Const, {{.CurrentEntity.Abbr}}s)
 }
 
-func (d *File{{.CurrentEntity.Camel}}) Update({{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
+func (d *File{{.CurrentEntity.Camel}}) Update(ctx context.Context, {{.CurrentEntity.Abbr}} {{.CurrentEntity.Camel}}) error {
 	{{.CurrentEntity.Abbr}}s := []{{.CurrentEntity.Camel}}{}
 	if err := storage.OpenFile({{.CurrentEntity.Camel}}Const, &{{.CurrentEntity.Abbr}}s); err != nil {
 		return err
@@ -51,7 +51,7 @@ func (d *File{{.CurrentEntity.Camel}}) Update({{.CurrentEntity.Abbr}} {{.Current
 	return storage.SaveFile({{.CurrentEntity.Camel}}Const, {{.CurrentEntity.Abbr}}s)
 }
 
-func (d *File{{.CurrentEntity.Camel}}) Delete({{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
+func (d *File{{.CurrentEntity.Camel}}) Delete(ctx context.Context, {{.CurrentEntity.Abbr}} *{{.CurrentEntity.Camel}}) error {
 	{{.CurrentEntity.Abbr}}s := []{{.CurrentEntity.Camel}}{}
 	if err := storage.OpenFile({{.CurrentEntity.Camel}}Const, &{{.CurrentEntity.Abbr}}s); err != nil {
 		return err

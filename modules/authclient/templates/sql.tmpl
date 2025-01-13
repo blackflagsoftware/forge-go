@@ -1,6 +1,7 @@
 package authclient
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -20,7 +21,7 @@ func InitSQL() *SQLAuthClient {
 	return &SQLAuthClient{DB: db}
 }
 
-func (d *SQLAuthClient) Read(aut *AuthClient) error {
+func (d *SQLAuthClient) Read(ctx context.Context, aut *AuthClient) error {
 	sqlGet := `
 		SELECT
 			id,
@@ -35,7 +36,7 @@ func (d *SQLAuthClient) Read(aut *AuthClient) error {
 	return nil
 }
 
-func (d *SQLAuthClient) ReadAll(aut *[]AuthClient, param AuthClientParam) (int, error) {
+func (d *SQLAuthClient) ReadAll(ctx context.Context, aut *[]AuthClient, param AuthClientParam) (int, error) {
 	searchStmt, args := util.BuildSearchString(param.Param, false)
 	sqlSearch := fmt.Sprintf(`
 		SELECT
@@ -64,7 +65,7 @@ func (d *SQLAuthClient) ReadAll(aut *[]AuthClient, param AuthClientParam) (int, 
 	return count, nil
 }
 
-func (d *SQLAuthClient) Create(aut *AuthClient) error {
+func (d *SQLAuthClient) Create(ctx context.Context, aut *AuthClient) error {
 	sqlPost := `
 		INSERT INTO auth_client (
 			id,
@@ -87,7 +88,7 @@ func (d *SQLAuthClient) Create(aut *AuthClient) error {
 	return nil
 }
 
-func (d *SQLAuthClient) Update(aut AuthClient) error {
+func (d *SQLAuthClient) Update(ctx context.Context, aut AuthClient) error {
 	sqlPatch := `
 		UPDATE auth_client SET
 			name = :name,
@@ -101,7 +102,7 @@ func (d *SQLAuthClient) Update(aut AuthClient) error {
 	return nil
 }
 
-func (d *SQLAuthClient) Delete(aut *AuthClient) error {
+func (d *SQLAuthClient) Delete(ctx context.Context, aut *AuthClient) error {
 	sqlDelete := `
 		DELETE FROM auth_client WHERE id = $1`
 	if _, errDB := d.DB.Exec(sqlDelete, aut.Id); errDB != nil {
