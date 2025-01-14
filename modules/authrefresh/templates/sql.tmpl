@@ -13,6 +13,7 @@ import (
 type (
 	SQLAuthRefresh struct {
 		DB *sqlx.DB
+		Txn *sqlx.Tx
 	}
 )
 
@@ -80,6 +81,30 @@ func (d *SQLAuthRefresh) Create(ctx context.Context, ar *AuthRefresh) error {
 	return nil
 }
 
+func (d *SQLAuthRefresh) CreateTxn(ar *AuthRefresh) error {
+	if d.Txn == nil {
+		return ae.GeneralError("Unexpected Error", fmt.Errorf("CreateTxn: txn was not set"))
+	}
+	sqlPost := `
+		INSERT INTO auth_refresh (
+			login_id,
+			token,
+			active,
+			created_at
+		) VALUES (
+			:login_id,
+			:token,
+			:active,
+			:created_at
+		)`
+	_, errDB := d.Txn.NamedExec(sqlPost, ar)
+	if errDB != nil {
+		return ae.DBError("AuthRefresh Post: unable to insert record.", errDB)
+	}
+
+	return nil
+}
+
 func (d *SQLAuthRefresh) Update(ctx context.Context, ar AuthRefresh) error {
 	sqlPatch := `
 		UPDATE auth_refresh SET
@@ -87,6 +112,21 @@ func (d *SQLAuthRefresh) Update(ctx context.Context, ar AuthRefresh) error {
 		WHERE client_id = :client_idtoken = :token`
 	if _, errDB := d.DB.NamedExec(sqlPatch, ar); errDB != nil {
 		return ae.DBError("AuthRefresh Patch: unable to update record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthRefresh) DeactiveAllTxn(ar AuthRefresh) error {
+	if d.Txn == nil {
+		return ae.GeneralError("Unexpected Error", fmt.Errorf("DeactiveAllTxn: txn was not set"))
+	}
+	sqlPatch := `
+		UPDATE auth_refresh SET
+			active = :active,
+			created_at = :created_at
+		WHERE login_id = :login_id`
+	if _, errDB := d.Txn.NamedExec(sqlPatch, ar); errDB != nil {
+		return ae.DBError("AuthRefresh DeactiveAllTxn: unable to update records.", errDB)
 	}
 	return nil
 }
