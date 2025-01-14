@@ -102,8 +102,8 @@ func Config(p m.Project) {
 	LoginAdminEmail        = GetEnvOrDefault("{{.ProjectNameEnv}}_ADMIN_EMAIL", "")
 	LoginBasicAuthUser     = GetEnvOrDefault("{{.ProjectNameEnv}}_BASIC_AUTH_USER", "")
 	LoginBasicAuthPwd      = GetEnvOrDefault("{{.ProjectNameEnv}}_BASIC_AUTH_PASS", "")
-	AuthAuthorizationExpires = GetEnvOrDefault("AUTH_SERVER_AUTH_AUTHORIZATION_EXPIRES", "60") // in seconds
-	AuthRefreshTokenExpires = GetEnvOrDefault("AUTH_REFRESH_TOKEN_EXPIRES", "86400")           // in seconds, set -1 to never expire; 0 - to always refresh; >0 in seconds to expire at // TODO: add to forge
+	AuthAuthorizationExpires = GetEnvOrDefault("AUTH_SERVER_AUTH_AUTHORIZATION_EXPIRES", "60") \/\/ in seconds
+	AuthRefreshTokenExpires = GetEnvOrDefault("AUTH_REFRESH_TOKEN_EXPIRES", "86400")           \/\/ in seconds, set -1 to never expire; 0 - to always refresh; >0 in seconds to expire at
 	\/\/ --- replace config init text - do not remove ---
 	`
 	configFile := fmt.Sprintf("%s/config/config.go", p.ProjectFile.FullPath)
