@@ -1,11 +1,15 @@
 package authrefresh
 
 import (
-	"context"
+	"context
+	"crypto/sha256""
+	"fmt"
 	"time"
 
 	ae "{{.ProjectPath}}/internal/api_error"
 	a "{{.ProjectPath}}/internal/audit"
+	"{{.ProjectPath}}/config"
+	util "{{.ProjectPath}}/internal/util"
 )
 
 //go:generate mockgen -source=manager.go -destination=mock.go -package=authrefresh
