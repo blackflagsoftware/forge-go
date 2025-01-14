@@ -1,6 +1,8 @@
 package role
 
 import (
+	"context"
+
 	ae "{{.ProjectPath}}/internal/api_error"
 	a "{{.ProjectPath}}/internal/audit"
 	"{{.ProjectPath}}/internal/util"
@@ -60,7 +62,7 @@ func (m *ManagerRole) Post(ctx context.Context, rol *Role) error {
 
 func (m *ManagerRole) Patch(ctx context.Context, rolIn Role) error {
 	rol := &Role{Id: rolIn.Id}
-	errGet := m.dataRole.Read(rol)
+	errGet := m.dataRole.Read(ctx, rol)
 	if errGet != nil {
 		return errGet
 	}

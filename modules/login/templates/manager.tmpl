@@ -87,7 +87,7 @@ func (m *ManagerLogin) Post(ctx context.Context, login *Login) error {
 	if err := m.dataLogin.Create(ctx, login, resetRequest); err != nil {
 		return err
 	}
-	go m.emailer.SendReset(login.EmailAddr.String, resetRequest.ResetToken)
+	go m.emailer.SendReset(ctx, login.EmailAddr.String, resetRequest.ResetToken)
 	go a.AuditCreate(m.auditWriter, *login, LoginConst, a.KeysToString("id", login.Id))
 	return nil
 }
@@ -95,7 +95,7 @@ func (m *ManagerLogin) Post(ctx context.Context, login *Login) error {
 // Patch only allows to update the email or active, see PatchPwd to update the pwd
 func (m *ManagerLogin) Patch(ctx context.Context, logIn Login) error {
 	login := &Login{Id: logIn.Id}
-	errGet := m.dataLogin.Read(login)
+	errGet := m.dataLogin.Read(ctx, login)
 	if errGet != nil {
 		return errGet
 	}
@@ -128,7 +128,7 @@ func (m *ManagerLogin) PatchPwd(ctx context.Context, logIn Login) error {
 		return ae.MissingParamError("Id")
 	}
 	login := &Login{Id: logIn.Id}
-	errGet := m.dataLogin.Read(login)
+	errGet := m.dataLogin.Read(ctx, login)
 	if errGet != nil {
 		return errGet
 	}
@@ -239,7 +239,7 @@ func (m *ManagerLogin) ResetRequest(ctx context.Context, res *ResetRequest) erro
 	res.LoginId = login.Id
 	res.ResetToken = util.GenerateUUID()
 	res.CreatedAt = time.Now().UTC()
-	return m.dataLogin.ResetRequest(res)
+	return m.dataLogin.ResetRequest(ctx, res)
 }
 
 func (m *ManagerLogin) SignIn(ctx context.Context, logIn Login) (string, error) {

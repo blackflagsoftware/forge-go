@@ -45,7 +45,7 @@ func (m *ManagerLoginRole) Search(ctx context.Context, lo *[]LoginRole, param Lo
 	return m.dataLoginRole.ReadAll(ctx, lo, param)
 }
 
-func (m *ManagerLoginRole) Post(lo *LoginRole) error {
+func (m *ManagerLoginRole) Post(ctx context.Context, lo *LoginRole) error {
 
 	if err := m.dataLoginRole.Create(ctx, lo); err != nil {
 		return err
@@ -73,7 +73,7 @@ func (m *ManagerLoginRole) Patch(ctx context.Context, loIn LoginRolePatch) error
 			return err
 		}
 	}
-	deleteRoles := util.ArrayDiff(ctx context.Context, loIn.RoleIds, exisingRoles)
+	deleteRoles := util.ArrayDiff(loIn.RoleIds, exisingRoles)
 	for _, del := range deleteRoles {
 		if err := m.dataLoginRole.Delete(ctx, &LoginRole{LoginId: loIn.LoginId, RoleId: del}); err != nil {
 			return err

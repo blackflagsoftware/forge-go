@@ -47,31 +47,31 @@ func TestManagerAuthClientSecret_Post(t *testing.T) {
 	}{
 		{
 			"successful",
-			&AuthClientSecret{ClientId: "a", Secret: "a"},
+			&AuthClientSecret{ClientId: null.NewString("a", true), Secret: null.NewString("a", true)},
 			false,
-			[]*gomock.Call{mockDataAuthClientSecret.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+			[]*gomock.Call{mockDataAuthClientSecret.EXPECT().Create(ctx, gomock.Any()).Return(nil).AnyTimes()},
 		},
 		{
 			"failed - clientId",
-			&AuthClientSecret{ClientId: "", Secret: "a"},
+			&AuthClientSecret{ClientId: null.NewString("a", false), Secret: null.NewString("a", true)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - length clientId",
-			&AuthClientSecret{ClientId: "0123456789012345678901234567890123456789", Secret: "a"},
+			&AuthClientSecret{ClientId: null.NewString("0123456789012345678901234567890123456789", true), Secret: null.NewString("a", true)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - secret",
-			&AuthClientSecret{ClientId: "a", Secret: ""},
+			&AuthClientSecret{ClientId: null.NewString("a", true), Secret: null.NewString("a", false)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - length secret",
-			&AuthClientSecret{ClientId: "a", Secret: "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"},
+			&AuthClientSecret{ClientId: null.NewString("a", true), Secret: null.NewString("01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", true)},
 			true,
 			[]*gomock.Call{},
 		},
@@ -106,8 +106,8 @@ func TestManagerAuthClientSecret_Patch(t *testing.T) {
 			AuthClientSecret{},
 			false,
 			[]*gomock.Call{
-				mockDataAuthClientSecret.EXPECT().Read(gomock.Any()).Return(nil),
-				mockDataAuthClientSecret.EXPECT().Update(gomock.Any()).Return(nil),
+				mockDataAuthClientSecret.EXPECT().Read(ctx, gomock.Any()).Return(nil),
+				mockDataAuthClientSecret.EXPECT().Update(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{
@@ -115,7 +115,7 @@ func TestManagerAuthClientSecret_Patch(t *testing.T) {
 			AuthClientSecret{},
 			true,
 			[]*gomock.Call{
-				mockDataAuthClientSecret.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+				mockDataAuthClientSecret.EXPECT().Read(ctx, gomock.Any()).Return(fmt.Errorf("missing record")),
 			},
 		},
 	}

@@ -103,7 +103,7 @@ func (h *RestAuthClientSecret) Patch(c echo.Context) error {
 }
 
 func (h *RestAuthClientSecret) Delete(c echo.Context) error {
-	ctx := context.TODO()B
+	ctx := context.TODO()
 	authClientSecret := &AuthClientSecret{}
 	if err := h.managerAuthClientSecret.Delete(ctx, authClientSecret); err != nil {
 		apiError := err.(ae.ApiError)

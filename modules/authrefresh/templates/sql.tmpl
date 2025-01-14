@@ -99,3 +99,15 @@ func (d *SQLAuthRefresh) Delete(ctx context.Context, ar *AuthRefresh) error {
 	}
 	return nil
 }
+
+func (d *SQLAuthRefresh) CycleRefreshToken(ctx context.Context, refreshOld, refreshNew AuthRefresh) (err error) {
+	txn := d.DB.MustBegin()
+	d.Txn = txn
+	defer util.TxnFinish(txn, &err)
+
+	err = d.DeactiveAllTxn(refreshOld)
+	if err != nil {
+		return err
+	}
+	return d.CreateTxn(&refreshNew)
+}

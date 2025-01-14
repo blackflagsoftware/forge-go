@@ -70,20 +70,22 @@ func AddAuth(p *m.Project) {
 }
 
 func Config(p m.Project) {
-	configVarLine := `LoginPwdCost string
-	LoginResetDuration     string
-	LoginExpiresAtDuration string
-	LoginAuthAlg           string
-	LoginAuthSecret        string
-	LoginAuthPublic        string
-	LoginEmailHost         string
-	LoginEmailPort         string
-	LoginEmailPwd          string
-	LoginEmailFrom         string
-	LoginEmailResetUrl     string
-	LoginAdminEmail        string
-	LoginBasicAuthUser     string
-	LoginBasicAuthPwd      string
+	configVarLine := `LoginPwdCost   string
+	LoginResetDuration     	 string
+	LoginExpiresAtDuration 	 string
+	LoginAuthAlg           	 string
+	LoginAuthSecret        	 string
+	LoginAuthPublic        	 string
+	LoginEmailHost         	 string
+	LoginEmailPort         	 string
+	LoginEmailPwd          	 string
+	LoginEmailFrom         	 string
+	LoginEmailResetUrl     	 string
+	LoginAdminEmail        	 string
+	LoginBasicAuthUser     	 string
+	LoginBasicAuthPwd      	 string
+	AuthAuthorizationExpires string
+	AuthRefreshTokenExpires  string
 	\/\/ --- replace config var text - do not remove ---
 	`
 	configInitLine := `LoginPwdCost           = GetEnvOrDefault("{{.ProjectNameEnv}}_LOGIN_PWD_COST", "10")             \/\/ algorithm cost
@@ -100,6 +102,8 @@ func Config(p m.Project) {
 	LoginAdminEmail        = GetEnvOrDefault("{{.ProjectNameEnv}}_ADMIN_EMAIL", "")
 	LoginBasicAuthUser     = GetEnvOrDefault("{{.ProjectNameEnv}}_BASIC_AUTH_USER", "")
 	LoginBasicAuthPwd      = GetEnvOrDefault("{{.ProjectNameEnv}}_BASIC_AUTH_PASS", "")
+	AuthAuthorizationExpires = GetEnvOrDefault("AUTH_SERVER_AUTH_AUTHORIZATION_EXPIRES", "60") // in seconds
+	AuthRefreshTokenExpires = GetEnvOrDefault("AUTH_REFRESH_TOKEN_EXPIRES", "86400")           // in seconds, set -1 to never expire; 0 - to always refresh; >0 in seconds to expire at // TODO: add to forge
 	\/\/ --- replace config init text - do not remove ---
 	`
 	configFile := fmt.Sprintf("%s/config/config.go", p.ProjectFile.FullPath)
@@ -181,7 +185,32 @@ func GetEmailPort() int {
 		return 7
 	}
 	return loginEmailPort
-}`
+}
+	
+func GetAuthorizationExpires() int {
+	authExpires, err := strconv.Atoi(AuthAuthorizationExpires)
+	if err != nil {
+		// TODO: unable to print to default log, might want to send error to another feedback loop
+		fmt.Printf("GetAuthorizationExpires: unable to parse env var: %s", err)
+		// TODO: change in forge too
+		return 3600 // 1 hour
+	}
+	// TODO: change in forge too
+	return authExpires * 60 * 60
+}
+
+func GetRefreshTokenExpires() int {
+	authExpires, err := strconv.Atoi(AuthRefreshTokenExpires)
+	if err != nil {
+		// TODO: unable to print to default log, might want to send error to another feedback loop
+		fmt.Printf("GetRefreshTokenExpires: unable to parse env var: %s", err)
+		// TODO: change in forge too
+		return 86400 // 1 day
+	}
+	// TODO: change in forge too
+	return authExpires
+}
+`
 
 	file, err := os.OpenFile(configFile, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {

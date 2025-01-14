@@ -46,10 +46,10 @@ func (h *RestAuthAuthorize) LoadAuthAuthorizeRoutes(eg *echo.Group) {
 func (h *RestAuthAuthorize) Get(c echo.Context) error {
 	ctx := context.TODO()
 	authAuthorize := &AuthAuthorize{}
-	if err := h.managerAuthAuthorize.Get(c, authAuthorize); err != nil {
+	if err := h.managerAuthAuthorize.Get(ctx, authAuthorize); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
-		return c.JSON(be.StatusCode, util.NewOutput(ctx, nil, &apiError, nil))
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
 	return c.JSON(http.StatusOK, util.NewOutput(c, *authAuthorize, nil, nil))
 }

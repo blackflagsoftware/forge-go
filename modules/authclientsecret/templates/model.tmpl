@@ -3,12 +3,15 @@ package authclientsecret
 import (
 	"{{.ProjectPath}}/config"
 	"{{.ProjectPath}}/internal/util"
+	"gopkg.in/guregu/null.v3"
 )
 
 type (
 	AuthClientSecret struct {
-		ClientId string `db:"client_id" json:"client_id"`
-		Secret   string `db:"secret" json:"secret"`
+		Id       string      `db:"id" json:"id"`
+		ClientId null.String `db:"client_id" json:"client_id"`
+		Secret   null.String `db:"secret" json:"secret"`
+		Active   bool        `db:"active" json:"active"`
 	}
 
 	AuthClientSecretData struct {

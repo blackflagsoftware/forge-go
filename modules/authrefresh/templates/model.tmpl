@@ -1,16 +1,18 @@
 package authrefresh
 
 import (
+	"time"
+
 	"{{.ProjectPath}}/config"
 	"{{.ProjectPath}}/internal/util"
-	"gopkg.in/guregu/null.v3"
 )
 
 type (
 	AuthRefresh struct {
 		ClientId  string    `db:"client_id" json:"client_id"`
 		Token     string    `db:"token" json:"token"`
-		CreatedAt null.Time `db:"created_at" json:"created_at"`
+		Active    bool      `db:"active" json:"active"`
+		CreatedAt time.Time `db:"created_at" json:"created_at"`
 	}
 
 	AuthRefreshData struct {

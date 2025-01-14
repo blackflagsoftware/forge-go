@@ -1,6 +1,7 @@
 package role
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -25,7 +26,7 @@ func TestManagerRole_Get(t *testing.T) {
 			&Role{Id: "test id"},
 			false,
 			[]*gomock.Call{
-				mockDataRole.EXPECT().Read(gomock.Any()).Return(nil),
+				mockDataRole.EXPECT().Read(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{
@@ -64,7 +65,7 @@ func TestManagerRole_Post(t *testing.T) {
 			"successful",
 			&Role{Name: null.NewString("a", true), Description: null.NewString("a", true), Id: "a"},
 			false,
-			[]*gomock.Call{mockDataRole.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+			[]*gomock.Call{mockDataRole.EXPECT().Create(ctx, gomock.Any()).Return(nil).AnyTimes()},
 		},
 		{
 			"failed - id",
@@ -121,8 +122,8 @@ func TestManagerRole_Patch(t *testing.T) {
 			Role{Id: "test value"},
 			false,
 			[]*gomock.Call{
-				mockDataRole.EXPECT().Read(gomock.Any()).Return(nil),
-				mockDataRole.EXPECT().Update(gomock.Any()).Return(nil),
+				mockDataRole.EXPECT().Read(ctx, gomock.Any()).Return(nil),
+				mockDataRole.EXPECT().Update(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{
@@ -130,7 +131,7 @@ func TestManagerRole_Patch(t *testing.T) {
 			Role{Id: "test value"},
 			true,
 			[]*gomock.Call{
-				mockDataRole.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+				mockDataRole.EXPECT().Read(ctx, gomock.Any()).Return(fmt.Errorf("missing record")),
 			},
 		},
 	}
@@ -164,7 +165,7 @@ func TestManagerRole_Delete(t *testing.T) {
 			&Role{Id: "test id"},
 			false,
 			[]*gomock.Call{
-				mockDataRole.EXPECT().Delete(gomock.Any()).Return(nil),
+				mockDataRole.EXPECT().Delete(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{

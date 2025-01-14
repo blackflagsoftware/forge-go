@@ -15,7 +15,9 @@ import (
 
 type (
 	ManagerAuthAdapter interface {
-		OAuthSignIn(context.Context, OAuthLogin) (OAuthResponse, error)
+		GetClientId(context.Context, string) (string, error)
+		OAuthSignIn(context.Context, OAuthLogin, aa.AuthAuthorize) (OAuthResponse, error)
+		OAuthExchange(context.Context, OAuthToken) (OAuthToken, error)
 	}
 
 	RestAuth struct{
@@ -36,134 +38,121 @@ func NewRestAuth(ma ManagerAuthAdapter) *RestAuth {
 func (h *RestAuth) LoadAuthRoutes(eg *echo.Group) {
 	eg.GET("/auth/oauth2/authorize", h.OAuth2Authorize)
 	eg.POST("/auth/oauth2/verify-consent", h.OAuth2VerifyConsent)
+	eg.POST("/auth/oauth2/sign-in", h.OAuth2SignIn)
 	eg.POST("/auth/oauth2/token-exchange", h.OAuth2Exchange)
+	eg.POST("/auth/oauth2/verify-consent", h.OAuth2VerifyConsent)
+}
+
+func (h *RestAuth) Redirect(c echo.Context) error {
+	return c.Redirect(http.StatusSeeOther, "https://localhost:3001/redirect")
 }
 
 func (h *RestAuth) OAuth2Authorize(c echo.Context) error {
-	// check the client_id
-	// save off the state or save off pkce if given and how it is encoded
-	// return the login form code or consent form (if already logged in)
-	// the login form will have to include the redirect_url
+	// return the login/consent form code
+	// do a redirect and call our "consent" page, store this on that page and send when calling "sign-in"
 	ctx := context.TODO()
-	responseType := c.FormValue("response_type")
-	if responseType != "code" {
+	auth := OAuthLogin{}
+	if err := c.Bind(&auth); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if auth.ResponseType != "code" {
 		responseErr := ae.GeneralError("Invalid response_type, 'code' is the only valid option", nil)
 		return c.JSON(responseErr.StatusCode, util.NewOutput(c, nil, &responseErr, nil))
 	}
-	clientId := c.FormValue("client_id")
-	redirectUrl := c.FormValue("redirect_url")
-	scope := c.FormValue("scope") // empty for now
-	state := c.FormValue("state")
-	codeChallenge := c.FormValue("code_challenge")
-	codeChallengeMethod := c.FormValue("code_challenge_method")
-
-	authClient := ac.AuthClient{Id: clientId}
-	acs := ac.InitStorage()
-	acm := ac.NewManagerAuthClient(acs)
-	if err := acm.Get(ctx, &authClient); err != nil {
-		// TODO: make new errors (make it for all the errors within these new functions)
+	redirectPath := url.URL{}
+	redirectPath.Scheme = "https"
+	clientName, err := h.managerAuth.GetClientId(ctx, auth.ClientId)
+	if err != nil {
 		responseErr := ae.GeneralError("Not a valid client", err)
 		return c.JSON(responseErr.StatusCode, util.NewOutput(c, nil, &responseErr, nil))
 	}
-	authorizeId := util.GenerateRandomString(32)
-	consentId := util.GenerateRandomString(32)
-	authAuthorize := aa.AuthAuthorize{
-		Id:                   authorizeId,
-		ClientId:             null.StringFrom(authClient.Id),
-		Verifier:             null.StringFrom(codeChallenge),
-		VerifierEncodeMethod: null.StringFrom(codeChallengeMethod),
-		State:                null.StringFrom(state),
-		Scope:                null.StringFrom(scope),
-		ConsentId:            null.StringFrom(consentId),
-	}
-	aas := aa.InitStorage()
-	aam := aa.NewManagerAuthAuthorize(aas)
-	if err := aam.Post(ctx, &authAuthorize); err != nil {
-		responseErr := ae.GeneralError("Error creating auth authorize", err)
-		return c.JSON(responseErr.StatusCode, util.NewOutput(c, nil, &responseErr, nil))
-	}
+	query := c.Request().URL.Query()
+	query.Add("client_id", auth.ClientId)
+	query.Add("client_name", clientName)
+	query.Add("scope", auth.Scope)
+	query.Add("state", auth.State)
+	query.Add("redirect_uri", auth.RedirectUri)
+	query.Add("code_challenge", auth.CodeChallenge)
+	query.Add("code_challenge_method", auth.CodeChallengeMethod)
 
-	fmt.Printf("client_id: %s; redirect_url: %s; scope: %s; state: %s; codeChallenge: %s; codeChallengeMethod: %s", clientId, redirectUrl, scope, state, codeChallenge, codeChallengeMethod)
-	sendHtml := fmt.Sprintf(html, "hello")
-	// template html
-	return c.HTML(http.StatusSeeOther, sendHtml)
+	redirectPath.Opaque = "//localhost/consent"
+	redirectPath.RawQuery = query.Encode()
+	// payload := map[string]string{"consent_form_path": redirectPath.String()}
+
+	return c.Redirect(http.StatusSeeOther, redirectPath.String())
+	// return c.JSON(http.StatusOK, util.NewOutput(c, payload, nil, nil))
 }
 
 func (h *RestAuth) OAuth2SignIn(c echo.Context) error {
 	// this is called from the login form or consent form
-	// like a normal sign in
-	// instead of a jwt token, send back a new code with the state with the redirect
-
+	// the consent form will validate the response here and redirect if needed
 	ctx := context.TODO()
-	login := OAuthLogin{}
-	logData := OAuthLoginData{Data: login}
+	logData := OAuthLoginData{}
 	if err := c.Bind(&logData); err != nil {
+		// since this is coming from our consent form, rare but avoidable
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	response, err := h.managerAuth.OAuthSignIn(ctx, logData.Data)
+	login := logData.Data
+	authorizeId := util.GenerateRandomString(32) // or authorization_code
+	consentId := util.GenerateRandomString(32)
+	authAuthorize := aa.AuthAuthorize{
+		Id:                   authorizeId,
+		ClientId:             null.StringFrom(login.ClientId),
+		Verifier:             null.StringFrom(login.CodeChallenge),
+		VerifierEncodeMethod: null.StringFrom(login.CodeChallengeMethod),
+		State:                null.StringFrom(login.State),
+		Scope:                null.StringFrom(login.Scope),
+		ConsentId:            null.StringFrom(consentId),
+		RedirectUrl:          null.StringFrom(login.RedirectUri),
+		AuthorizedAt:         null.TimeFrom(time.Now().UTC()),
+	}
+
+	response, err := h.managerAuth.OAuthSignIn(ctx, logData.Data, authAuthorize)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
-	return c.JSON(http.StatusOK, util.NewOutput(c, response, nil, nil))
+	payload := map[string]string{"code": response.AuthCode, "access_token": response.AccessToken}
+	return c.JSON(http.StatusOK, util.NewOutput(c, payload, nil, nil))
 }
 
 func (h *RestAuth) OAuth2Exchange(c echo.Context) error {
 	// grant_type=authorization_code
-	// code=auth_code
-	// redirect_uri=
-	// code_verifier=base64(pkce)
-	// client_id=
-	// client_secret=
 	ctx := context.TODO()
 	oAuthToken := OAuthToken{}
-
 	if err := c.Bind(&oAuthToken); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
 
-	// check the code, will need to check the timing on when that code was created
-	// check the client_secret
-	// encode the state (pkce) and verify from the earlier saved off state (pkce)
-	// return a oauth.Token
-	// or
-	// refresh
-	// grant_type=refresh_token
-	// refresh_token=
-	// client_id=
-	// client_secret=
-	// return a new oauth.token (do we generate a new refresh_token?)
-	return nil
-}
-
-func (h *RestAuth) OAuth2VerifyConsent(c echo.Context) error {
-	ctx := context.TODO()
-	authAuthorize := aa.AuthAuthorize{}
-	if err := c.Bind(&authAuthorize); err != nil {
-		bindErr := ae.BindError(err)
-		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
-	}
-	aas := aa.InitStorage()
-	aam := aa.NewManagerAuthAuthorize(aas)
-	if err := aam.VerifyConsent(ctx, authAuthorize); err != nil {
+	authToken, err := h.managerAuth.OAuthExchange(ctx, oAuthToken)
+	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
 	}
-	return c.NoContent(http.StatusOK)
+
+	return c.JSON(http.StatusOK, util.NewOutput(c, authToken, nil, nil))
 }
 
-var html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title>Document</title>
-</head>
-<body>
-	<p>Log In</p>
-	<input id="pc_authorize_id" type="hidden">%s</input>
-</body>
-</html>`
+func (h *RestAuth) OAuth2VerifyConsent(c echo.Context) error {
+	// grant_type=authorization_code
+	ctx := context.TODO()
+	oAuthToken := OAuthToken{}
+	if err := c.Bind(&oAuthToken); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+
+	authToken, err := h.managerAuth.OAuthExchange(ctx, oAuthToken)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+
+	return c.JSON(http.StatusOK, util.NewOutput(c, authToken, nil, nil))
+}

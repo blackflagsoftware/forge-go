@@ -1,6 +1,7 @@
 package email
 
 import (
+	"context"
 	"fmt"
 	"net/smtp"
 
@@ -11,7 +12,7 @@ import (
 //go:generate mockgen -source=email.go -destination=mock.go -package=email
 type (
 	Emailer interface {
-		SendReset(string, string) error
+		SendReset(context.Context, string, string) error
 	}
 
 	Email struct{}
@@ -24,7 +25,7 @@ func EmailInit() Emailer {
 	return &MockEmailer{}
 }
 
-func (e Email) SendReset(toEmail, resetToken string) error {
+func (e Email) SendReset(ctx context.Context, toEmail, resetToken string) error {
 	from := config.LoginEmailFrom
 	pwd := config.LoginEmailPwd
 	host := config.LoginEmailHost

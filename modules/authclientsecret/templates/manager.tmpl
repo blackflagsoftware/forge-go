@@ -2,6 +2,8 @@ package authclientsecret
 
 import (
 	"context"
+
+	ae "{{.ProjectPath}}/internal/api_error"
 	a "{{.ProjectPath}}/internal/audit"
 )
 
@@ -13,6 +15,7 @@ type (
 		Create(context.Context, *AuthClientSecret) error
 		Update(context.Context, AuthClientSecret) error
 		Delete(context.Context, *AuthClientSecret) error
+		ReadByIdAndSecret(context.Context, *AuthClientSecret) error
 	}
 
 	ManagerAuthClientSecret struct {
@@ -21,24 +24,21 @@ type (
 	}
 )
 
-func NewManagerAuthClientSecret(ctx context.Context, cau DataAuthClientSecretAdapter) *ManagerAuthClientSecret {
+func NewManagerAuthClientSecret(cau DataAuthClientSecretAdapter) *ManagerAuthClientSecret {
 	aw := a.AuditInit()
 	return &ManagerAuthClientSecret{dataAuthClientSecret: cau, auditWriter: aw}
 }
 
 func (m *ManagerAuthClientSecret) Get(ctx context.Context, au *AuthClientSecret) error {
-
 	return m.dataAuthClientSecret.Read(ctx, au)
 }
 
 func (m *ManagerAuthClientSecret) Search(ctx context.Context, au *[]AuthClientSecret, param AuthClientSecretParam) (int, error) {
 	param.Param.CalculateParam("", map[string]string{})
-
-	return m.dataAuthClientSecret.ReadAll(au, param)
+	return m.dataAuthClientSecret.ReadAll(ctx, au, param)
 }
 
 func (m *ManagerAuthClientSecret) Post(ctx context.Context, au *AuthClientSecret) error {
-
 	if err := m.dataAuthClientSecret.Create(ctx, au); err != nil {
 		return err
 	}
@@ -62,10 +62,19 @@ func (m *ManagerAuthClientSecret) Patch(ctx context.Context, auIn AuthClientSecr
 }
 
 func (m *ManagerAuthClientSecret) Delete(ctx context.Context, au *AuthClientSecret) error {
-
 	if err := m.dataAuthClientSecret.Delete(ctx, au); err != nil {
 		return err
 	}
 	go a.AuditDelete(m.auditWriter, *au, AuthClientSecretConst, a.KeysToString("client_id", au.ClientId, "secret", au.Secret))
 	return nil
+}
+
+func (m *ManagerAuthClientSecret) GetByIdAndSecret(ctx context.Context, au *AuthClientSecret) error {
+	if !au.ClientId.Valid || au.ClientId.String == "" {
+		return ae.MissingParamError("ClientId")
+	}
+	if !au.Secret.Valid || au.Secret.String == "" {
+		return ae.MissingParamError("Secret")
+	}
+	return m.dataAuthClientSecret.ReadByIdAndSecret(ctx, au)
 }

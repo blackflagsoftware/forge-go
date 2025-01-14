@@ -50,7 +50,7 @@ func TestManagerAuthClient_Post(t *testing.T) {
 			"successful",
 			&AuthClient{Name: null.NewString("a", true), Description: null.NewString("a", true), HomepageUrl: null.NewString("a", true), CallbackUrl: null.NewString("a", true), Id: "a"},
 			false,
-			[]*gomock.Call{mockDataAuthClient.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+			[]*gomock.Call{mockDataAuthClient.EXPECT().Create(ctx, gomock.Any()).Return(nil).AnyTimes()},
 		},
 		{
 			"failed - id",
@@ -137,8 +137,8 @@ func TestManagerAuthClient_Patch(t *testing.T) {
 			AuthClient{},
 			false,
 			[]*gomock.Call{
-				mockDataAuthClient.EXPECT().Read(gomock.Any()).Return(nil),
-				mockDataAuthClient.EXPECT().Update(gomock.Any()).Return(nil),
+				mockDataAuthClient.EXPECT().Read(ctx, gomock.Any()).Return(nil),
+				mockDataAuthClient.EXPECT().Update(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{
@@ -146,7 +146,7 @@ func TestManagerAuthClient_Patch(t *testing.T) {
 			AuthClient{},
 			true,
 			[]*gomock.Call{
-				mockDataAuthClient.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+				mockDataAuthClient.EXPECT().Read(ctx, gomock.Any()).Return(fmt.Errorf("missing record")),
 			},
 		},
 	}

@@ -49,37 +49,37 @@ func TestManagerAuthRefresh_Post(t *testing.T) {
 	}{
 		{
 			"successful",
-			&AuthRefresh{ClientId: "a", Token: "a", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			&AuthRefresh{ClientId: "a", Token: "a", CreatedAt: time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC)},
 			false,
-			[]*gomock.Call{mockDataAuthRefresh.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+			[]*gomock.Call{mockDataAuthRefresh.EXPECT().Create(ctx, gomock.Any()).Return(nil).AnyTimes()},
 		},
 		{
 			"failed - clientId",
-			&AuthRefresh{ClientId: "", Token: "a", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			&AuthRefresh{ClientId: "", Token: "a", CreatedAt: time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - length clientId",
-			&AuthRefresh{ClientId: "0123456789012345678901234567890123456789", Token: "a", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			&AuthRefresh{ClientId: "0123456789012345678901234567890123456789", Token: "a", CreatedAt: time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - token",
-			&AuthRefresh{ClientId: "a", Token: "", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			&AuthRefresh{ClientId: "a", Token: "", CreatedAt: time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - length token",
-			&AuthRefresh{ClientId: "a", Token: "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
+			&AuthRefresh{ClientId: "a", Token: "01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", CreatedAt: time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC)},
 			true,
 			[]*gomock.Call{},
 		},
 		{
 			"failed - createdAt",
-			&AuthRefresh{ClientId: "a", Token: "a", CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), false)},
+			&AuthRefresh{ClientId: "a", Token: "a", CreatedAt: time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC)},
 			true,
 			[]*gomock.Call{},
 		},
@@ -114,8 +114,8 @@ func TestManagerAuthRefresh_Patch(t *testing.T) {
 			AuthRefresh{},
 			false,
 			[]*gomock.Call{
-				mockDataAuthRefresh.EXPECT().Read(gomock.Any()).Return(nil),
-				mockDataAuthRefresh.EXPECT().Update(gomock.Any()).Return(nil),
+				mockDataAuthRefresh.EXPECT().Read(ctx, gomock.Any()).Return(nil),
+				mockDataAuthRefresh.EXPECT().Update(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{
@@ -123,7 +123,7 @@ func TestManagerAuthRefresh_Patch(t *testing.T) {
 			AuthRefresh{},
 			true,
 			[]*gomock.Call{
-				mockDataAuthRefresh.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+				mockDataAuthRefresh.EXPECT().Read(ctx, gomock.Any()).Return(fmt.Errorf("missing record")),
 			},
 		},
 	}

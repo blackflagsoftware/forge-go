@@ -168,7 +168,7 @@ func (h *RestLogin) ResetRequest(c echo.Context) error {
 	ctx := context.TODO()
 	emailAddr := c.Param("email_addr")
 	resetRequest := &ResetRequest{EmailAddr: emailAddr}
-	if err := h.managerLogin.ResetRequest(c, resetRequest); err != nil {
+	if err := h.managerLogin.ResetRequest(ctx, resetRequest); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -184,7 +184,7 @@ func (h *RestLogin) SignIn(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	token, err := h.managerLogin.SignIn(c, logData.Data)
+	token, err := h.managerLogin.SignIn(ctx, logData.Data)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -201,7 +201,7 @@ func (h *RestLogin) Verify(c echo.Context) error {
 func (h *RestLogin) WithRoles(c echo.Context) error {
 	ctx := context.TODO()
 	login := &[]LoginRoles{}
-	totalCount, err := h.managerLogin.WithRoles(c, login)
+	totalCount, err := h.managerLogin.WithRoles(ctx, login)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()

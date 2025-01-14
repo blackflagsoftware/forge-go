@@ -51,7 +51,7 @@ func TestManagerAuthAuthorize_Post(t *testing.T) {
 			"successful",
 			&AuthAuthorize{Scope: null.NewString("a", true), AuthCodeAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), Id: "a", ClientId: null.NewString("a", true), State: null.NewString("a", true), AuthCode: null.NewString("a", true), Verifier: null.NewString("a", true), VerifierEncodeMethod: null.NewString("a", true), AuthorizedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
 			false,
-			[]*gomock.Call{mockDataAuthAuthorize.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+			[]*gomock.Call{mockDataAuthAuthorize.EXPECT().Create(ctx, gomock.Any()).Return(nil).AnyTimes()},
 		},
 		{
 			"failed - id",
@@ -139,8 +139,8 @@ func TestManagerAuthAuthorize_Patch(t *testing.T) {
 			AuthAuthorize{},
 			false,
 			[]*gomock.Call{
-				mockDataAuthAuthorize.EXPECT().Read(gomock.Any()).Return(nil),
-				mockDataAuthAuthorize.EXPECT().Update(gomock.Any()).Return(nil),
+				mockDataAuthAuthorize.EXPECT().Read(ctx, gomock.Any()).Return(nil),
+				mockDataAuthAuthorize.EXPECT().Update(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{
@@ -148,7 +148,7 @@ func TestManagerAuthAuthorize_Patch(t *testing.T) {
 			AuthAuthorize{},
 			true,
 			[]*gomock.Call{
-				mockDataAuthAuthorize.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+				mockDataAuthAuthorize.EXPECT().Read(ctx, gomock.Any()).Return(fmt.Errorf("missing record")),
 			},
 		},
 	}

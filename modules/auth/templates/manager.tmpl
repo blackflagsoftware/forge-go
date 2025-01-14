@@ -73,16 +73,21 @@ func (m *ManagerAuth) OAuthSignIn(ctx context.Context, logIn OAuthLogin, authAut
 	if err := aam.Post(ctx, &authAuthorize); err != nil {
 		return oAuthResponse, err
 	}
+	accessToken, err := middleware.AuthBuild([]string{}) // TODO: add roles here for the user
+	if err != nil {
+		return oAuthResponse, ae.GeneralError("Unable to build access token", fmt.Errorf("Unable to build access token"))
+	}
 
 	oAuthResponse.AuthCode = authAuthorize.Id
 	oAuthResponse.State = authAuthorize.State.String
 	oAuthResponse.RedirectUrl = authAuthorize.RedirectUrl.String
+	oAuthResponse.AccessToken = accessToken
 	return oAuthResponse, nil
 }
 
 func (m *ManagerAuth) OAuthExchange(ctx context.Context, authToken OAuthToken) (OAuthToken, error) {
 	// check the client_secret is valid
-	authClientSecret := acs.AuthClientSecret{ClientId: null.StringFrom(authToken.ClientId), Secret: null.StringFrom(authToken.ClientSecret)} // TODO: add to forge
+	authClientSecret := acs.AuthClientSecret{ClientId: null.StringFrom(authToken.ClientId), Secret: null.StringFrom(authToken.ClientSecret)}
 	acss := acs.InitStorage()
 	acsm := acs.NewManagerAuthClientSecret(acss)
 	if err := acsm.GetByIdAndSecret(ctx, &authClientSecret); err != nil {
@@ -102,10 +107,10 @@ func (m *ManagerAuth) OAuthExchange(ctx context.Context, authToken OAuthToken) (
 	}
 	// check the code
 	if authToken.GrantType == "authorization_code" {
-		return ExchangeAuthCode(authToken, authAuthorize)
+		return ExchangeAuthCode(ctx, authToken, authAuthorize)
 	}
 	if authToken.GrantType == "refresh_token" {
-		return ExchangeRefreshToken(authToken, authAuthorize.LoginId.String)
+		return ExchangeRefreshToken(ctx, authToken, authAuthorize.LoginId.String)
 	}
 	return OAuthToken{}, fmt.Errorf("Invalid grant type")
 }
@@ -128,7 +133,7 @@ func ExchangeAuthCode(ctx context.Context, authToken OAuthToken, authAuthorize a
 	// authRefresh := ar.AuthRefresh{LoginId: loginId, Token: authToken.RefreshToken}
 	ars := ar.InitStorage()
 	arm := ar.NewManagerAuthRefresh(ars)
-	refreshToken, err := arm.CycleRefreshToken(ctx, ar.AuthRefresh{LoginId: authAuthorize.LoginId.String})
+	refreshToken, err := arm.CycleRefreshToken(ctx, ar.AuthRefresh{ClientId: authAuthorize.ClientId.String})
 	if err != nil {
 		return OAuthToken{}, nil
 	}
@@ -145,11 +150,11 @@ func ExchangeAuthCode(ctx context.Context, authToken OAuthToken, authAuthorize a
 	return authTokenNew, nil
 }
 
-func ExchangeRefreshToken(ctx context.Context, authToken OAuthToken, loginId string) (OAuthToken, error) {
+func ExchangeRefreshToken(ctx context.Context, authToken OAuthToken, clientId string) (OAuthToken, error) {
 	// grant_type=refresh_token
 	// TODO: we will want to hash the refresh token on save and then do the same here when comparing
 	// TODO: add a config setting to either -1 [keep forever]; 0 [always refresh]; >0 [expire time interval]
-	authRefresh := ar.AuthRefresh{LoginId: loginId, Token: authToken.RefreshToken}
+	authRefresh := ar.AuthRefresh{ClientId: clientId, Token: authToken.RefreshToken}
 	ars := ar.InitStorage()
 	arm := ar.NewManagerAuthRefresh(ars)
 	if err := arm.Get(ctx, &authRefresh); err != nil {
@@ -164,7 +169,7 @@ func ExchangeRefreshToken(ctx context.Context, authToken OAuthToken, loginId str
 	if err != nil {
 		return OAuthToken{}, fmt.Errorf("Unable to build access token")
 	}
-	refreshToken, err := arm.CycleRefreshToken(ar.AuthRefresh{LoginId: loginId}) // empty => old
+	refreshToken, err := arm.CycleRefreshToken(ctx, ar.AuthRefresh{ClientId: clientId}) // empty => old
 	if err != nil {
 		return OAuthToken{}, err
 	}

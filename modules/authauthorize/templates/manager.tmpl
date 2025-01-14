@@ -11,12 +11,12 @@ import (
 //go:generate mockgen -source=manager.go -destination=mock.go -package=authauthorize
 type (
 	DataAuthAuthorizeAdapter interface {
-		Read(*AuthAuthorize) error
-		ReadAll(*[]AuthAuthorize, AuthAuthorizeParam) (int, error)
-		Create(*AuthAuthorize) error
-		Update(AuthAuthorize) error
-		Delete(*AuthAuthorize) error
-		VerifyConsent(AuthAuthorize) error
+		Read(context.Context, *AuthAuthorize) error
+		ReadAll(context.Context, *[]AuthAuthorize, AuthAuthorizeParam) (int, error)
+		Create(context.Context, *AuthAuthorize) error
+		Update(context.Context, AuthAuthorize) error
+		Delete(context.Context, *AuthAuthorize) error
+		VerifyConsent(context.Context, AuthAuthorize) error
 	}
 
 	ManagerAuthAuthorize struct {
@@ -31,12 +31,11 @@ func NewManagerAuthAuthorize(caa DataAuthAuthorizeAdapter) *ManagerAuthAuthorize
 }
 
 func (m *ManagerAuthAuthorize) Get(ctx context.Context, aa *AuthAuthorize) error {
-	return m.dataAuthAuthorize.Read(aa)
+	return m.dataAuthAuthorize.Read(ctx, aa)
 }
 
 func (m *ManagerAuthAuthorize) Search(ctx context.Context, aa *[]AuthAuthorize, param AuthAuthorizeParam) (int, error) {
 	param.Param.CalculateParam("client_id", map[string]string{"client_id": "client_id", "verifier": "verifier", "verifier_encode_method": "verifier_encode_method", "state": "state", "scope": "scope", "authorized_at": "authorized_at", "auth_code_at": "auth_code_at", "auth_code": "auth_code"})
-
 	return m.dataAuthAuthorize.ReadAll(ctx, aa, param)
 }
 

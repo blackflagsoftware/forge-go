@@ -10,6 +10,7 @@ import (
 )
 
 func TestManagerLoginRole_Get(t *testing.T) {
+	ctx := context.TODO()
 	ctrl := gomock.NewController(t)
 	mockDataLoginRole := NewMockDataLoginRoleAdapter(ctrl)
 
@@ -24,7 +25,7 @@ func TestManagerLoginRole_Get(t *testing.T) {
 			&LoginRole{LoginId: "test id", RoleId: "test id"},
 			false,
 			[]*gomock.Call{
-				mockDataLoginRole.EXPECT().Read(gomock.Any()).Return(nil),
+				mockDataLoginRole.EXPECT().Read(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{
@@ -63,7 +64,7 @@ func TestManagerLoginRole_Post(t *testing.T) {
 			"successful",
 			&LoginRole{LoginId: "a", RoleId: "a"},
 			false,
-			[]*gomock.Call{mockDataLoginRole.EXPECT().Create(gomock.Any()).Return(nil).AnyTimes()},
+			[]*gomock.Call{mockDataLoginRole.EXPECT().Create(ctx, gomock.Any()).Return(nil).AnyTimes()},
 		},
 		{
 			"failed - loginId",
@@ -108,8 +109,8 @@ func TestManagerLoginRole_Patch(t *testing.T) {
 			LoginRolePatch{LoginId: "test value", RoleIds: []string{"test value"}},
 			false,
 			[]*gomock.Call{
-				mockDataLoginRole.EXPECT().Read(gomock.Any()).Return(nil),
-				mockDataLoginRole.EXPECT().Update(gomock.Any()).Return(nil),
+				mockDataLoginRole.EXPECT().Read(ctx, gomock.Any()).Return(nil),
+				mockDataLoginRole.EXPECT().Update(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{
@@ -117,7 +118,7 @@ func TestManagerLoginRole_Patch(t *testing.T) {
 			LoginRolePatch{LoginId: "test value", RoleIds: []string{"test value"}},
 			true,
 			[]*gomock.Call{
-				mockDataLoginRole.EXPECT().Read(gomock.Any()).Return(fmt.Errorf("missing record")),
+				mockDataLoginRole.EXPECT().Read(ctx, gomock.Any()).Return(fmt.Errorf("missing record")),
 			},
 		},
 	}
@@ -151,7 +152,7 @@ func TestManagerLoginRole_Delete(t *testing.T) {
 			&LoginRole{LoginId: "test id", RoleId: "test id"},
 			false,
 			[]*gomock.Call{
-				mockDataLoginRole.EXPECT().Delete(gomock.Any()).Return(nil),
+				mockDataLoginRole.EXPECT().Delete(ctx, gomock.Any()).Return(nil),
 			},
 		},
 		{

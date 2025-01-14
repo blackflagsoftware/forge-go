@@ -95,3 +95,17 @@ func (d *SQLAuthClientSecret) Delete(ctx context.Context, au *AuthClientSecret) 
 	}
 	return nil
 }
+
+func (d *SQLAuthClientSecret) ReadByIdAndSecret(ctx context.Context, au *AuthClientSecret) error {
+	sqlGet := `
+		SELECT
+			id,
+			client_id,
+			secret,
+			active
+		FROM auth_client_secret WHERE client_id = $1 AND secret = $2`
+	if errDB := d.DB.Get(au, sqlGet, au.ClientId, au.Secret); errDB != nil {
+		return ae.DBError("AuthClientSecret Get: unable to get record.", errDB)
+	}
+	return nil
+}
