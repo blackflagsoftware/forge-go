@@ -43,9 +43,9 @@ func (h *RestAuthRefresh) LoadAuthRefreshRoutes(eg *echo.Group) {
 }
 
 func (h *RestAuthRefresh) Get(c echo.Context) error {
-
+	ctx := context.TODO()
 	authRefresh := &AuthRefresh{}
-	if err := h.managerAuthRefresh.Get(c, authRefresh); err != nil {
+	if err := h.managerAuthRefresh.Get(ctx, authRefresh); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -54,13 +54,14 @@ func (h *RestAuthRefresh) Get(c echo.Context) error {
 }
 
 func (h *RestAuthRefresh) Search(c echo.Context) error {
+ 	ctx := context.TODO()
 	param := AuthRefreshParam{}
 	if err := c.Bind(&param); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
 	}
 	authRefreshs := &[]AuthRefresh{}
-	totalCount, err := h.managerAuthRefresh.Search(c, authRefreshs, param)
+	totalCount, err := h.managerAuthRefresh.Search(ctx, authRefreshs, param)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -70,13 +71,14 @@ func (h *RestAuthRefresh) Search(c echo.Context) error {
 }
 
 func (h *RestAuthRefresh) Post(c echo.Context) error {
+	ctx := context.TODO()
 	ar := AuthRefresh{}
 	arData := AuthRefreshData{Data: ar}
 	if err := c.Bind(&arData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerAuthRefresh.Post(c, &arData.Data); err != nil {
+	if err := h.managerAuthRefresh.Post(ctx, &arData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -85,13 +87,14 @@ func (h *RestAuthRefresh) Post(c echo.Context) error {
 }
 
 func (h *RestAuthRefresh) Patch(c echo.Context) error {
+	ctx := context.TODO()
 	ar := AuthRefresh{}
 	arData := AuthRefreshData{Data: ar}
 	if err := c.Bind(&arData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerAuthRefresh.Patch(c, arData.Data); err != nil {
+	if err := h.managerAuthRefresh.Patch(ctx, arData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -100,9 +103,9 @@ func (h *RestAuthRefresh) Patch(c echo.Context) error {
 }
 
 func (h *RestAuthRefresh) Delete(c echo.Context) error {
-
+	ctx := context.TODO()
 	authRefresh := &AuthRefresh{}
-	if err := h.managerAuthRefresh.Delete(c, authRefresh); err != nil {
+	if err := h.managerAuthRefresh.Delete(ctx, authRefresh); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))

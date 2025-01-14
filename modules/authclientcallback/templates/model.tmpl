@@ -1,0 +1,31 @@
+package authclientcallback
+
+import (
+	"{{.ProjectPath}}/config"
+	"{{.ProjectPath}}/internal/util"
+)
+
+type (
+	AuthClientCallback struct {
+		ClientId    string `db:"client_id" json:"client_id"`
+		CallbackUrl string `db:"callback_url" json:"callback_url"`
+	}
+
+	AuthClientCallbackData struct {
+		Data AuthClientCallback `json:"data"`
+	}
+
+	AuthClientCallbackParam struct {
+		// TODO: add any other custom params here
+		util.Param
+	}
+)
+
+const AuthClientCallbackConst = "auth_client_callback"
+
+func InitStorage() DataAuthClientCallbackAdapter {
+	if config.StorageSQL {
+		return InitSQL()
+	}
+	return nil
+}

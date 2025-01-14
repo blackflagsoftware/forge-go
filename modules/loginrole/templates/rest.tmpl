@@ -44,13 +44,14 @@ func (h *RestLoginRole) LoadLoginRoleRoutes(eg *echo.Group) {
 }
 
 func (h *RestLoginRole) Get(c echo.Context) error {
+	ctx := context.TODO()
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
 	loginId := c.Param("login_id")
 	roleId := c.Param("role_id")
 	loginRole := &LoginRole{LoginId: loginId, RoleId: roleId}
-	if err := h.managerLoginRole.Get(c, loginRole); err != nil {
+	if err := h.managerLoginRole.Get(ctx, loginRole); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -59,6 +60,7 @@ func (h *RestLoginRole) Get(c echo.Context) error {
 }
 
 func (h *RestLoginRole) Search(c echo.Context) error {
+ 	ctx := context.TODO()
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
@@ -68,7 +70,7 @@ func (h *RestLoginRole) Search(c echo.Context) error {
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
 	}
 	loginRoles := &[]LoginRole{}
-	totalCount, err := h.managerLoginRole.Search(c, loginRoles, param)
+	totalCount, err := h.managerLoginRole.Search(ctx, loginRoles, param)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -78,6 +80,7 @@ func (h *RestLoginRole) Search(c echo.Context) error {
 }
 
 func (h *RestLoginRole) Post(c echo.Context) error {
+	ctx := context.TODO()
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
@@ -87,7 +90,7 @@ func (h *RestLoginRole) Post(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLoginRole.Post(c, &loData.Data); err != nil {
+	if err := h.managerLoginRole.Post(ctx, &loData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -96,6 +99,7 @@ func (h *RestLoginRole) Post(c echo.Context) error {
 }
 
 func (h *RestLoginRole) Patch(c echo.Context) error {
+	ctx := context.TODO()
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
@@ -104,7 +108,7 @@ func (h *RestLoginRole) Patch(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLoginRole.Patch(c, loData.Data); err != nil {
+	if err := h.managerLoginRole.Patch(ctx, loData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -113,13 +117,14 @@ func (h *RestLoginRole) Patch(c echo.Context) error {
 }
 
 func (h *RestLoginRole) Delete(c echo.Context) error {
+	ctx := context.TODO()
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
 	loginId := c.Param("login_id")
 	roleId := c.Param("role_id")
 	loginRole := &LoginRole{LoginId: loginId, RoleId: roleId}
-	if err := h.managerLoginRole.Delete(c, loginRole); err != nil {
+	if err := h.managerLoginRole.Delete(ctx, loginRole); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))

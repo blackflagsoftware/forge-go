@@ -1,0 +1,100 @@
+package authclientcallback
+
+import (
+	"context"
+	"net/http"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	util "{{.ProjectPath}}/internal/util"
+	"github.com/labstack/echo/v4"
+)
+
+type (
+	ManagerAuthClientCallbackAdapter interface {
+		Get(context.Context, *AuthClientCallback) error
+		Search(context.Context, *[]AuthClientCallback, AuthClientCallbackParam) (int, error)
+		Post(context.Context, *AuthClientCallback) error
+		Delete(context.Context, *AuthClientCallback) error
+	}
+
+	RestAuthClientCallback struct {
+		managerAuthClientCallback ManagerAuthClientCallbackAdapter
+	}
+)
+
+func InitializeRest(eg *echo.Group) {
+	sl := InitStorage()
+	ml := NewManagerAuthClientCallback(sl)
+	hl := NewRestAuthClientCallback(ml)
+	hl.LoadAuthClientCallbackRoutes(eg)
+}
+
+func NewRestAuthClientCallback(macc ManagerAuthClientCallbackAdapter) *RestAuthClientCallback {
+	return &RestAuthClientCallback{managerAuthClientCallback: macc}
+}
+
+func (h *RestAuthClientCallback) LoadAuthClientCallbackRoutes(eg *echo.Group) {
+	eg.GET("/auth-client-callback/:auth_client_id/callback_url/:callback_url", h.Get)
+	eg.POST("/auth-client-callback/search", h.Search)
+	eg.POST("/auth-client-callback", h.Post)
+	eg.DELETE("/auth-client-callback/:auth_client_id/callback_url/:callback_url", h.Delete)
+}
+
+func (h *RestAuthClientCallback) Get(c echo.Context) error {
+	ctx := context.TODO()
+	auth_client_id := c.Param("auth_client_id")
+	callback_url := c.Param("callback_url")
+	authClientCallback := &AuthClientCallback{ClientId: auth_client_id, CallbackUrl: callback_url}
+	if err := h.managerAuthClientCallback.Get(ctx, authClientCallback); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authClientCallback, nil, nil))
+}
+
+func (h *RestAuthClientCallback) Search(c echo.Context) error {
+	ctx := context.TODO()
+	param := AuthClientCallbackParam{}
+	if err := c.Bind(&param); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
+	}
+	authClientCallbacks := &[]AuthClientCallback{}
+	totalCount, err := h.managerAuthClientCallback.Search(ctx, authClientCallbacks, param)
+	if err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, *authClientCallbacks, nil, &totalCount))
+}
+
+func (h *RestAuthClientCallback) Post(c echo.Context) error {
+	ctx := context.TODO()
+	acc := AuthClientCallback{}
+	accData := AuthClientCallbackData{Data: acc}
+	if err := c.Bind(&accData); err != nil {
+		bindErr := ae.BindError(err)
+		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
+	}
+	if err := h.managerAuthClientCallback.Post(ctx, &accData.Data); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.JSON(http.StatusOK, util.NewOutput(c, accData.Data, nil, nil))
+}
+
+func (h *RestAuthClientCallback) Delete(c echo.Context) error {
+	ctx := context.TODO()
+	auth_client_id := c.Param("auth_client_id")
+	callback_url := c.Param("callback_url")
+	authClientCallback := &AuthClientCallback{ClientId: auth_client_id, CallbackUrl: callback_url}
+	if err := h.managerAuthClientCallback.Delete(ctx, authClientCallback); err != nil {
+		apiError := err.(ae.ApiError)
+		be := apiError.BodyError()
+		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+	}
+	return c.NoContent(http.StatusOK)
+}

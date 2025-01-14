@@ -1,0 +1,129 @@
+package authclientcallback
+
+import (
+	"context"
+	"encoding/json"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	p "{{.ProjectPath}}/pkg/proto"
+)
+
+type (
+	AuthClientCallbackGrpc struct {
+		p.UnimplementedAuthClientServiceServer
+		managerAuthClientCallbackCallback managerAuthClientCallbackCallbackAdapter
+	}
+)
+
+func NewAuthClientCallbackGrpc(maut managerAuthClientCallbackCallbackAdapter) *AuthClientCallbackGrpc {
+	return &AuthClientCallbackGrpc{managerAuthClientCallback: maut}
+}
+
+func (a *AuthClientCallbackGrpc) Get(ctx context.Context, in *p.AuthClientCallbackIn) (*p.AuthClientCallbackResponse, error) {
+	result := &p.Result{Success: false}
+	response := &p.AuthClientCallbackResponse{Result: result}
+	aut := &AuthClientCallback{ClientId: in.ClientId, CallbackUrl: in.ClientCallbackUrl}
+	if err := a.managerAuthClientCallback.Get(ctx, aut); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var err error
+	response.AuthClientCallback, err = translateOut(aut)
+	if err != nil {
+		return response, err
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthClientCallbackGrpc) Search(ctx context.Context, in *p.AuthClientCallback) (*p.AuthClientRepeatResponse, error) {
+	authClientParam := AuthClientParam{}
+	result := &p.Result{Success: false}
+	response := &p.AuthClientCallbackRepeatResponse{Result: result}
+	auts := &[]AuthClientCallback{}
+	if _, err := a.managerAuthClientCallback.Search(ctx, auts, authClientCallbackParam); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	for _, a := range *auts {
+		protoAuthClientCallback, err := translateOut(&a)
+		if err != nil {
+			return response, err
+		}
+		response.AuthClientCallback = append(response.AuthClientCallback, protoAuthClientCallback)
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthClientCallbackGrpc) Create(ctx context.Context, in *p.AuthClientCallback) (*p.AuthClientResponseCallback, error) {
+	result := &p.Result{Success: false}
+	response := &p.AuthClientCallbackResponse{Result: result}
+	aut, err := translateIn(in)
+	if err != nil {
+		return response, err
+	}
+	if err := a.managerAuthClientCallback.Post(ctx, aut); err != nil {
+		response.Result.Error = err.Error()
+		return response, err
+	}
+	var errTranslate error
+	response.AuthClientCallback, errTranslate = translateOut(aut)
+	if err != nil {
+		return response, errTranslate
+	}
+	response.Result.Success = true
+	return response, nil
+}
+
+func (a *AuthClientCallbackGrpc) Delete(ctx context.Context, in *p.AuthClientCallbackIn) (*p.Result, error) {
+	response := &p.Result{Success: false}
+	aut := &AuthClientCallback{Id: in.Id}
+	if err := a.managerAuthClientCallback.Delete(ctx, aut); err != nil {
+		response.Error = err.Error()
+		return response, err
+	}
+	response.Success = true
+	return response, nil
+}
+
+func translateOut(aut *AuthClientCallback) (*p.AuthClientCallback, error) {
+	protoAuthClientCallback := p.AuthClientCallback{}
+	protoAuthClientCallback.ClientId = aut.ClientId
+	protoAuthClientCallback.CallbackUrl = aut.CallbackUrl
+	return &protoAuthClientCallback, nil
+}
+
+func translateIn(in *p.AuthClientCallback) (*AuthClientCallback, error) {
+	aut := AuthClientCallback{}
+	aut.ClientId = in.ClientId
+	aut.CallbackUrl = in.CallbackUrl
+	return &aut, nil
+}
+
+// found these are slower; deprecated; keep them, just in case
+func translateJsonOut(aut *AuthClientCallback) (*p.AuthClientCallback, error) {
+	protoAuthClientCallback := p.AuthClientCallback{}
+	outBytes, err := json.Marshal(aut)
+	if err != nil {
+		return &protoAuthClientCallback, ae.GeneralError("Unable to encode from AuthClientCallback", err)
+	}
+	err = json.Unmarshal(outBytes, &protoAuthClientCallback)
+	if err != nil {
+		return &protoAuthClientCallback, ae.GeneralError("Unable to decode to proto.AuthClientCallback", err)
+	}
+	return &protoAuthClientCallback, nil
+}
+
+func translateJsonIn(in *p.AuthClientCallback) (*AuthClientCallback, error) {
+	aut := AuthClientCallback{}
+	outBytes, err := json.Marshal(in)
+	if err != nil {
+		return &aut, ae.GeneralError("Unable to encode from proto.AuthClientCallback", err)
+	}
+	err = json.Unmarshal(outBytes, &aut)
+	if err != nil {
+		return &aut, ae.GeneralError("Unable to decode to AuthClientCallback", err)
+	}
+	return &aut, nil
+}

@@ -42,6 +42,11 @@ func AddAuth(p *m.Project) {
 	authClientName := authClientEntity.Name.BuildName("auth_client", p.ProjectFile.KnownAliases)
 	p.KnownAliases = append(p.KnownAliases, authClientName)
 	p.Entities = append(p.Entities, authClientEntity)
+	// authclientcallback
+	authClientCallbackEntity := m.Entity{ModuleName: "authclientcallback", SkipGrpc: true}
+	authClientCallbackName := authClientCallbackEntity.Name.BuildName("auth_client_callback", p.ProjectFile.KnownAliases)
+	p.KnownAliases = append(p.KnownAliases, authClientCallbackName)
+	p.Entities = append(p.Entities, authClientCallbackEntity)
 	// authclientsecret
 	authClientSecretEntity := m.Entity{ModuleName: "authclientsecret", SkipGrpc: true}
 	authClientSecretName := authClientSecretEntity.Name.BuildName("auth_client_secret", p.ProjectFile.KnownAliases)

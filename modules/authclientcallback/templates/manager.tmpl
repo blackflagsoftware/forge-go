@@ -1,0 +1,70 @@
+package authclientcallback
+
+import (
+	"context"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	a "{{.ProjectPath}}/internal/audit"
+	stor "{{.ProjectPath}}/internal/storage"
+)
+
+//go:generate mockgen -source=manager.go -destination=mock.go -package=authclientcallback
+type (
+	DataAuthClientCallbackAdapter interface {
+		Read(context.Context, *AuthClientCallback) error
+		ReadAll(context.Context, *[]AuthClientCallback, AuthClientCallbackParam) (int, error)
+		Create(context.Context, *AuthClientCallback) error
+		Delete(context.Context, *AuthClientCallback) error
+	}
+
+	ManagerAuthClientCallback struct {
+		dataAuthClientCallback DataAuthClientCallbackAdapter
+		auditWriter            a.AuditAdapter
+	}
+)
+
+func NewManagerAuthClientCallback(cacc DataAuthClientCallbackAdapter) *ManagerAuthClientCallback {
+	aw := a.AuditInit()
+	return &ManagerAuthClientCallback{dataAuthClientCallback: cacc, auditWriter: aw}
+}
+
+func (m *ManagerAuthClientCallback) Get(ctx context.Context, acc *AuthClientCallback) error {
+	return m.dataAuthClientCallback.Read(ctx, acc)
+}
+
+func (m *ManagerAuthClientCallback) Search(ctx context.Context, acc *[]AuthClientCallback, param AuthClientCallbackParam) (int, error) {
+	// the second argument (map[string]string) is a list of columns to use for filtering
+	// the key matches the json struct tag, the value is the actual table column name (this should change if aliases are used in your query)
+	param.Param.CalculateParam("client_id", map[string]string{"client_id": "client_id", "callback_url": "callback_url"})
+	param.Param.PaginationString = stor.FormatPagination(param.Param.Limit, param.Param.Offset)
+
+	return m.dataAuthClientCallback.ReadAll(ctx, acc, param)
+}
+
+func (m *ManagerAuthClientCallback) Post(ctx context.Context, acc *AuthClientCallback) error {
+	if acc.ClientId == "" {
+		return ae.MissingParamError("ClientId")
+	}
+	if len(acc.ClientId) > 32 {
+		return ae.StringLengthError("ClientId", 32)
+	}
+	if acc.CallbackUrl == "" {
+		return ae.MissingParamError("CallbackUrl")
+	}
+	if len(acc.CallbackUrl) > 500 {
+		return ae.StringLengthError("CallbackUrl", 500)
+	}
+	if err := m.dataAuthClientCallback.Create(ctx, acc); err != nil {
+		return err
+	}
+	go a.AuditCreate(m.auditWriter, *acc, AuthClientCallbackConst, a.KeysToString("auth_client_id", acc.ClientId, "callback_url", acc.CallbackUrl))
+	return nil
+}
+
+func (m *ManagerAuthClientCallback) Delete(ctx context.Context, acc *AuthClientCallback) error {
+	if err := m.dataAuthClientCallback.Delete(ctx, acc); err != nil {
+		return err
+	}
+	go a.AuditDelete(m.auditWriter, *acc, AuthClientCallbackConst, a.KeysToString("auth_client_id", acc.ClientId, "callback_url", acc.CallbackUrl))
+	return nil
+}

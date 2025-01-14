@@ -44,24 +44,25 @@ func (h *RestAuthAuthorize) LoadAuthAuthorizeRoutes(eg *echo.Group) {
 }
 
 func (h *RestAuthAuthorize) Get(c echo.Context) error {
-
+	ctx := context.TODO()
 	authAuthorize := &AuthAuthorize{}
 	if err := h.managerAuthAuthorize.Get(c, authAuthorize); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
-		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
+		return c.JSON(be.StatusCode, util.NewOutput(ctx, nil, &apiError, nil))
 	}
 	return c.JSON(http.StatusOK, util.NewOutput(c, *authAuthorize, nil, nil))
 }
 
 func (h *RestAuthAuthorize) Search(c echo.Context) error {
+	ctx := context.TODO()
 	param := AuthAuthorizeParam{}
 	if err := c.Bind(&param); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
 	}
 	authAuthorizes := &[]AuthAuthorize{}
-	totalCount, err := h.managerAuthAuthorize.Search(c, authAuthorizes, param)
+	totalCount, err := h.managerAuthAuthorize.Search(ctx, authAuthorizes, param)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -71,13 +72,14 @@ func (h *RestAuthAuthorize) Search(c echo.Context) error {
 }
 
 func (h *RestAuthAuthorize) Post(c echo.Context) error {
+	ctx := context.TODO()
 	aa := AuthAuthorize{}
 	aaData := AuthAuthorizeData{Data: aa}
 	if err := c.Bind(&aaData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerAuthAuthorize.Post(c, &aaData.Data); err != nil {
+	if err := h.managerAuthAuthorize.Post(ctx, &aaData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -86,13 +88,14 @@ func (h *RestAuthAuthorize) Post(c echo.Context) error {
 }
 
 func (h *RestAuthAuthorize) Patch(c echo.Context) error {
+	ctx := context.TODO()
 	aa := AuthAuthorize{}
 	aaData := AuthAuthorizeData{Data: aa}
 	if err := c.Bind(&aaData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerAuthAuthorize.Patch(c, aaData.Data); err != nil {
+	if err := h.managerAuthAuthorize.Patch(ctx, aaData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -101,9 +104,9 @@ func (h *RestAuthAuthorize) Patch(c echo.Context) error {
 }
 
 func (h *RestAuthAuthorize) Delete(c echo.Context) error {
-
+	ctx := context.TODO()
 	authAuthorize := &AuthAuthorize{}
-	if err := h.managerAuthAuthorize.Delete(c, authAuthorize); err != nil {
+	if err := h.managerAuthAuthorize.Delete(ctx, authAuthorize); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))

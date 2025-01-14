@@ -1,0 +1,86 @@
+package authclientcallback
+
+import (
+	"context"
+	"fmt"
+
+	ae "{{.ProjectPath}}/internal/api_error"
+	stor "{{.ProjectPath}}/internal/storage"
+	"{{.ProjectPath}}/internal/util"
+	"github.com/jmoiron/sqlx"
+)
+
+type (
+	SQLAuthClientCallback struct {
+		DB *sqlx.DB
+	}
+)
+
+func InitSQL() *SQLAuthClientCallback {
+	db := stor.PostgresInit()
+	return &SQLAuthClientCallback{DB: db}
+}
+
+func (d *SQLAuthClientCallback) Read(ctx context.Context, acc *AuthClientCallback) error {
+	sqlGet := `
+		SELECT
+			client_id,
+			callback_url
+		FROM auth_client_callback WHERE client_id = $1 and callback_url = $2`
+	if errDB := d.DB.Get(acc, sqlGet, acc.ClientId, acc.CallbackUrl); errDB != nil {
+		return ae.DBError("AuthClientCallback Get: unable to get record.", errDB)
+	}
+	return nil
+}
+
+func (d *SQLAuthClientCallback) ReadAll(ctx context.Context, acc *[]AuthClientCallback, param AuthClientCallbackParam) (int, error) {
+	searchStmt, args := util.BuildSearchString(param.Param, false) // false => include the where clause, see internal/util/sql.go
+	sqlSearch := fmt.Sprintf(`
+		SELECT
+			client_id,
+			callback_url
+		FROM auth_client_callback
+		%s
+		ORDER BY %s %s`, searchStmt, param.Sort, param.PaginationString)
+	sqlSearch = d.DB.Rebind(sqlSearch)
+	if errDB := d.DB.Select(acc, sqlSearch, args...); errDB != nil {
+		return 0, ae.DBError("AuthClientCallback Search: unable to select records.", errDB)
+	}
+	sqlCount := fmt.Sprintf(`
+		SELECT
+			COUNT(*)
+		FROM auth_client_callback
+		%s`, searchStmt)
+	var count int
+	sqlCount = d.DB.Rebind(sqlCount)
+	if errDB := d.DB.Get(&count, sqlCount, args...); errDB != nil {
+		return 0, ae.DBError("auth_client_callback Search: unable to select count.", errDB)
+	}
+	return count, nil
+}
+
+func (d *SQLAuthClientCallback) Create(ctx context.Context, acc *AuthClientCallback) error {
+	sqlPost := `
+		INSERT INTO auth_client_callback (
+			client_id,
+			callback_url
+		) VALUES (
+			:client_id,
+			:callback_url
+		)`
+	_, errDB := d.DB.NamedExec(sqlPost, acc)
+	if errDB != nil {
+		return ae.DBError("AuthClientCallback Post: unable to insert record.", errDB)
+	}
+
+	return nil
+}
+
+func (d *SQLAuthClientCallback) Delete(ctx context.Context, acc *AuthClientCallback) error {
+	sqlDelete := `
+		DELETE FROM auth_client_callback WHERE client_id = $1 and callback_url = $2`
+	if _, errDB := d.DB.Exec(sqlDelete, acc.ClientId, acc.CallbackUrl); errDB != nil {
+		return ae.DBError("AuthClientCallback Delete: unable to delete record.", errDB)
+	}
+	return nil
+}

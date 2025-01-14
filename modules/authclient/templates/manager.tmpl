@@ -35,7 +35,6 @@ func (m *ManagerAuthClient) Get(ctx context.Context, aut *AuthClient) error {
 
 func (m *ManagerAuthClient) Search(ctx context.Context, aut *[]AuthClient, param AuthClientParam) (int, error) {
 	param.Param.CalculateParam("name", map[string]string{"name": "name", "description": "description", "homepage_url": "homepage_url", "callback_url": "callback_url"})
-
 	return m.dataAuthClient.ReadAll(ctx, aut, param)
 }
 
@@ -116,7 +115,6 @@ func (m *ManagerAuthClient) Patch(ctx context.Context, autIn AuthClient) error {
 }
 
 func (m *ManagerAuthClient) Delete(ctx context.Context, aut *AuthClient) error {
-
 	if err := m.dataAuthClient.Delete(ctx, aut); err != nil {
 		return err
 	}

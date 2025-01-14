@@ -44,6 +44,7 @@ func (h *RestAuth) OAuth2Authorize(c echo.Context) error {
 	// save off the state or save off pkce if given and how it is encoded
 	// return the login form code or consent form (if already logged in)
 	// the login form will have to include the redirect_url
+	ctx := context.TODO()
 	responseType := c.FormValue("response_type")
 	if responseType != "code" {
 		responseErr := ae.GeneralError("Invalid response_type, 'code' is the only valid option", nil)
@@ -59,7 +60,7 @@ func (h *RestAuth) OAuth2Authorize(c echo.Context) error {
 	authClient := ac.AuthClient{Id: clientId}
 	acs := ac.InitStorage()
 	acm := ac.NewManagerAuthClient(acs)
-	if err := acm.Get(c, &authClient); err != nil {
+	if err := acm.Get(ctx, &authClient); err != nil {
 		// TODO: make new errors (make it for all the errors within these new functions)
 		responseErr := ae.GeneralError("Not a valid client", err)
 		return c.JSON(responseErr.StatusCode, util.NewOutput(c, nil, &responseErr, nil))
@@ -77,7 +78,7 @@ func (h *RestAuth) OAuth2Authorize(c echo.Context) error {
 	}
 	aas := aa.InitStorage()
 	aam := aa.NewManagerAuthAuthorize(aas)
-	if err := aam.Post(c, &authAuthorize); err != nil {
+	if err := aam.Post(ctx, &authAuthorize); err != nil {
 		responseErr := ae.GeneralError("Error creating auth authorize", err)
 		return c.JSON(responseErr.StatusCode, util.NewOutput(c, nil, &responseErr, nil))
 	}
@@ -93,13 +94,14 @@ func (h *RestAuth) OAuth2SignIn(c echo.Context) error {
 	// like a normal sign in
 	// instead of a jwt token, send back a new code with the state with the redirect
 
+	ctx := context.TODO()
 	login := OAuthLogin{}
 	logData := OAuthLoginData{Data: login}
 	if err := c.Bind(&logData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	response, err := h.managerAuth.OAuthSignIn(c, logData.Data)
+	response, err := h.managerAuth.OAuthSignIn(ctx, logData.Data)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -115,6 +117,7 @@ func (h *RestAuth) OAuth2Exchange(c echo.Context) error {
 	// code_verifier=base64(pkce)
 	// client_id=
 	// client_secret=
+	ctx := context.TODO()
 	oAuthToken := OAuthToken{}
 
 	if err := c.Bind(&oAuthToken); err != nil {
@@ -137,6 +140,7 @@ func (h *RestAuth) OAuth2Exchange(c echo.Context) error {
 }
 
 func (h *RestAuth) OAuth2VerifyConsent(c echo.Context) error {
+	ctx := context.TODO()
 	authAuthorize := aa.AuthAuthorize{}
 	if err := c.Bind(&authAuthorize); err != nil {
 		bindErr := ae.BindError(err)
@@ -144,7 +148,7 @@ func (h *RestAuth) OAuth2VerifyConsent(c echo.Context) error {
 	}
 	aas := aa.InitStorage()
 	aam := aa.NewManagerAuthAuthorize(aas)
-	if err := aam.VerifyConsent(c, authAuthorize); err != nil {
+	if err := aam.VerifyConsent(ctx, authAuthorize); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))

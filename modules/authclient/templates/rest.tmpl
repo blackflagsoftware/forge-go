@@ -43,8 +43,9 @@ func (h *RestAuthClient) LoadAuthClientRoutes(eg *echo.Group) {
 }
 
 func (h *RestAuthClient) Get(c echo.Context) error {
+	ctx := context.TODO()
 	authClient := &AuthClient{}
-	if err := h.managerAuthClient.Get(c, authClient); err != nil {
+	if err := h.managerAuthClient.Get(ctx, authClient); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -53,13 +54,14 @@ func (h *RestAuthClient) Get(c echo.Context) error {
 }
 
 func (h *RestAuthClient) Search(c echo.Context) error {
+	ctx := context.TODO()
 	param := AuthClientParam{}
 	if err := c.Bind(&param); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
 	}
 	authClients := &[]AuthClient{}
-	totalCount, err := h.managerAuthClient.Search(c, authClients, param)
+	totalCount, err := h.managerAuthClient.Search(ctx, authClients, param)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -69,13 +71,14 @@ func (h *RestAuthClient) Search(c echo.Context) error {
 }
 
 func (h *RestAuthClient) Post(c echo.Context) error {
+	ctx := context.TODO()
 	aut := AuthClient{}
 	autData := AuthClientData{Data: aut}
 	if err := c.Bind(&autData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerAuthClient.Post(c, &autData.Data); err != nil {
+	if err := h.managerAuthClient.Post(ctx, &autData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -84,13 +87,14 @@ func (h *RestAuthClient) Post(c echo.Context) error {
 }
 
 func (h *RestAuthClient) Patch(c echo.Context) error {
+	ctx := context.TODO()
 	aut := AuthClient{}
 	autData := AuthClientData{Data: aut}
 	if err := c.Bind(&autData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerAuthClient.Patch(c, autData.Data); err != nil {
+	if err := h.managerAuthClient.Patch(ctx, autData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -99,8 +103,9 @@ func (h *RestAuthClient) Patch(c echo.Context) error {
 }
 
 func (h *RestAuthClient) Delete(c echo.Context) error {
+	ctx := context.TODO()
 	authClient := &AuthClient{}
-	if err := h.managerAuthClient.Delete(c, authClient); err != nil {
+	if err := h.managerAuthClient.Delete(ctx, authClient); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))

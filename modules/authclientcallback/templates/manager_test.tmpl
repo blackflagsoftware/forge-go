@@ -1,0 +1,115 @@
+package authclientcallback
+
+import (
+	"context"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestManagerAuthClientCallback_Get(t *testing.T) {
+	ctx := context.TODO()
+	ctrl := gomock.NewController(t)
+	mockDataAuthClientCallback := NewMockDataAuthClientCallbackAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		acc     *AuthClientCallback
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClientCallback{dataAuthClientCallback: mockDataAuthClientCallback}
+			err := m.Get(ctx, tt.acc)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClientCallback.Get().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClientCallback.Get().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthClientCallback_Post(t *testing.T) {
+	ctx := context.TODO()
+	ctrl := gomock.NewController(t)
+	mockDataAuthClientCallback := NewMockDataAuthClientCallbackAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		acc     *AuthClientCallback
+		wantErr bool
+		calls   []*gomock.Call
+	}{
+		{
+			"successful",
+			&AuthClientCallback{ClientId: "a", CallbackUrl: "a"},
+			false,
+			[]*gomock.Call{mockDataAuthClientCallback.EXPECT().Create(ctx, gomock.Any()).Return(nil).AnyTimes()},
+		},
+		{
+			"failed - ClientId",
+			&AuthClientCallback{ClientId: "", CallbackUrl: "a"},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length ClientId",
+			&AuthClientCallback{ClientId: "0123456789012345678901234567890123456789", CallbackUrl: "a"},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - callbackUrl",
+			&AuthClientCallback{ClientId: "a", CallbackUrl: ""},
+			true,
+			[]*gomock.Call{},
+		},
+		{
+			"failed - length callbackUrl",
+			&AuthClientCallback{ClientId: "a", CallbackUrl: "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"},
+			true,
+			[]*gomock.Call{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClientCallback{dataAuthClientCallback: mockDataAuthClientCallback}
+			err := m.Post(ctx, tt.acc)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClientCallback.Create().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClientCallback.Create().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}
+
+func TestManagerAuthClientCallback_Delete(t *testing.T) {
+	ctx := context.TODO()
+	ctrl := gomock.NewController(t)
+	mockDataAuthClientCallback := NewMockDataAuthClientCallbackAdapter(ctrl)
+
+	tests := []struct {
+		name    string
+		acc     *AuthClientCallback
+		wantErr bool
+		calls   []*gomock.Call
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &ManagerAuthClientCallback{dataAuthClientCallback: mockDataAuthClientCallback}
+			err := m.Delete(ctx, tt.acc)
+			if !tt.wantErr {
+				assert.Nil(t, err, "ManagerAuthClientCallback.Delete().%s => expected not error; got: %s", tt.name, err)
+			}
+			if tt.wantErr {
+				assert.NotNil(t, err, "ManagerAuthClientCallback.Delete().%s => expected error: got nil", tt.name)
+			}
+		})
+	}
+}

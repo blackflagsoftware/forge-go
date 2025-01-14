@@ -57,9 +57,10 @@ func (h *RestLogin) LoadLoginRoutes(eg *echo.Group) {
 }
 
 func (h *RestLogin) Get(c echo.Context) error {
+	ctx := context.TODO()
 	id := c.Param("id")
 	login := &Login{Id: id}
-	if err := h.managerLogin.Get(c, login); err != nil {
+	if err := h.managerLogin.Get(ctx, login); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -68,13 +69,14 @@ func (h *RestLogin) Get(c echo.Context) error {
 }
 
 func (h *RestLogin) Search(c echo.Context) error {
+	ctx := context.TODO()
 	param := LoginParam{}
 	if err := c.Bind(&param); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, nil, &bindErr, nil))
 	}
 	logins := &[]Login{}
-	totalCount, err := h.managerLogin.Search(c, logins, param)
+	totalCount, err := h.managerLogin.Search(ctx, logins, param)
 	if err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
@@ -84,6 +86,7 @@ func (h *RestLogin) Search(c echo.Context) error {
 }
 
 func (h *RestLogin) Post(c echo.Context) error {
+	ctx := context.TODO()
 	if !m.AuthContext([]string{"admin"}, c) {
 		return ae.AuthorizationError("User has insufficent role permissions")
 	}
@@ -93,7 +96,7 @@ func (h *RestLogin) Post(c echo.Context) error {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLogin.Post(c, &logData.Data); err != nil {
+	if err := h.managerLogin.Post(ctx, &logData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -102,13 +105,14 @@ func (h *RestLogin) Post(c echo.Context) error {
 }
 
 func (h *RestLogin) Patch(c echo.Context) error {
+ 	ctx := context.TODO()
 	login := Login{}
 	logData := LoginData{Data: login}
 	if err := c.Bind(&logData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLogin.Patch(c, logData.Data); err != nil {
+	if err := h.managerLogin.Patch(ctx, logData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -117,13 +121,14 @@ func (h *RestLogin) Patch(c echo.Context) error {
 }
 
 func (h *RestLogin) PatchPwd(c echo.Context) error {
+	ctx := context.TODO()
 	login := Login{}
 	logData := LoginData{Data: login}
 	if err := c.Bind(&logData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLogin.PatchPwd(c, logData.Data); err != nil {
+	if err := h.managerLogin.PatchPwd(ctx, logData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -132,9 +137,10 @@ func (h *RestLogin) PatchPwd(c echo.Context) error {
 }
 
 func (h *RestLogin) Delete(c echo.Context) error {
+	ctx := context.TODO()
 	id := c.Param("id")
 	login := &Login{Id: id}
-	if err := h.managerLogin.Delete(c, login); err != nil {
+	if err := h.managerLogin.Delete(ctx, login); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -143,13 +149,14 @@ func (h *RestLogin) Delete(c echo.Context) error {
 }
 
 func (h *RestLogin) PostPwd(c echo.Context) error {
+	ctx := context.TODO()
 	pwd := PasswordReset{}
 	pwdData := PasswordResetData{Data: pwd}
 	if err := c.Bind(&pwdData); err != nil {
 		bindErr := ae.BindError(err)
 		return c.JSON(bindErr.StatusCode, util.NewOutput(c, bindErr.BodyError(), &bindErr, nil))
 	}
-	if err := h.managerLogin.PwdReset(c, pwdData.Data); err != nil {
+	if err := h.managerLogin.PwdReset(ctx, pwdData.Data); err != nil {
 		apiError := err.(ae.ApiError)
 		be := apiError.BodyError()
 		return c.JSON(be.StatusCode, util.NewOutput(c, nil, &apiError, nil))
@@ -158,6 +165,7 @@ func (h *RestLogin) PostPwd(c echo.Context) error {
 }
 
 func (h *RestLogin) ResetRequest(c echo.Context) error {
+	ctx := context.TODO()
 	emailAddr := c.Param("email_addr")
 	resetRequest := &ResetRequest{EmailAddr: emailAddr}
 	if err := h.managerLogin.ResetRequest(c, resetRequest); err != nil {
@@ -169,6 +177,7 @@ func (h *RestLogin) ResetRequest(c echo.Context) error {
 }
 
 func (h *RestLogin) SignIn(c echo.Context) error {
+	ctx := context.TODO()
 	login := Login{}
 	logData := LoginData{Data: login}
 	if err := c.Bind(&logData); err != nil {
@@ -190,6 +199,7 @@ func (h *RestLogin) Verify(c echo.Context) error {
 }
 
 func (h *RestLogin) WithRoles(c echo.Context) error {
+	ctx := context.TODO()
 	login := &[]LoginRoles{}
 	totalCount, err := h.managerLogin.WithRoles(c, login)
 	if err != nil {
