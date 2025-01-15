@@ -131,7 +131,7 @@ func Config(p m.Project) {
 		if errConfig != nil {
 			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
 		} else {
-			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config init text - do not remove ---/%s/g' %s`, configReplace.String(), configFile)
+			cmdConfig := fmt.Sprintf(`perl -pi -e 's/\/\/ --- replace config init text - do not remove ---/%s/g' %s`, configReplaceVar.String(), configFile)
 			execConfig := exec.Command("bash", "-c", cmdConfig)
 			errConfigCmd := execConfig.Run()
 			if errConfigCmd != nil {
