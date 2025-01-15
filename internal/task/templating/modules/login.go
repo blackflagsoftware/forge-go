@@ -125,8 +125,9 @@ func Config(p m.Project) {
 			}
 		}
 		// config init lines
+		var configReplaceVar bytes.Buffer
 		tConfig = template.Must(template.New("config").Parse(configInitLine))
-		errConfig = tConfig.Execute(&configReplace, p)
+		errConfig = tConfig.Execute(&configReplaceVar, p)
 		if errConfig != nil {
 			fmt.Printf("%s: template error [%s]\n", configFile, errConfig)
 		} else {
