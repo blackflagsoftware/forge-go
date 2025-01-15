@@ -69,7 +69,7 @@ func TestManagerLogin_Post(t *testing.T) {
 			&Login{EmailAddr: null.NewString("test@email.com", true), Pwd: null.NewString("a", true), Active: null.NewBool(true, true), SetPwd: null.NewBool(true, true), CreatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true), UpdatedAt: null.NewTime(time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC), true)},
 			false,
 			[]*gomock.Call{
-				mockDataLogin.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil).AnyTimes(),
+				mockDataLogin.EXPECT().Create(ctx, gomock.Any(), gomock.Any()).Return(nil).AnyTimes(),
 				mockEmail.EXPECT().SendReset(ctx, gomock.Any(), gomock.Any()).Return(nil),
 				mockDataLogin.EXPECT().GetByEmailAddr(ctx, gomock.Any()).Return(nil),
 			},
