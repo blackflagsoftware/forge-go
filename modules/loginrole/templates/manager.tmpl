@@ -58,7 +58,7 @@ func (m *ManagerLoginRole) Patch(ctx context.Context, loIn LoginRolePatch) error
 	// get old list
 	loginRoleParam := LoginRoleParam{Param: util.Param{Search: util.Search{Filters: []util.Filter{ {Column: "login_id", Compare: "=", Value: loIn.LoginId}}}}}
 	existingLoginRoles := []LoginRole{}
-	_, errSearch := m.dataLoginRole.ReadAll(ctx, &existingLoginRoles, loginRoleParam)
+	_, errSearch := m.Search(ctx, &existingLoginRoles, loginRoleParam)
 	if errSearch != nil {
 		return errSearch
 	}

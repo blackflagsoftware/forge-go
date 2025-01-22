@@ -189,7 +189,7 @@ func ValidFile(file fs.DirEntry) bool {
 }
 
 func ProcessMigration(db *sqlx.DB, migrationPath, fileName string) error {
-	fmt.Printf("Running: ProcessMigration for [%s]\n", migrationPath)
+	m.Default.Printf("Running: ProcessMigration for [%s]\n", migrationPath)
 	ext := path.Ext(migrationPath)
 	switch ext {
 	case ".sql":

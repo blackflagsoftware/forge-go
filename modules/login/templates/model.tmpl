@@ -30,7 +30,7 @@ type (
 	}
 
 	ResetRequest struct {
-		EmailAddr  string    `db:"email_addr" json:"email_addr"`
+		EmailAddr  string    `db:"email_address" json:"email_address"`
 		LoginId   string    `db:"login_id"`
 		ResetToken string    `db:"reset_token"`
 		CreatedAt  time.Time `db:"created_at"`

@@ -53,7 +53,7 @@ func (h *RestLogin) LoadLoginRoutes(eg *echo.Group) {
 	eg.GET("/login/roles", h.WithRoles)
 	eg.POST("/login/reset/pwd", h.PostPwd)
 	eg.GET("/login/forgot-password/:email_addr", h.ResetRequest)
-	eg.POST("/login/signin", h.SignIn)
+	eg.POST("/login/sign-in", h.SignIn)
 }
 
 func (h *RestLogin) Get(c echo.Context) error {
